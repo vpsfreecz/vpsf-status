@@ -7,9 +7,10 @@ import (
 )
 
 type Status struct {
-	VpsAdmin     VpsAdmin
-	LocationList []*Location
-	LocationMap  map[string]*Location
+	VpsAdmin      VpsAdmin
+	LocationList  []*Location
+	LocationMap   map[string]*Location
+	GlobalNodeMap map[string]*Node
 }
 
 type VpsAdmin struct {
@@ -72,8 +73,9 @@ type PingCheck struct {
 
 func openConfig(cfg *config.Config) *Status {
 	st := Status{
-		LocationList: make([]*Location, len(cfg.Locations)),
-		LocationMap:  make(map[string]*Location),
+		LocationList:  make([]*Location, len(cfg.Locations)),
+		LocationMap:   make(map[string]*Location),
+		GlobalNodeMap: make(map[string]*Node),
 	}
 
 	st.VpsAdmin.Api = &WebService{
@@ -111,6 +113,7 @@ func openConfig(cfg *config.Config) *Status {
 
 			loc.NodeList[iNode] = &n
 			loc.NodeMap[cfgNode.Name] = &n
+			st.GlobalNodeMap[cfgNode.Name] = &n
 		}
 
 		for iDns, cfgDns := range cfgLoc.DnsResolvers {

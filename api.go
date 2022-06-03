@@ -51,13 +51,7 @@ func failApi(st *Status, now time.Time) {
 }
 
 func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now time.Time) {
-	stLoc := st.LocationMap[apiNode.Location.Label]
-	if stLoc == nil {
-		log.Printf("Not configured for location %s", apiNode.Location.Label)
-		return
-	}
-
-	stNode := stLoc.NodeMap[apiNode.Name]
+	stNode := st.GlobalNodeMap[apiNode.Name]
 	if stNode == nil {
 		log.Printf("Not configured for node %s", apiNode.Name)
 		return
