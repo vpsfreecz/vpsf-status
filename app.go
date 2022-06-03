@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
@@ -28,8 +29,8 @@ type StatusData struct {
 
 func (app *application) parseTemplates() error {
 	status, err := template.ParseFiles(
-		"templates/layout.tpl",
-		"templates/status.tpl",
+		filepath.Join(app.config.DataDir, "templates/layout.tpl"),
+		filepath.Join("templates/status.tpl"),
 	)
 	if err != nil {
 		return err

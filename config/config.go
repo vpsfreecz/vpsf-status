@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	ListenAddress string     `json:"listen_address"`
+	DataDir      string     `json:"data_dir"`
 	StateDir      string     `json:"state_dir"`
 	VpsAdmin      VpsAdmin   `json:"vpsadmin"`
 	Locations     []Location `json:"locations"`
