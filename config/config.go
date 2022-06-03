@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	ListenAddress string     `json:"listen_address"`
-	DataDir      string     `json:"data_dir"`
+	DataDir       string     `json:"data_dir"`
 	StateDir      string     `json:"state_dir"`
 	VpsAdmin      VpsAdmin   `json:"vpsadmin"`
 	Locations     []Location `json:"locations"`
@@ -21,9 +21,9 @@ type VpsAdmin struct {
 }
 
 type Location struct {
-	Id int `json:"id"`
-	Label string `json:"label"`
-	Nodes []Node `json:"nodes"`
+	Id           int           `json:"id"`
+	Label        string        `json:"label"`
+	Nodes        []Node        `json:"nodes"`
 	DnsResolvers []DnsResolver `json:"dns_resolvers"`
 }
 
@@ -34,7 +34,7 @@ type Node struct {
 }
 
 type DnsResolver struct {
-	Name string `json:"name"`
+	Name      string `json:"name"`
 	IpAddress string `json:"ip_address"`
 }
 
