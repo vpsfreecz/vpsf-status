@@ -30,7 +30,7 @@ type StatusData struct {
 func (app *application) parseTemplates() error {
 	status, err := template.ParseFiles(
 		filepath.Join(app.config.DataDir, "templates/layout.tpl"),
-		filepath.Join("templates/status.tpl"),
+		filepath.Join(app.config.DataDir, "templates/status.tpl"),
 	)
 	if err != nil {
 		return err
