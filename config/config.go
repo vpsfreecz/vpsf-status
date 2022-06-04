@@ -7,11 +7,12 @@ import (
 )
 
 type Config struct {
-	ListenAddress string     `json:"listen_address"`
-	DataDir       string     `json:"data_dir"`
-	StateDir      string     `json:"state_dir"`
-	VpsAdmin      VpsAdmin   `json:"vpsadmin"`
-	Locations     []Location `json:"locations"`
+	ListenAddress string       `json:"listen_address"`
+	DataDir       string       `json:"data_dir"`
+	StateDir      string       `json:"state_dir"`
+	VpsAdmin      VpsAdmin     `json:"vpsadmin"`
+	Locations     []Location   `json:"locations"`
+	WebServices   []WebService `json:"web_services"`
 }
 
 type VpsAdmin struct {
@@ -36,6 +37,13 @@ type Node struct {
 type DnsResolver struct {
 	Name      string `json:"name"`
 	IpAddress string `json:"ip_address"`
+}
+
+type WebService struct {
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Url         string `json:"url"`
+	CheckUrl    string `json:"check_url"`
 }
 
 func ParseConfig(path string) (*Config, error) {

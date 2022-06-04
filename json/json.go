@@ -7,10 +7,11 @@ import (
 )
 
 type Status struct {
-	GeneratedAt time.Time  `json:"generated_at"`
-	Notice      string     `json:"notice"`
-	VpsAdmin    VpsAdmin   `json:"vpsadmin"`
-	Locations   []Location `json:"locations"`
+	GeneratedAt time.Time    `json:"generated_at"`
+	Notice      string       `json:"notice"`
+	VpsAdmin    VpsAdmin     `json:"vpsadmin"`
+	Locations   []Location   `json:"locations"`
+	WebServices []WebService `json:"web_services"`
 }
 
 type VpsAdmin struct {
@@ -39,6 +40,13 @@ type DnsResolver struct {
 	Name   string `json:"name"`
 	Ping   bool   `json:"ping"`
 	Lookup bool   `json:"lookup"`
+}
+
+type WebService struct {
+	Label       string `json:"label"`
+	Description string `json:"description"`
+	Url         string `json:"url"`
+	Status      bool   `json:"status"`
 }
 
 func ExportTo(w io.Writer, st *Status) error {

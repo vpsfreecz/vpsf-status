@@ -12,6 +12,7 @@ type Status struct {
 	LocationList  []*Location
 	LocationMap   map[string]*Location
 	GlobalNodeMap map[string]*Node
+	Services      *Services
 }
 
 type VpsAdmin struct {
@@ -61,9 +62,20 @@ type DnsResolver struct {
 	Ping *PingCheck
 }
 
+type Services struct {
+	Web []*WebService
+
+	Up       int
+	Count    int
+	WebUp    int
+	WebCount int
+}
+
 type WebService struct {
 	Label        string
+	Description  string
 	Url          string
+	CheckUrl     string
 	Status       bool
 	StatusCode   int
 	StatusString string
@@ -82,19 +94,25 @@ func openConfig(cfg *config.Config) *Status {
 		LocationList:  make([]*Location, len(cfg.Locations)),
 		LocationMap:   make(map[string]*Location),
 		GlobalNodeMap: make(map[string]*Node),
+		Services: &Services{
+			Web: make([]*WebService, len(cfg.WebServices)),
+		},
 	}
 
 	st.VpsAdmin.Api = &WebService{
-		Label: cfg.VpsAdmin.ApiUrl,
-		Url:   cfg.VpsAdmin.ApiUrl,
+		Label:    cfg.VpsAdmin.ApiUrl,
+		Url:      cfg.VpsAdmin.ApiUrl,
+		CheckUrl: cfg.VpsAdmin.ApiUrl,
 	}
 	st.VpsAdmin.Webui = &WebService{
-		Label: cfg.VpsAdmin.WebuiUrl,
-		Url:   cfg.VpsAdmin.WebuiUrl,
+		Label:    cfg.VpsAdmin.WebuiUrl,
+		Url:      cfg.VpsAdmin.WebuiUrl,
+		CheckUrl: cfg.VpsAdmin.WebuiUrl,
 	}
 	st.VpsAdmin.Console = &WebService{
-		Label: "Console Router",
-		Url:   cfg.VpsAdmin.ConsoleUrl,
+		Label:    "Console Router",
+		Url:      cfg.VpsAdmin.ConsoleUrl,
+		CheckUrl: cfg.VpsAdmin.ConsoleUrl,
 	}
 
 	for iLoc, cfgLoc := range cfg.Locations {
@@ -139,6 +157,21 @@ func openConfig(cfg *config.Config) *Status {
 		st.LocationMap[loc.Label] = &loc
 	}
 
+	for iWs, cfgWs := range cfg.WebServices {
+		ws := WebService{
+			Label:       cfgWs.Label,
+			Description: cfgWs.Description,
+			Url:         cfgWs.Url,
+			CheckUrl:    cfgWs.CheckUrl,
+		}
+
+		if ws.CheckUrl == "" {
+			ws.CheckUrl = ws.Url
+		}
+
+		st.Services.Web[iWs] = &ws
+	}
+
 	return &st
 }
 
@@ -148,6 +181,8 @@ func (st *Status) CacheCounts() {
 	for _, loc := range st.LocationList {
 		loc.CacheCounts()
 	}
+
+	st.Services.CacheCounts()
 }
 
 func (st *Status) ToJson(now time.Time, notice string) *json.Status {
@@ -158,6 +193,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 			Webui:   st.VpsAdmin.Webui.Status,
 		},
 		Locations:   make([]json.Location, len(st.LocationList)),
+		WebServices: make([]json.WebService, len(st.Services.Web)),
 		Notice:      notice,
 		GeneratedAt: now,
 	}
@@ -190,6 +226,15 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 		}
 
 		ret.Locations[iLoc] = jsonLoc
+	}
+
+	for iWs, ws := range st.Services.Web {
+		ret.WebServices[iWs] = json.WebService{
+			Label:       ws.Label,
+			Description: ws.Description,
+			Url:         ws.Url,
+			Status:      ws.Status,
+		}
 	}
 
 	return ret
@@ -311,6 +356,28 @@ func (n *Node) IsOperational() bool {
 
 func (r *DnsResolver) IsOperational() bool {
 	return r.ResolveStatus
+}
+
+func (s *Services) CacheCounts() {
+	cnt := 0
+	for _, ws := range s.Web {
+		if ws.Status {
+			cnt += 1
+		}
+	}
+	s.WebUp = cnt
+	s.WebCount = len(s.Web)
+
+	s.Up = s.WebUp
+	s.Count = s.WebCount
+}
+
+func (s *Services) IsOperational() bool {
+	return s.Up == s.Count
+}
+
+func (s *Services) IsWebOperational() bool {
+	return s.WebUp == s.WebCount
 }
 
 func (pc *PingCheck) IsUp() bool {

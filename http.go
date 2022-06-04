@@ -11,6 +11,12 @@ func checkVpsAdminWebServices(st *Status) {
 	go spawnHttpCheck(st.VpsAdmin.Console)
 }
 
+func checkWebServices(st *Status) {
+	for _, ws := range st.Services.Web {
+		go spawnHttpCheck(ws)
+	}
+}
+
 func spawnHttpCheck(ws *WebService) {
 	for {
 		ws.LastCheck = time.Now()

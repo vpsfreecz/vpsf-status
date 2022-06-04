@@ -32,6 +32,7 @@ func main() {
 	pingNodes(systemStatus)
 	pingDnsResolvers(systemStatus)
 	checkDnsResolvers(systemStatus)
+	checkWebServices(systemStatus)
 
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/json", app.handleJson)
