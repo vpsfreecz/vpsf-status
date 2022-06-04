@@ -174,8 +174,15 @@
 	</div>
 	{{ end }}
 
-	<footer class="py-3 my-4">
-		<p class="text-end text-muted">vpsFree.cz</p>
+	<footer class="row py-3 my-4">
+		<div class="col">
+			<p class="text-start">
+				<a href="/json" class="link-secondary">JSON</a>
+			</p>
+		</div>
+		<div class="col">
+			<p class="text-end text-muted">vpsFree.cz</p>
+		</div>
 	</footer>
 </div>
 {{ end }}

@@ -34,6 +34,7 @@ func main() {
 	checkDnsResolvers(systemStatus)
 
 	http.HandleFunc("/", app.handleIndex)
+	http.HandleFunc("/json", app.handleJson)
 
 	fmt.Printf("Starting server...\n")
 	if err := http.ListenAndServe(cfg.ListenAddress, nil); err != nil {

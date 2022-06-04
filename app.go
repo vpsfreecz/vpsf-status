@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
+	"github.com/vpsfreecz/vpsf-status/json"
 )
 
 type application struct {
@@ -58,5 +59,21 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("Template error: %+v", err)
+	}
+}
+
+func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
+	now := time.Now()
+	app.status.CacheCounts()
+
+	notice, err := readNoticeFile(app.config.StateDir)
+	if err != nil {
+		log.Printf("Unable to read notice file: %+v", err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.ExportTo(w, app.status.ToJson(now, notice)); err != nil {
+		log.Printf("Error while exporting to JSON: %+v", err)
 	}
 }

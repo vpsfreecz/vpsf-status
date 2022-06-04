@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
+	"github.com/vpsfreecz/vpsf-status/json"
 )
 
 type Status struct {
@@ -38,6 +39,7 @@ type Location struct {
 }
 
 type Node struct {
+	Id        int
 	Name      string
 	IpAddress string
 
@@ -106,6 +108,7 @@ func openConfig(cfg *config.Config) *Status {
 
 		for iNode, cfgNode := range cfgLoc.Nodes {
 			n := Node{
+				Id:        cfgNode.Id,
 				Name:      cfgNode.Name,
 				IpAddress: cfgNode.IpAddress,
 				Ping: &PingCheck{
@@ -143,6 +146,50 @@ func (st *Status) CacheCounts() {
 	for _, loc := range st.LocationList {
 		loc.CacheCounts()
 	}
+}
+
+func (st *Status) ToJson(now time.Time, notice string) *json.Status {
+	ret := &json.Status{
+		VpsAdmin: json.VpsAdmin{
+			Api:     st.VpsAdmin.Api.Status,
+			Console: st.VpsAdmin.Console.Status,
+			Webui:   st.VpsAdmin.Webui.Status,
+		},
+		Locations:   make([]json.Location, len(st.LocationList)),
+		Notice:      notice,
+		GeneratedAt: now,
+	}
+
+	for iLoc, loc := range st.LocationList {
+		jsonLoc := json.Location{
+			Id:           loc.Id,
+			Label:        loc.Label,
+			Nodes:        make([]json.Node, len(loc.NodeList)),
+			DnsResolvers: make([]json.DnsResolver, len(loc.DnsResolverList)),
+		}
+
+		for iNode, node := range loc.NodeList {
+			jsonLoc.Nodes[iNode] = json.Node{
+				Id:          node.Id,
+				Name:        node.Name,
+				VpsAdmin:    node.ApiStatus,
+				Ping:        node.Ping.PacketLoss < 20,
+				Maintenance: node.ApiMaintenance,
+			}
+		}
+
+		for iDns, dns := range loc.DnsResolverList {
+			jsonLoc.DnsResolvers[iDns] = json.DnsResolver{
+				Name:   dns.Name,
+				Ping:   dns.Ping.PacketLoss < 20,
+				Lookup: dns.ResolveStatus,
+			}
+		}
+
+		ret.Locations[iLoc] = jsonLoc
+	}
+
+	return ret
 }
 
 func (vpsa *VpsAdmin) IsOperational() bool {
