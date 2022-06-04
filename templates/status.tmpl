@@ -265,7 +265,49 @@
 							</table>
 						</div>
 					</div>
-				</div>
+				</div> <!-- accordion item -->
+
+				<div class="accordion-item">
+					<h3 class="accordion-header" id="heading-nameservers">
+						<button class="accordion-button text-{{ if .Status.Services.IsNameServerOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
+							Name Servers {{ .Status.Services.NameServerUp }}/{{ .Status.Services.NameServerCount }}
+						</button>
+					</h3>
+					<div id="collapse-nameservers" class="accordion-collapse collapse" aria-labelledby="heading-nameservers">
+						<div class="accordion-body">
+							<table class="table table-sm">
+								<thead>
+									<tr>
+										<th>Service</th>
+										<th>Ping</th>
+										<th>Lookup</th>
+									</tr>
+								</thead>
+								<tbody>
+									{{ range $ns := .Status.Services.NameServer }}
+									<tr class="table-{{ if $ns.IsOperational }}success{{ else }}danger{{ end }}">
+										<td>{{ $ns.Name }}</td>
+										<td>
+											{{ if $ns.Ping.IsUp }}
+											<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+											{{ end }}
+										</td>
+										<td>
+											{{ if $ns.ResolveStatus }}
+											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+											{{ end }}
+										</td>
+									</tr>
+									{{ end }}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div> <!-- accordion item -->
 			</div>
 		</div>
 	</div>

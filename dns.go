@@ -16,6 +16,12 @@ func checkDnsResolvers(st *Status) {
 	}
 }
 
+func checkNameServers(st *Status) {
+	for _, ns := range st.Services.NameServer {
+		go spawnDnsResolverCheck(ns)
+	}
+}
+
 func spawnDnsResolverCheck(r *DnsResolver) {
 	for {
 		net_r := &net.Resolver{
@@ -30,7 +36,7 @@ func spawnDnsResolverCheck(r *DnsResolver) {
 
 		r.LastResolveCheck = time.Now()
 
-		_, err := net_r.LookupHost(context.Background(), "www.google.com")
+		_, err := net_r.LookupHost(context.Background(), r.ResolveDomain)
 		if err != nil {
 			log.Printf("DNS lookup failed on %s", r.Name)
 			r.ResolveStatus = false

@@ -13,6 +13,7 @@ type Config struct {
 	VpsAdmin      VpsAdmin     `json:"vpsadmin"`
 	Locations     []Location   `json:"locations"`
 	WebServices   []WebService `json:"web_services"`
+	NameServers   []NameServer `json:"nameservers"`
 }
 
 type VpsAdmin struct {
@@ -44,6 +45,11 @@ type WebService struct {
 	Description string `json:"description"`
 	Url         string `json:"url"`
 	CheckUrl    string `json:"check_url"`
+}
+
+type NameServer struct {
+	Name   string
+	Domain string
 }
 
 func ParseConfig(path string) (*Config, error) {

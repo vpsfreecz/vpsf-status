@@ -53,8 +53,9 @@ type Node struct {
 }
 
 type DnsResolver struct {
-	Name      string
-	IpAddress string
+	Name          string
+	IpAddress     string
+	ResolveDomain string
 
 	ResolveStatus    bool
 	LastResolveCheck time.Time
@@ -63,12 +64,15 @@ type DnsResolver struct {
 }
 
 type Services struct {
-	Web []*WebService
+	Web        []*WebService
+	NameServer []*DnsResolver
 
-	Up       int
-	Count    int
-	WebUp    int
-	WebCount int
+	Up              int
+	Count           int
+	WebUp           int
+	WebCount        int
+	NameServerUp    int
+	NameServerCount int
 }
 
 type WebService struct {
@@ -95,7 +99,8 @@ func openConfig(cfg *config.Config) *Status {
 		LocationMap:   make(map[string]*Location),
 		GlobalNodeMap: make(map[string]*Node),
 		Services: &Services{
-			Web: make([]*WebService, len(cfg.WebServices)),
+			Web:        make([]*WebService, len(cfg.WebServices)),
+			NameServer: make([]*DnsResolver, len(cfg.NameServers)),
 		},
 	}
 
@@ -144,8 +149,9 @@ func openConfig(cfg *config.Config) *Status {
 
 		for iDns, cfgDns := range cfgLoc.DnsResolvers {
 			loc.DnsResolverList[iDns] = &DnsResolver{
-				Name:      cfgDns.Name,
-				IpAddress: cfgDns.IpAddress,
+				Name:          cfgDns.Name,
+				IpAddress:     cfgDns.IpAddress,
+				ResolveDomain: "www.google.com",
 				Ping: &PingCheck{
 					Name:      cfgDns.Name,
 					IpAddress: cfgDns.IpAddress,
@@ -172,6 +178,20 @@ func openConfig(cfg *config.Config) *Status {
 		st.Services.Web[iWs] = &ws
 	}
 
+	for iNs, cfgNs := range cfg.NameServers {
+		ns := DnsResolver{
+			Name:          cfgNs.Name,
+			IpAddress:     cfgNs.Name,
+			ResolveDomain: cfgNs.Domain,
+			Ping: &PingCheck{
+				Name:      cfgNs.Name,
+				IpAddress: cfgNs.Name,
+			},
+		}
+
+		st.Services.NameServer[iNs] = &ns
+	}
+
 	return &st
 }
 
@@ -194,6 +214,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 		},
 		Locations:   make([]json.Location, len(st.LocationList)),
 		WebServices: make([]json.WebService, len(st.Services.Web)),
+		NameServers: make([]json.NameServer, len(st.Services.NameServer)),
 		Notice:      notice,
 		GeneratedAt: now,
 	}
@@ -234,6 +255,14 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 			Description: ws.Description,
 			Url:         ws.Url,
 			Status:      ws.Status,
+		}
+	}
+
+	for iNs, ns := range st.Services.NameServer {
+		ret.NameServers[iNs] = json.NameServer{
+			Name:   ns.Name,
+			Ping:   ns.Ping.PacketLoss < 20,
+			Lookup: ns.ResolveStatus,
 		}
 	}
 
@@ -368,8 +397,17 @@ func (s *Services) CacheCounts() {
 	s.WebUp = cnt
 	s.WebCount = len(s.Web)
 
-	s.Up = s.WebUp
-	s.Count = s.WebCount
+	cnt = 0
+	for _, ns := range s.NameServer {
+		if ns.ResolveStatus {
+			cnt += 1
+		}
+	}
+	s.NameServerUp = cnt
+	s.NameServerCount = len(s.NameServer)
+
+	s.Up = s.WebUp + s.NameServerUp
+	s.Count = s.WebCount + s.NameServerCount
 }
 
 func (s *Services) IsOperational() bool {
@@ -378,6 +416,10 @@ func (s *Services) IsOperational() bool {
 
 func (s *Services) IsWebOperational() bool {
 	return s.WebUp == s.WebCount
+}
+
+func (s *Services) IsNameServerOperational() bool {
+	return s.NameServerUp == s.NameServerCount
 }
 
 func (pc *PingCheck) IsUp() bool {

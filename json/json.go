@@ -12,6 +12,7 @@ type Status struct {
 	VpsAdmin    VpsAdmin     `json:"vpsadmin"`
 	Locations   []Location   `json:"locations"`
 	WebServices []WebService `json:"web_services"`
+	NameServers []NameServer `json:"nameservers"`
 }
 
 type VpsAdmin struct {
@@ -47,6 +48,12 @@ type WebService struct {
 	Description string `json:"description"`
 	Url         string `json:"url"`
 	Status      bool   `json:"status"`
+}
+
+type NameServer struct {
+	Name   string `json:"name"`
+	Ping   bool   `json:"ping"`
+	Lookup bool   `json:"lookup"`
 }
 
 func ExportTo(w io.Writer, st *Status) error {
