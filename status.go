@@ -17,6 +17,9 @@ type VpsAdmin struct {
 	Api     *WebService
 	Webui   *WebService
 	Console *WebService
+
+	TotalUp    int
+	TotalCount int
 }
 
 type Location struct {
@@ -135,9 +138,32 @@ func openConfig(cfg *config.Config) *Status {
 }
 
 func (st *Status) CacheCounts() {
+	st.VpsAdmin.CacheCounts()
+
 	for _, loc := range st.LocationList {
 		loc.CacheCounts()
 	}
+}
+
+func (vpsa *VpsAdmin) IsOperational() bool {
+	return vpsa.Api.Status && vpsa.Webui.Status && vpsa.Console.Status
+}
+
+func (vpsa *VpsAdmin) CacheCounts() {
+	vpsa.TotalUp = vpsa.GetTotalUp()
+	vpsa.TotalCount = 3
+}
+
+func (vpsa *VpsAdmin) GetTotalUp() int {
+	cnt := 0
+
+	for _, ws := range []*WebService{vpsa.Api, vpsa.Webui, vpsa.Console} {
+		if ws.Status {
+			cnt += 1
+		}
+	}
+
+	return cnt
 }
 
 func (loc *Location) CacheCounts() {

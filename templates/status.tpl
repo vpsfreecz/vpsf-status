@@ -14,7 +14,9 @@
 
 	<div class="row">
 		<div class="col">
-			<h2>vpsAdmin</h2>
+			<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
+				vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+			</h2>
 			<table class="table">
 				<thead>
 					<tr>
