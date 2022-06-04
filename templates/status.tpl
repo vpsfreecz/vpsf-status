@@ -74,7 +74,7 @@
 							Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
 						</button>
 					</h3>
-					<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse show" aria-labelledby="heading-nodes-{{ $loc.Id }}">
+					<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
 						<div class="accordion-body">
 							<div class="container">
 								<div class="row">
