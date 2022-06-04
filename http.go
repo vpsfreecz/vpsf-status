@@ -21,7 +21,7 @@ func spawnHttpCheck(ws *WebService) {
 	for {
 		ws.LastCheck = time.Now()
 
-		resp, err := http.Head(ws.Url)
+		resp, err := sendHttpRequest(ws)
 		if err != nil {
 			log.Printf("Unable to check %s: %+v", ws.Label, err)
 			ws.Status = false
@@ -46,4 +46,12 @@ func spawnHttpCheck(ws *WebService) {
 
 		time.Sleep(30 * time.Second)
 	}
+}
+
+func sendHttpRequest(ws *WebService) (*http.Response, error) {
+	if ws.Method == "get" {
+		return http.Get(ws.Url)
+	}
+
+	return http.Head(ws.Url)
 }

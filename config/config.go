@@ -45,6 +45,7 @@ type WebService struct {
 	Description string `json:"description"`
 	Url         string `json:"url"`
 	CheckUrl    string `json:"check_url"`
+	Method      string `json:"method"`
 }
 
 type NameServer struct {

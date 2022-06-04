@@ -80,6 +80,7 @@ type WebService struct {
 	Description  string
 	Url          string
 	CheckUrl     string
+	Method       string
 	Status       bool
 	StatusCode   int
 	StatusString string
@@ -169,10 +170,15 @@ func openConfig(cfg *config.Config) *Status {
 			Description: cfgWs.Description,
 			Url:         cfgWs.Url,
 			CheckUrl:    cfgWs.CheckUrl,
+			Method:      cfgWs.Method,
 		}
 
 		if ws.CheckUrl == "" {
 			ws.CheckUrl = ws.Url
+		}
+
+		if ws.Method == "" {
+			ws.Method = "head"
 		}
 
 		st.Services.Web[iWs] = &ws
