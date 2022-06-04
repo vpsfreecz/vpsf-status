@@ -20,11 +20,11 @@
 
 			<div class="accordion" id="accordion-vpsadmin">
 				<div class="accordion-item">
-					<h2 class="accordion-header" id="heading-vpsadmin">
+					<h3 class="accordion-header" id="heading-vpsadmin">
 						<button class="accordion-button text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
 							Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
 						</button>
-					</h2>
+					</h3>
 					<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
 						<div class="accordion-body">
 							<table class="table">
@@ -69,11 +69,11 @@
 
 			<div class="accordion" id="accordion-location-{{ $loc.Id }}">
 				<div class="accordion-item">
-					<h2 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
+					<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
 						<button class="accordion-button text-{{ if $loc.NodesOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
 							Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
 						</button>
-					</h2>
+					</h3>
 					<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse show" aria-labelledby="heading-nodes-{{ $loc.Id }}">
 						<div class="accordion-body">
 							<div class="container">
@@ -139,11 +139,11 @@
 
 				{{ if $loc.HasDnsResolvers }}
 				<div class="accordion-item">
-					<h2 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
+					<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
 						<button class="accordion-button text-{{ if $loc.DnsResolversOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
 							DNS Resolvers {{ $loc.DnsResolversUp }}/{{ $loc.DnsResolversCount }}
 						</button>
-					</h2>
+					</h3>
 					<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
 						<div class="accordion-body">
 							<table class="table">
