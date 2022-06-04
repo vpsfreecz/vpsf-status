@@ -29,6 +29,7 @@ type Location struct {
 type Node struct {
 	Id          int    `json:"id"`
 	Name        string `json:"name"`
+	LocationId  int    `json:"location_id"`
 	VpsAdmin    bool   `json:"vpsadmin"`
 	Ping        bool   `json:"ping"`
 	Maintenance bool   `json:"maintenance"`

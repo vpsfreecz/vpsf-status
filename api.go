@@ -58,6 +58,7 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 	}
 
 	stNode.LastApiCheck = now
+	stNode.LocationId = int(apiNode.Location.Id)
 
 	if apiNode.MaintenanceLock != "no" {
 		stNode.ApiStatus = true

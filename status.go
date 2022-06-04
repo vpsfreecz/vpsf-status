@@ -39,9 +39,10 @@ type Location struct {
 }
 
 type Node struct {
-	Id        int
-	Name      string
-	IpAddress string
+	Id         int
+	Name       string
+	LocationId int
+	IpAddress  string
 
 	ApiStatus      bool
 	ApiMaintenance bool
@@ -108,9 +109,10 @@ func openConfig(cfg *config.Config) *Status {
 
 		for iNode, cfgNode := range cfgLoc.Nodes {
 			n := Node{
-				Id:        cfgNode.Id,
-				Name:      cfgNode.Name,
-				IpAddress: cfgNode.IpAddress,
+				Id:         cfgNode.Id,
+				Name:       cfgNode.Name,
+				LocationId: cfgLoc.Id,
+				IpAddress:  cfgNode.IpAddress,
 				Ping: &PingCheck{
 					Name:      cfgNode.Name,
 					IpAddress: cfgNode.IpAddress,
@@ -172,6 +174,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 			jsonLoc.Nodes[iNode] = json.Node{
 				Id:          node.Id,
 				Name:        node.Name,
+				LocationId:  node.LocationId,
 				VpsAdmin:    node.ApiStatus,
 				Ping:        node.Ping.PacketLoss < 20,
 				Maintenance: node.ApiMaintenance,
