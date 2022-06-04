@@ -27,7 +27,7 @@
 					</h3>
 					<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
 						<div class="accordion-body">
-							<table class="table">
+							<table class="table table-sm">
 								<thead>
 									<tr>
 										<th>Service</th>
@@ -41,7 +41,7 @@
 										<td>Main web interface for vpsAdmin</td>
 										<td>
 											{{ if .Status.VpsAdmin.Webui.Status }}
-											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 											{{ else }}
 											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 											{{ end }}
@@ -52,7 +52,7 @@
 										<td>HTTP API server</td>
 										<td>
 											{{ if .Status.VpsAdmin.Api.Status }}
-											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 											{{ else }}
 											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 											{{ end }}
@@ -63,7 +63,7 @@
 										<td>Interface for VPS remote console</td>
 										<td>
 											{{ if .Status.VpsAdmin.Console.Status }}
-											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 											{{ else }}
 											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 											{{ end }}
@@ -97,7 +97,7 @@
 							<div class="container">
 								<div class="row">
 									<div class="col">
-										<table class="table">
+										<table class="table table-sm">
 											<thead>
 												<tr>
 													<th>Node</th>
@@ -114,7 +114,7 @@
 															{{ if $node.ApiMaintenance }}
 															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
 															{{ else }}
-															<i class="bi bi-check text-success" aria-label="Operational"></i>
+															<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 															{{ end }}
 														{{ else }}
 															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
@@ -122,7 +122,7 @@
 													</td>
 													<td>
 														{{ if $node.Ping.IsUp }}
-														<i class="bi bi-check text-success" aria-label="Responding"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
 														{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 														{{ end }}
@@ -134,7 +134,7 @@
 									</div>
 
 									<div class="col">
-										<table class="table">
+										<table class="table table-sm">
 											<thead>
 												<tr>
 													<th>Node</th>
@@ -151,7 +151,7 @@
 															{{ if $node.ApiMaintenance }}
 															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
 															{{ else }}
-															<i class="bi bi-check text-success" aria-label="Operational"></i>
+															<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 															{{ end }}
 														{{ else }}
 															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
@@ -159,7 +159,7 @@
 													</td>
 													<td>
 														{{ if $node.Ping.IsUp }}
-														<i class="bi bi-check text-success" aria-label="Responding"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
 														{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 														{{ end }}
@@ -184,7 +184,7 @@
 					</h3>
 					<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
 						<div class="accordion-body">
-							<table class="table">
+							<table class="table table-sm">
 								<thead>
 									<tr>
 										<th>Name</th>
@@ -198,14 +198,14 @@
 										<td>{{ $dns.Name }}</td>
 										<td>
 											{{ if $dns.Ping.IsUp }}
-											<i class="bi bi-check text-success" aria-label="Responding"></i>
+											<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
 											{{ else }}
 											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 											{{ end }}
 										</td>
 										<td>
 											{{ if $dns.ResolveStatus }}
-											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 											{{ else }}
 											<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
 											{{ end }}
