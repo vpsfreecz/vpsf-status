@@ -39,17 +39,35 @@
 									<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
 										<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
 										<td>Main web interface for vpsAdmin</td>
-										<td>{{ if .Status.VpsAdmin.Webui.Status }}Operational{{ else }}Down{{ end }}</td>
+										<td>
+											{{ if .Status.VpsAdmin.Webui.Status }}
+											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+											{{ end }}
+										</td>
 									</tr>
 									<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
 										<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
 										<td>HTTP API server</td>
-										<td>{{ if .Status.VpsAdmin.Api.Status }}Operational{{ else }}Down{{ end }}</td>
+										<td>
+											{{ if .Status.VpsAdmin.Api.Status }}
+											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+											{{ end }}
+										</td>
 									</tr>
 									<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
 										<td>Remote Console</td>
 										<td>Interface for VPS remote console</td>
-										<td>{{ if .Status.VpsAdmin.Console.Status }}Operational{{ else }}Down{{ end }}</td>
+										<td>
+											{{ if .Status.VpsAdmin.Console.Status }}
+											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+											{{ end }}
+										</td>
 									</tr>
 								</tbody>
 							</table>
@@ -93,12 +111,22 @@
 													<td>{{ $node.Name }}</td>
 													<td>
 														{{ if $node.ApiStatus }}
-															{{ if $node.ApiMaintenance }}Under maintenance{{ else }}Operational{{ end }}
+															{{ if $node.ApiMaintenance }}
+															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+															{{ else }}
+															<i class="bi bi-check text-success" aria-label="Operational"></i>
+															{{ end }}
 														{{ else }}
-															Down
+															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 														{{ end }}
 													</td>
-													<td>{{ if $node.Ping.IsUp }}Responding{{ else }}Down{{ end }}</td>
+													<td>
+														{{ if $node.Ping.IsUp }}
+														<i class="bi bi-check text-success" aria-label="Responding"></i>
+														{{ else }}
+														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														{{ end }}
+													</td>
 												</tr>
 												{{ end }}
 											</tbody>
@@ -120,12 +148,22 @@
 													<td>{{ $node.Name }}</td>
 													<td>
 														{{ if $node.ApiStatus }}
-															{{ if $node.ApiMaintenance }}Under maintenance{{ else }}Operational{{ end }}
+															{{ if $node.ApiMaintenance }}
+															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+															{{ else }}
+															<i class="bi bi-check text-success" aria-label="Operational"></i>
+															{{ end }}
 														{{ else }}
-															Down
+															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 														{{ end }}
 													</td>
-													<td>{{ if $node.Ping.IsUp }}Responding{{ else }}Down{{ end }}</td>
+													<td>
+														{{ if $node.Ping.IsUp }}
+														<i class="bi bi-check text-success" aria-label="Responding"></i>
+														{{ else }}
+														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														{{ end }}
+													</td>
 												</tr>
 												{{ end }}
 											</tbody>
@@ -158,8 +196,20 @@
 									{{ range $dns := $loc.DnsResolverList }}
 									<tr class="table-{{ if $dns.IsOperational }}success{{ else }}danger{{ end }}">
 										<td>{{ $dns.Name }}</td>
-										<td>{{ if $dns.Ping.IsUp }}Responding{{ else }}Down{{ end }}</td>
-										<td>{{ if $dns.ResolveStatus }}Operational{{ else }}Error{{ end }}</td>
+										<td>
+											{{ if $dns.Ping.IsUp }}
+											<i class="bi bi-check text-success" aria-label="Responding"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+											{{ end }}
+										</td>
+										<td>
+											{{ if $dns.ResolveStatus }}
+											<i class="bi bi-check text-success" aria-label="Operational"></i>
+											{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+											{{ end }}
+										</td>
 									</tr>
 									{{ end }}
 								</tbody>
