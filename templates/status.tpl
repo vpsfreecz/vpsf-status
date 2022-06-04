@@ -17,32 +17,46 @@
 			<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
 				vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
 			</h2>
-			<table class="table">
-				<thead>
-					<tr>
-						<th>Service</th>
-						<th>Description</th>
-						<th>Status</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
-						<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
-						<td>Main web interface for vpsAdmin</td>
-						<td>{{ if .Status.VpsAdmin.Webui.Status }}Operational{{ else }}Down{{ end }}</td>
-					</tr>
-					<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
-						<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
-						<td>HTTP API server</td>
-						<td>{{ if .Status.VpsAdmin.Api.Status }}Operational{{ else }}Down{{ end }}</td>
-					</tr>
-					<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
-						<td>Remote Console</td>
-						<td>Interface for VPS remote console</td>
-						<td>{{ if .Status.VpsAdmin.Console.Status }}Operational{{ else }}Down{{ end }}</td>
-					</tr>
-				</tbody>
-			</table>
+
+			<div class="accordion" id="accordion-vpsadmin">
+				<div class="accordion-item">
+					<h2 class="accordion-header" id="heading-vpsadmin">
+						<button class="accordion-button text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
+							Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+						</button>
+					</h2>
+					<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
+						<div class="accordion-body">
+							<table class="table">
+								<thead>
+									<tr>
+										<th>Service</th>
+										<th>Description</th>
+										<th>Status</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
+										<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
+										<td>Main web interface for vpsAdmin</td>
+										<td>{{ if .Status.VpsAdmin.Webui.Status }}Operational{{ else }}Down{{ end }}</td>
+									</tr>
+									<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
+										<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
+										<td>HTTP API server</td>
+										<td>{{ if .Status.VpsAdmin.Api.Status }}Operational{{ else }}Down{{ end }}</td>
+									</tr>
+									<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
+										<td>Remote Console</td>
+										<td>Interface for VPS remote console</td>
+										<td>{{ if .Status.VpsAdmin.Console.Status }}Operational{{ else }}Down{{ end }}</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 
