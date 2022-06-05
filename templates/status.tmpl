@@ -78,7 +78,7 @@
 		</div>
 	</div>
 
-	{{ range $loc := .Status.LocationList }}
+	{{ range $loc := .Status.Locations }}
 	<div class="row mt-4 mb-4">
 		<div class="column">
 			<h2 class="text-{{ if $loc.IsOperational }}success{{ else }}danger{{ end }}">

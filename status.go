@@ -19,9 +19,6 @@ type VpsAdmin struct {
 	Api     *WebService
 	Webui   *WebService
 	Console *WebService
-
-	TotalUp    int
-	TotalCount int
 }
 
 type Location struct {
@@ -30,13 +27,6 @@ type Location struct {
 	NodeList        []*Node
 	NodeMap         map[string]*Node
 	DnsResolverList []*DnsResolver
-
-	TotalUp           int
-	TotalCount        int
-	NodesUp           int
-	NodesCount        int
-	DnsResolversUp    int
-	DnsResolversCount int
 }
 
 type Node struct {
@@ -66,13 +56,6 @@ type DnsResolver struct {
 type Services struct {
 	Web        []*WebService
 	NameServer []*DnsResolver
-
-	Up              int
-	Count           int
-	WebUp           int
-	WebCount        int
-	NameServerUp    int
-	NameServerCount int
 }
 
 type WebService struct {
@@ -201,16 +184,6 @@ func openConfig(cfg *config.Config) *Status {
 	return &st
 }
 
-func (st *Status) CacheCounts() {
-	st.VpsAdmin.CacheCounts()
-
-	for _, loc := range st.LocationList {
-		loc.CacheCounts()
-	}
-
-	st.Services.CacheCounts()
-}
-
 func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 	ret := &json.Status{
 		VpsAdmin: json.VpsAdmin{
@@ -275,157 +248,12 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 	return ret
 }
 
-func (vpsa *VpsAdmin) IsOperational() bool {
-	return vpsa.Api.Status && vpsa.Webui.Status && vpsa.Console.Status
-}
-
-func (vpsa *VpsAdmin) CacheCounts() {
-	vpsa.TotalUp = vpsa.GetTotalUp()
-	vpsa.TotalCount = 3
-}
-
-func (vpsa *VpsAdmin) GetTotalUp() int {
-	cnt := 0
-
-	for _, ws := range []*WebService{vpsa.Api, vpsa.Webui, vpsa.Console} {
-		if ws.Status {
-			cnt += 1
-		}
-	}
-
-	return cnt
-}
-
-func (loc *Location) CacheCounts() {
-	loc.TotalUp = loc.GetTotalUp()
-	loc.TotalCount = loc.GetTotalCount()
-	loc.NodesUp = loc.GetNodesUp()
-	loc.NodesCount = loc.GetNodesCount()
-	loc.DnsResolversUp = loc.GetDnsResolversUp()
-	loc.DnsResolversCount = loc.GetDnsResolversCount()
-}
-
-func (loc *Location) IsOperational() bool {
-	return loc.TotalUp == loc.TotalCount
-}
-
-func (loc *Location) GetTotalUp() int {
-	return loc.GetNodesUp() + loc.GetDnsResolversUp()
-}
-
-func (loc *Location) GetTotalCount() int {
-	return loc.GetNodesCount() + loc.GetDnsResolversCount()
-}
-
-func (loc *Location) EvenNodes() []*Node {
-	return loc.SelectNodes(func(i int, n *Node) bool {
-		return (i+1)%2 == 0
-	})
-}
-
-func (loc *Location) OddNodes() []*Node {
-	return loc.SelectNodes(func(i int, n *Node) bool {
-		return (i+1)%2 == 1
-	})
-}
-
-func (loc *Location) SelectNodes(filter func(int, *Node) bool) []*Node {
-	result := make([]*Node, 0)
-
-	for i, node := range loc.NodeList {
-		if filter(i, node) {
-			result = append(result, node)
-		}
-	}
-
-	return result
-}
-
-func (loc *Location) GetNodesUp() int {
-	cnt := 0
-
-	for _, node := range loc.NodeList {
-		if node.IsOperational() {
-			cnt += 1
-		}
-	}
-
-	return cnt
-}
-
-func (loc *Location) GetNodesCount() int {
-	return len(loc.NodeList)
-}
-
-func (loc *Location) NodesOperational() bool {
-	return loc.NodesUp == loc.NodesCount
-}
-
-func (loc *Location) HasDnsResolvers() bool {
-	return len(loc.DnsResolverList) > 0
-}
-
-func (loc *Location) GetDnsResolversUp() int {
-	cnt := 0
-
-	for _, r := range loc.DnsResolverList {
-		if r.IsOperational() {
-			cnt += 1
-		}
-	}
-
-	return cnt
-}
-
-func (loc *Location) GetDnsResolversCount() int {
-	return len(loc.DnsResolverList)
-}
-
-func (loc *Location) DnsResolversOperational() bool {
-	return loc.DnsResolversUp == loc.DnsResolversCount
-}
-
 func (n *Node) IsOperational() bool {
 	return n.ApiStatus && n.Ping.PacketLoss < 20
 }
 
 func (r *DnsResolver) IsOperational() bool {
 	return r.ResolveStatus
-}
-
-func (s *Services) CacheCounts() {
-	cnt := 0
-	for _, ws := range s.Web {
-		if ws.Status {
-			cnt += 1
-		}
-	}
-	s.WebUp = cnt
-	s.WebCount = len(s.Web)
-
-	cnt = 0
-	for _, ns := range s.NameServer {
-		if ns.ResolveStatus {
-			cnt += 1
-		}
-	}
-	s.NameServerUp = cnt
-	s.NameServerCount = len(s.NameServer)
-
-	s.Up = s.WebUp + s.NameServerUp
-	s.Count = s.WebCount + s.NameServerCount
-}
-
-func (s *Services) IsOperational() bool {
-	return s.Up == s.Count
-}
-
-func (s *Services) IsWebOperational() bool {
-	return s.WebUp == s.WebCount
-}
-
-func (s *Services) IsNameServerOperational() bool {
-	return s.NameServerUp == s.NameServerCount
 }
 
 func (pc *PingCheck) IsUp() bool {

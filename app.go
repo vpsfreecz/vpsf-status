@@ -23,7 +23,7 @@ type htmlTemplate struct {
 
 type StatusData struct {
 	Config     *config.Config
-	Status     *Status
+	Status     *StatusView
 	RenderedAt string
 	Notice     template.HTML
 }
@@ -43,7 +43,7 @@ func (app *application) parseTemplates() error {
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	app.status.CacheCounts()
+	view := createStatusView(app.status)
 
 	notice, err := readNoticeFile(app.config.StateDir)
 	if err != nil {
@@ -52,7 +52,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 	err = app.templates.status.Execute(w, StatusData{
 		Config:     app.config,
-		Status:     app.status,
+		Status:     &view,
 		RenderedAt: now.Format(time.UnixDate),
 		Notice:     template.HTML(notice),
 	})
@@ -64,7 +64,6 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
-	app.status.CacheCounts()
 
 	notice, err := readNoticeFile(app.config.StateDir)
 	if err != nil {
