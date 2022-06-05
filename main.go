@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/vpsfreecz/vpsf-status/config"
 )
@@ -38,6 +39,13 @@ func main() {
 
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/json", app.handleJson)
+	http.Handle(
+		"/static/",
+		http.StripPrefix(
+			"/static/",
+			http.FileServer(http.Dir(filepath.Join(cfg.DataDir, "public"))),
+		),
+	)
 
 	fmt.Printf("Starting server...\n")
 	if err := http.ListenAndServe(cfg.ListenAddress, nil); err != nil {
