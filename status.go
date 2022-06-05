@@ -225,12 +225,15 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 			Console: st.VpsAdmin.Console.Status,
 			Webui:   st.VpsAdmin.Webui.Status,
 		},
-		OutageReports: make([]json.OutageReport, len(outages.List)),
-		Locations:     make([]json.Location, len(st.LocationList)),
-		WebServices:   make([]json.WebService, len(st.Services.Web)),
-		NameServers:   make([]json.NameServer, len(st.Services.NameServer)),
-		Notice:        notice,
-		GeneratedAt:   now,
+		OutageReports: json.OutageReports{
+			Status:    outages.Status,
+			Announced: make([]json.OutageReport, len(outages.List)),
+		},
+		Locations:   make([]json.Location, len(st.LocationList)),
+		WebServices: make([]json.WebService, len(st.Services.Web)),
+		NameServers: make([]json.NameServer, len(st.Services.NameServer)),
+		Notice:      notice,
+		GeneratedAt: now,
 	}
 
 	for iOutage, outage := range outages.List {
@@ -256,7 +259,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 			}
 		}
 
-		ret.OutageReports[iOutage] = jsonOutage
+		ret.OutageReports.Announced[iOutage] = jsonOutage
 	}
 
 	for iLoc, loc := range st.LocationList {

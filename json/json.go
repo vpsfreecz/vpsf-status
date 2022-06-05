@@ -7,19 +7,24 @@ import (
 )
 
 type Status struct {
-	GeneratedAt   time.Time      `json:"generated_at"`
-	Notice        string         `json:"notice"`
-	VpsAdmin      VpsAdmin       `json:"vpsadmin"`
-	OutageReports []OutageReport `json:"outage_reports"`
-	Locations     []Location     `json:"locations"`
-	WebServices   []WebService   `json:"web_services"`
-	NameServers   []NameServer   `json:"nameservers"`
+	GeneratedAt   time.Time     `json:"generated_at"`
+	Notice        string        `json:"notice"`
+	VpsAdmin      VpsAdmin      `json:"vpsadmin"`
+	OutageReports OutageReports `json:"outage_reports"`
+	Locations     []Location    `json:"locations"`
+	WebServices   []WebService  `json:"web_services"`
+	NameServers   []NameServer  `json:"nameservers"`
 }
 
 type VpsAdmin struct {
 	Api     bool `json:"api"`
 	Console bool `json:"console"`
 	Webui   bool `json:"webui"`
+}
+
+type OutageReports struct {
+	Status    bool           `json:"status"`
+	Announced []OutageReport `json:"announced"`
 }
 
 type OutageReport struct {
