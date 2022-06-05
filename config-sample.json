@@ -1,0 +1,95 @@
+{
+	"listen_address": ":8080",
+	"data_dir": ".",
+	"state_dir": ".",
+	"vpsadmin": {
+		"api_url": "https://api.vpsfree.cz",
+		"webui_url": "https://vpsadmin.vpsfree.cz",
+		"console_url": "https://console.vpsfree.cz/vzconsole.js"
+	},
+	"locations": [
+		{
+			"id": 3,
+			"label": "Praha",
+			"nodes": [
+				{
+					"id": 101,
+					"name": "node1.prg",
+					"ip_address": "172.16.0.10"
+				},
+				{
+					"id": 102,
+					"name": "node2.prg",
+					"ip_address": "172.16.0.11"
+				},
+				{
+					"id": 103,
+					"name": "node3.prg",
+					"ip_address": "172.16.0.11"
+				},
+				{
+					"id": 400,
+					"name": "node1.stg",
+					"ip_address": "172.16.0.66"
+				},
+				{
+					"id": 150,
+					"name": "backuper.prg",
+					"ip_address": "172.16.0.5"
+				}
+			],
+			"dns_resolvers": [
+				{
+					"name": "google dns",
+					"ip_address": "8.8.8.8"
+				},
+				{
+					"name": "cloudflare dns",
+					"ip_address": "1.1.1.1"
+				}
+			]
+		},
+		{
+			"id": 4,
+			"label": "Brno",
+			"nodes": [
+				{
+					"name": "node1.brq",
+					"ip_address": "172.19.0.10"
+				},
+				{
+					"name": "node4.brq",
+					"ip_address": "172.19.0.13"
+				}
+			]
+		}
+	],
+	"web_services": [
+		{
+			"label": "vpsfree.cz",
+			"description": "Website in Czech",
+			"url": "https://vpsfree.cz"
+		},
+		{
+			"label": "kb.vpsfree.cz",
+			"description": "Knowledge Base in Czech",
+			"url": "https://kb.vpsfree.cz"
+		},
+		{
+			"label": "ZNC",
+			"description": "IRC bouncer",
+			"url": "https://im.vpsfree.cz/znc/",
+			"method": "get"
+		}
+	],
+	"nameservers": [
+		{
+			"name": "ns1.vpsfree.cz",
+			"domain": "vpsfree.cz"
+		},
+		{
+			"name": "ns2.vpsfree.cz",
+			"domain": "vpsfree.cz"
+		}
+	]
+}
