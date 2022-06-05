@@ -9,6 +9,7 @@ import (
 
 type Status struct {
 	VpsAdmin      VpsAdmin
+	OutageReports *OutageReports
 	LocationList  []*Location
 	LocationMap   map[string]*Location
 	GlobalNodeMap map[string]*Node
@@ -19,6 +20,34 @@ type VpsAdmin struct {
 	Api     *WebService
 	Webui   *WebService
 	Console *WebService
+}
+
+type OutageReports struct {
+	Status         bool
+	List           []*OutageReport
+	Any            bool
+	AnyMaintenance bool
+	AnyOutage      bool
+}
+
+type OutageReport struct {
+	Id               int64
+	BeginsAt         time.Time
+	Duration         time.Duration
+	Planned          bool
+	State            string
+	Type             string
+	CsSummary        string
+	CsDescription    string
+	EnSummary        string
+	EnDescription    string
+	AffectedEntities []OutageEntity
+}
+
+type OutageEntity struct {
+	Name  string
+	Id    int64
+	Label string
 }
 
 type Location struct {
@@ -85,6 +114,9 @@ func openConfig(cfg *config.Config) *Status {
 		Services: &Services{
 			Web:        make([]*WebService, len(cfg.WebServices)),
 			NameServer: make([]*DnsResolver, len(cfg.NameServers)),
+		},
+		OutageReports: &OutageReports{
+			List: make([]*OutageReport, 0),
 		},
 	}
 
@@ -185,17 +217,46 @@ func openConfig(cfg *config.Config) *Status {
 }
 
 func (st *Status) ToJson(now time.Time, notice string) *json.Status {
+	outages := st.OutageReports
+
 	ret := &json.Status{
 		VpsAdmin: json.VpsAdmin{
 			Api:     st.VpsAdmin.Api.Status,
 			Console: st.VpsAdmin.Console.Status,
 			Webui:   st.VpsAdmin.Webui.Status,
 		},
-		Locations:   make([]json.Location, len(st.LocationList)),
-		WebServices: make([]json.WebService, len(st.Services.Web)),
-		NameServers: make([]json.NameServer, len(st.Services.NameServer)),
-		Notice:      notice,
-		GeneratedAt: now,
+		OutageReports: make([]json.OutageReport, len(outages.List)),
+		Locations:     make([]json.Location, len(st.LocationList)),
+		WebServices:   make([]json.WebService, len(st.Services.Web)),
+		NameServers:   make([]json.NameServer, len(st.Services.NameServer)),
+		Notice:        notice,
+		GeneratedAt:   now,
+	}
+
+	for iOutage, outage := range outages.List {
+		jsonOutage := json.OutageReport{
+			Id:            outage.Id,
+			BeginsAt:      outage.BeginsAt,
+			Duration:      int(outage.Duration.Minutes()),
+			Planned:       outage.Planned,
+			State:         outage.State,
+			Type:          outage.Type,
+			CsSummary:     outage.CsSummary,
+			CsDescription: outage.CsDescription,
+			EnSummary:     outage.EnSummary,
+			EnDescription: outage.EnDescription,
+			Entities:      make([]json.OutageEntity, len(outage.AffectedEntities)),
+		}
+
+		for iEnt, ent := range outage.AffectedEntities {
+			jsonOutage.Entities[iEnt] = json.OutageEntity{
+				Name:  ent.Name,
+				Id:    ent.Id,
+				Label: ent.Label,
+			}
+		}
+
+		ret.OutageReports[iOutage] = jsonOutage
 	}
 
 	for iLoc, loc := range st.LocationList {

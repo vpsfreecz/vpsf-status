@@ -7,18 +7,39 @@ import (
 )
 
 type Status struct {
-	GeneratedAt time.Time    `json:"generated_at"`
-	Notice      string       `json:"notice"`
-	VpsAdmin    VpsAdmin     `json:"vpsadmin"`
-	Locations   []Location   `json:"locations"`
-	WebServices []WebService `json:"web_services"`
-	NameServers []NameServer `json:"nameservers"`
+	GeneratedAt   time.Time      `json:"generated_at"`
+	Notice        string         `json:"notice"`
+	VpsAdmin      VpsAdmin       `json:"vpsadmin"`
+	OutageReports []OutageReport `json:"outage_reports"`
+	Locations     []Location     `json:"locations"`
+	WebServices   []WebService   `json:"web_services"`
+	NameServers   []NameServer   `json:"nameservers"`
 }
 
 type VpsAdmin struct {
 	Api     bool `json:"api"`
 	Console bool `json:"console"`
 	Webui   bool `json:"webui"`
+}
+
+type OutageReport struct {
+	Id            int64          `json:"id"`
+	BeginsAt      time.Time      `json:"begins_at"`
+	Duration      int            `json:"duration"`
+	Planned       bool           `json:"planned"`
+	State         string         `json:"state"`
+	Type          string         `json:"type"`
+	CsSummary     string         `json:"cs_summary"`
+	CsDescription string         `json:"cs_description"`
+	EnSummary     string         `json:"en_summary"`
+	EnDescription string         `json:"en_description"`
+	Entities      []OutageEntity `json:"entities"`
+}
+
+type OutageEntity struct {
+	Name  string `json:"name"`
+	Id    int64  `json:"id"`
+	Label string `json:"label"`
 }
 
 type Location struct {

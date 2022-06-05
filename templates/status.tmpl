@@ -12,6 +12,69 @@
 		</div>
 	</div>
 
+	{{ $webuiUrl := .Status.VpsAdmin.Webui.Url }}
+	<div class="row">
+		<div class="col">
+			{{ if .Status.OutageReports.Any }}
+			<h2>
+				Reported
+				{{ if and .Status.OutageReports.AnyMaintenance .Status.OutageReports.AnyOutage }}
+				Maintenances and Outages
+				{{ else if .Status.OutageReports.AnyMaintenance }}
+				Maintenances
+				{{ else }}
+				Outages
+				{{ end }}
+			</h2>
+			<table class="table table-sm">
+				<thead>
+					<tr>
+						<th>Date</th>
+						<th>Duration</th>
+						<th>Planned</th>
+						<th>Systems</th>
+						<th>Type</th>
+						<th>Reason</th>
+						<th>Link</th>
+					</tr>
+				</thead>
+				<tbody>
+					{{ $status := .Status }}
+					{{ range $outage := .Status.OutageReports.List }}
+					<tr class="table-{{ if $outage.Planned }}warning{{ else }}danger{{ end }}">
+						<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
+						<td>{{ $outage.Duration }}</td>
+						<td>
+							{{ if $outage.Planned }}
+							<i class="bi bi-check-lg text-success" aria-label="Planned maintenance"></i>
+							{{ else }}
+							<i class="bi bi-exclamation-circle text-danger" aria-label="Outage"></i>
+							{{ end }}
+						</td>
+						<td>
+							{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
+						</td>
+						<td>{{ $outage.Type }}</td>
+						<td>{{ $outage.EnSummary }}</td>
+						<td>
+							<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
+						</td>
+					</tr>
+					{{ end }}
+				</tbody>
+			</table>
+			{{ else if .Status.OutageReports.Status }}
+			<div class="alert alert-success">
+				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
+			</div>
+			{{ else }}
+			<div class="alert alert-danger" role="alert">
+				Unable to fetch outage reports from vpsAdmin.
+			</div>
+			{{ end }}
+		</div>
+	</div>
+
 	<div class="row">
 		<div class="col">
 			<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">

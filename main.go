@@ -28,6 +28,7 @@ func main() {
 	}
 
 	go checkApi(systemStatus)
+	go checkOutageReports(systemStatus)
 	checkVpsAdminWebServices(systemStatus)
 	pingNodes(systemStatus)
 	pingDnsResolvers(systemStatus)

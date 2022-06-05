@@ -1,9 +1,10 @@
 package main
 
 type StatusView struct {
-	VpsAdmin  VpsAdminView
-	Locations []LocationView
-	Services  ServicesView
+	VpsAdmin      VpsAdminView
+	Locations     []LocationView
+	Services      ServicesView
+	OutageReports *OutageReports
 }
 
 type VpsAdminView struct {
@@ -37,9 +38,10 @@ type ServicesView struct {
 
 func createStatusView(st *Status) StatusView {
 	return StatusView{
-		VpsAdmin:  createVpsAdminView(st.VpsAdmin),
-		Locations: createLocationView(st.LocationList),
-		Services:  createServicesView(st.Services),
+		VpsAdmin:      createVpsAdminView(st.VpsAdmin),
+		Locations:     createLocationView(st.LocationList),
+		Services:      createServicesView(st.Services),
+		OutageReports: st.OutageReports,
 	}
 }
 
