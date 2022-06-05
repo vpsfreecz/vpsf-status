@@ -2,13 +2,21 @@
 
 {{ define "content" }}
 <div class="container">
+	<nav class="navbar bg-light">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="#">
+				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+				<h1 class="navbar-text">Status</h1>
+			</a>
+			<span class="navbar-text">
+				Rendered at: {{ .RenderedAt }}
+			</span>
+		</div>
+	</nav>
+
 	<div class="row">
 		<div class="col">
-			<h1>vpsFree.cz Status</h1>
 			{{ .Notice }}
-			<p>
-				Rendered at: {{ .RenderedAt }}
-			</p>
 		</div>
 	</div>
 
