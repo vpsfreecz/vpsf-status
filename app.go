@@ -50,6 +50,8 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
 
+	app.setCacheControl(w)
+
 	err = app.templates.status.Execute(w, StatusData{
 		Config:     app.config,
 		Status:     &view,
@@ -70,9 +72,14 @@ func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
 
+	app.setCacheControl(w)
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.ExportTo(w, app.status.ToJson(now, notice)); err != nil {
 		log.Printf("Error while exporting to JSON: %+v", err)
 	}
+}
+
+func (app *application) setCacheControl(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "max-age=1")
 }
