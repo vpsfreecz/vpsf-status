@@ -276,7 +276,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 				Name:        node.Name,
 				LocationId:  node.LocationId,
 				VpsAdmin:    node.ApiStatus,
-				Ping:        node.Ping.PacketLoss <= 20,
+				Ping:        node.Ping.StatusString(),
 				Maintenance: node.ApiMaintenance,
 			}
 		}
@@ -284,7 +284,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 		for iDns, dns := range loc.DnsResolverList {
 			jsonLoc.DnsResolvers[iDns] = json.DnsResolver{
 				Name:   dns.Name,
-				Ping:   dns.Ping.PacketLoss <= 20,
+				Ping:   dns.Ping.StatusString(),
 				Lookup: dns.ResolveStatus,
 			}
 		}
@@ -304,7 +304,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 	for iNs, ns := range st.Services.NameServer {
 		ret.NameServers[iNs] = json.NameServer{
 			Name:   ns.Name,
-			Ping:   ns.Ping.PacketLoss <= 20,
+			Ping:   ns.Ping.StatusString(),
 			Lookup: ns.ResolveStatus,
 		}
 	}
@@ -334,6 +334,16 @@ func (pc *PingCheck) IsUp() bool {
 
 func (pc *PingCheck) IsWarning() bool {
 	return pc.PacketLoss > 20 && pc.PacketLoss < 100
+}
+
+func (pc *PingCheck) StatusString() string {
+	if pc.IsUp() {
+		return "responding"
+	} else if pc.IsWarning() {
+		return "degraded"
+	} else {
+		return "down"
+	}
 }
 
 func (pc *PingCheck) IsDown() bool {

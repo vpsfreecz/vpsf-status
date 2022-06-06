@@ -59,13 +59,13 @@ type Node struct {
 	Name        string `json:"name"`
 	LocationId  int    `json:"location_id"`
 	VpsAdmin    bool   `json:"vpsadmin"`
-	Ping        bool   `json:"ping"`
+	Ping        string `json:"ping"`
 	Maintenance bool   `json:"maintenance"`
 }
 
 type DnsResolver struct {
 	Name   string `json:"name"`
-	Ping   bool   `json:"ping"`
+	Ping   string `json:"ping"`
 	Lookup bool   `json:"lookup"`
 }
 
@@ -78,7 +78,7 @@ type WebService struct {
 
 type NameServer struct {
 	Name   string `json:"name"`
-	Ping   bool   `json:"ping"`
+	Ping   string `json:"ping"`
 	Lookup bool   `json:"lookup"`
 }
 
