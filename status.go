@@ -316,10 +316,26 @@ func (n *Node) IsOperational() bool {
 	return n.ApiStatus && n.Ping.PacketLoss <= 20
 }
 
+func (n *Node) IsDegraded() bool {
+	return n.ApiStatus && n.Ping.PacketLoss > 20 && n.Ping.PacketLoss < 100
+}
+
 func (r *DnsResolver) IsOperational() bool {
 	return r.ResolveStatus
 }
 
+func (r *DnsResolver) IsDegraded() bool {
+	return r.ResolveStatus && r.Ping.PacketLoss > 20 && r.Ping.PacketLoss < 100
+}
+
 func (pc *PingCheck) IsUp() bool {
 	return pc.PacketLoss <= 20
+}
+
+func (pc *PingCheck) IsWarning() bool {
+	return pc.PacketLoss > 20 && pc.PacketLoss < 100
+}
+
+func (pc *PingCheck) IsDown() bool {
+	return pc.PacketLoss == 100
 }

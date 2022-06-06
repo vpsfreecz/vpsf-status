@@ -17,23 +17,28 @@ type VpsAdminView struct {
 type LocationView struct {
 	Location
 
-	TotalUp           int
-	TotalCount        int
-	NodesUp           int
-	NodesCount        int
-	DnsResolversUp    int
-	DnsResolversCount int
+	TotalUp              int
+	TotalCount           int
+	NodesUp              int
+	NodesCount           int
+	NodesDegraded        bool
+	DnsResolversUp       int
+	DnsResolversCount    int
+	DnsResolversDegraded bool
+	Degraded             bool
 }
 
 type ServicesView struct {
 	Services
 
-	Up              int
-	Count           int
-	WebUp           int
-	WebCount        int
-	NameServerUp    int
-	NameServerCount int
+	Up                 int
+	Count              int
+	WebUp              int
+	WebCount           int
+	NameServerUp       int
+	NameServerCount    int
+	NameServerDegraded bool
+	Degraded           bool
 }
 
 func createStatusView(st *Status) StatusView {
@@ -73,12 +78,36 @@ func createLocationView(locations []*Location) []LocationView {
 			Location: *loc,
 		}
 
-		v.TotalUp = v.getTotalUp()
-		v.TotalCount = v.getTotalCount()
-		v.NodesUp = v.getNodesUp()
-		v.NodesCount = v.getNodesCount()
-		v.DnsResolversUp = v.getDnsResolversUp()
-		v.DnsResolversCount = v.getDnsResolversCount()
+		v.NodesUp = 0
+		v.NodesCount = len(loc.NodeList)
+
+		for _, node := range loc.NodeList {
+			if node.IsOperational() {
+				v.NodesUp += 1
+			} else if node.IsDegraded() {
+				v.NodesUp += 1
+				v.NodesDegraded = true
+			}
+		}
+
+		v.DnsResolversUp = 0
+		v.DnsResolversCount = len(loc.DnsResolverList)
+
+		for _, r := range loc.DnsResolverList {
+			if r.IsOperational() {
+				v.DnsResolversUp += 1
+			} else if r.IsDegraded() {
+				v.DnsResolversUp += 1
+				v.DnsResolversDegraded = true
+			}
+		}
+
+		v.TotalUp = v.NodesUp + v.DnsResolversUp
+		v.TotalCount = v.NodesCount + v.DnsResolversCount
+
+		if v.NodesDegraded || v.DnsResolversDegraded {
+			v.Degraded = true
+		}
 
 		ret[i] = v
 	}
@@ -87,15 +116,11 @@ func createLocationView(locations []*Location) []LocationView {
 }
 
 func (loc *LocationView) IsOperational() bool {
-	return loc.TotalUp == loc.TotalCount
+	return loc.TotalUp == loc.TotalCount && !loc.Degraded
 }
 
-func (loc *LocationView) getTotalUp() int {
-	return loc.getNodesUp() + loc.getDnsResolversUp()
-}
-
-func (loc *LocationView) getTotalCount() int {
-	return loc.getNodesCount() + loc.getDnsResolversCount()
+func (loc *LocationView) IsDegraded() bool {
+	return loc.TotalUp == loc.TotalCount && loc.Degraded
 }
 
 func (loc *LocationView) EvenNodes() []*Node {
@@ -122,48 +147,24 @@ func (loc *LocationView) SelectNodes(filter func(int, *Node) bool) []*Node {
 	return result
 }
 
-func (loc *LocationView) getNodesUp() int {
-	cnt := 0
-
-	for _, node := range loc.NodeList {
-		if node.IsOperational() {
-			cnt += 1
-		}
-	}
-
-	return cnt
+func (loc *LocationView) AreNodesOperational() bool {
+	return loc.NodesUp == loc.NodesCount && !loc.NodesDegraded
 }
 
-func (loc *LocationView) getNodesCount() int {
-	return len(loc.NodeList)
-}
-
-func (loc *LocationView) NodesOperational() bool {
-	return loc.NodesUp == loc.NodesCount
+func (loc *LocationView) AreNodesDegraded() bool {
+	return loc.NodesUp == loc.NodesCount && loc.NodesDegraded
 }
 
 func (loc *LocationView) HasDnsResolvers() bool {
 	return len(loc.DnsResolverList) > 0
 }
 
-func (loc *LocationView) getDnsResolversUp() int {
-	cnt := 0
-
-	for _, r := range loc.DnsResolverList {
-		if r.IsOperational() {
-			cnt += 1
-		}
-	}
-
-	return cnt
+func (loc *LocationView) AreDnsResolversOperational() bool {
+	return loc.DnsResolversUp == loc.DnsResolversCount && !loc.DnsResolversDegraded
 }
 
-func (loc *LocationView) getDnsResolversCount() int {
-	return len(loc.DnsResolverList)
-}
-
-func (loc *LocationView) DnsResolversOperational() bool {
-	return loc.DnsResolversUp == loc.DnsResolversCount
+func (loc *LocationView) AreDnsResolversDegraded() bool {
+	return loc.DnsResolversUp == loc.DnsResolversCount && loc.DnsResolversDegraded
 }
 
 func createServicesView(services *Services) ServicesView {
@@ -181,8 +182,11 @@ func createServicesView(services *Services) ServicesView {
 
 	ret.NameServerUp = 0
 	for _, ns := range ret.NameServer {
-		if ns.ResolveStatus {
+		if ns.IsOperational() {
 			ret.NameServerUp += 1
+		} else if ns.IsDegraded() {
+			ret.NameServerUp += 1
+			ret.NameServerDegraded = true
 		}
 	}
 	ret.NameServerCount = len(ret.NameServer)
@@ -190,11 +194,19 @@ func createServicesView(services *Services) ServicesView {
 	ret.Up = ret.WebUp + ret.NameServerUp
 	ret.Count = ret.WebCount + ret.NameServerCount
 
+	if ret.NameServerDegraded {
+		ret.Degraded = true
+	}
+
 	return ret
 }
 
 func (s *ServicesView) IsOperational() bool {
-	return s.Up == s.Count
+	return s.Up == s.Count && !s.Degraded
+}
+
+func (s *ServicesView) IsDegraded() bool {
+	return s.Up == s.Count && s.Degraded
 }
 
 func (s *ServicesView) IsWebOperational() bool {
@@ -202,5 +214,9 @@ func (s *ServicesView) IsWebOperational() bool {
 }
 
 func (s *ServicesView) IsNameServerOperational() bool {
-	return s.NameServerUp == s.NameServerCount
+	return s.NameServerUp == s.NameServerCount && !s.NameServerDegraded
+}
+
+func (s *ServicesView) IsNameServerDegraded() bool {
+	return s.NameServerUp == s.NameServerCount && s.NameServerDegraded
 }
