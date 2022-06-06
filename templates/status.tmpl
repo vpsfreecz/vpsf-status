@@ -4,10 +4,12 @@
 <div class="container">
 	<nav class="navbar bg-light">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="#">
-				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-				<h1 class="navbar-text">Status</h1>
-			</a>
+			<div class="navbar-brand clearfix">
+				<a class="float-start" href="#">
+					<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+				</a>
+				<h1 class="navbar-text float-start">Status</h1>
+			</div>
 			<span class="navbar-text">
 				Rendered at: {{ .RenderedAt }}
 			</span>
