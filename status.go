@@ -8,6 +8,7 @@ import (
 )
 
 type Status struct {
+	Initialized   bool
 	VpsAdmin      VpsAdmin
 	OutageReports *OutageReports
 	LocationList  []*Location
@@ -214,6 +215,39 @@ func openConfig(cfg *config.Config) *Status {
 	}
 
 	return &st
+}
+
+func (st *Status) initialize(cfg *config.Config) {
+	checkInterval := time.Duration(cfg.CheckInterval) * time.Second
+
+	time.Sleep(5 * time.Second)
+
+	go checkApi(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	go checkOutageReports(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	checkVpsAdminWebServices(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	pingNodes(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	pingDnsResolvers(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	checkDnsResolvers(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	checkWebServices(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	checkNameServers(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
+	time.Sleep(checkInterval * 2)
+	st.Initialized = true
 }
 
 func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {

@@ -1,0 +1,39 @@
+{{ define "title" }}vpsFree.cz Status{{ end }}
+
+{{ define "content" }}
+<nav class="navbar bg-light">
+	<div class="container-fluid">
+		<div class="navbar-brand clearfix">
+			<a class="float-start" href="/">
+				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+			</a>
+			<h1 class="navbar-text float-start">Status</h1>
+		</div>
+		<span class="navbar-text">
+			Rendered at: {{ .RenderedAt }}
+		</span>
+	</div>
+</nav>
+
+{{ if .Notice.Any }}
+<div class="row">
+	<div class="col">
+		<div class="alert alert-primary" role="alert">
+			{{ .Notice.Html }}
+			<hr>
+			<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
+		</div>
+	</div>
+</div>
+{{ end }}
+
+<div class="row">
+	<div class="col">
+		<h2>Initializing...</h2>
+		<p>
+			vpsFree.cz Status is initializing and will be ready in a minute, please
+			try to refresh the page.
+		</p>
+	</div>
+</div>
+{{ end }}

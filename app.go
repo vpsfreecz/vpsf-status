@@ -19,8 +19,9 @@ type application struct {
 }
 
 type htmlTemplate struct {
-	status *template.Template
-	about  *template.Template
+	loading *template.Template
+	status  *template.Template
+	about   *template.Template
 }
 
 type StatusData struct {
@@ -35,26 +36,37 @@ type AboutData struct {
 }
 
 func (app *application) parseTemplates() error {
-	status, err := template.ParseFiles(
-		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
-		filepath.Join(app.config.DataDir, "templates/status.tmpl"),
-	)
-	if err != nil {
+	if tpl, err := app.parseTemplateWithLayout("loading.tmpl"); err == nil {
+		app.templates.loading = tpl
+	} else {
 		return err
 	}
 
-	app.templates.status = status
-
-	about, err := template.ParseFiles(
-		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
-		filepath.Join(app.config.DataDir, "templates/about.tmpl"),
-	)
-	if err != nil {
+	if tpl, err := app.parseTemplateWithLayout("status.tmpl"); err == nil {
+		app.templates.status = tpl
+	} else {
 		return err
 	}
 
-	app.templates.about = about
+	if tpl, err := app.parseTemplateWithLayout("about.tmpl"); err == nil {
+		app.templates.about = tpl
+	} else {
+		return err
+	}
+
 	return nil
+}
+
+func (app *application) parseTemplateWithLayout(name string) (*template.Template, error) {
+	tpl, err := template.ParseFiles(
+		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
+		filepath.Join(app.config.DataDir, fmt.Sprintf("templates/%s", name)),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return tpl, nil
 }
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +79,21 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 
 	app.setCacheControl(w, 1)
+
+	if !app.status.Initialized {
+		err = app.templates.loading.Execute(w, StatusData{
+			Config:     app.config,
+			Status:     &view,
+			RenderedAt: now.Format(time.UnixDate),
+			Notice:     notice,
+		})
+
+		if err != nil {
+			log.Printf("Template error: %+v", err)
+		}
+
+		return
+	}
 
 	err = app.templates.status.Execute(w, StatusData{
 		Config:     app.config,
