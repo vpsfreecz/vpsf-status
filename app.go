@@ -27,7 +27,7 @@ type StatusData struct {
 	Config     *config.Config
 	Status     *StatusView
 	RenderedAt string
-	Notice     template.HTML
+	Notice     Notice
 }
 
 type AboutData struct {
@@ -72,7 +72,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 		Config:     app.config,
 		Status:     &view,
 		RenderedAt: now.Format(time.UnixDate),
-		Notice:     template.HTML(notice),
+		Notice:     notice,
 	})
 
 	if err != nil {

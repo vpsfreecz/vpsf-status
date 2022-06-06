@@ -8,12 +8,18 @@ import (
 
 type Status struct {
 	GeneratedAt   time.Time     `json:"generated_at"`
-	Notice        string        `json:"notice"`
+	Notice        Notice        `json:"notice"`
 	VpsAdmin      VpsAdmin      `json:"vpsadmin"`
 	OutageReports OutageReports `json:"outage_reports"`
 	Locations     []Location    `json:"locations"`
 	WebServices   []WebService  `json:"web_services"`
 	NameServers   []NameServer  `json:"nameservers"`
+}
+
+type Notice struct {
+	Any       bool      `json:"any"`
+	Text      string    `json:"text"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type VpsAdmin struct {

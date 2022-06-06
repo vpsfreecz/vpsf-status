@@ -16,11 +16,17 @@
 		</div>
 	</nav>
 
+	{{ if .Notice.Any }}
 	<div class="row">
 		<div class="col">
-			{{ .Notice }}
+			<div class="alert alert-primary" role="alert">
+				{{ .Notice.Html }}
+				<hr>
+				<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
+			</div>
 		</div>
 	</div>
+	{{ end }}
 
 	{{ $webuiUrl := .Status.VpsAdmin.Webui.Url }}
 	<div class="row">
@@ -74,9 +80,11 @@
 				</tbody>
 			</table>
 			{{ else if .Status.OutageReports.Status }}
-			<div class="alert alert-success">
-				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
-			</div>
+				{{ if not .Notice.Any }}
+				<div class="alert alert-success">
+					No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
+				</div>
+				{{ end }}
 			{{ else }}
 			<div class="alert alert-danger" role="alert">
 				Unable to fetch outage reports from vpsAdmin.

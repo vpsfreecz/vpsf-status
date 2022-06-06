@@ -216,7 +216,7 @@ func openConfig(cfg *config.Config) *Status {
 	return &st
 }
 
-func (st *Status) ToJson(now time.Time, notice string) *json.Status {
+func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 	outages := st.OutageReports
 
 	ret := &json.Status{
@@ -232,7 +232,11 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 		Locations:   make([]json.Location, len(st.LocationList)),
 		WebServices: make([]json.WebService, len(st.Services.Web)),
 		NameServers: make([]json.NameServer, len(st.Services.NameServer)),
-		Notice:      notice,
+		Notice: json.Notice{
+			Any:       notice.Any,
+			Text:      string(notice.Html),
+			UpdatedAt: notice.UpdatedAt,
+		},
 		GeneratedAt: now,
 	}
 
