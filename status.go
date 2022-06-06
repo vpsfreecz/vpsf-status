@@ -276,7 +276,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 				Name:        node.Name,
 				LocationId:  node.LocationId,
 				VpsAdmin:    node.ApiStatus,
-				Ping:        node.Ping.PacketLoss < 20,
+				Ping:        node.Ping.PacketLoss <= 20,
 				Maintenance: node.ApiMaintenance,
 			}
 		}
@@ -284,7 +284,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 		for iDns, dns := range loc.DnsResolverList {
 			jsonLoc.DnsResolvers[iDns] = json.DnsResolver{
 				Name:   dns.Name,
-				Ping:   dns.Ping.PacketLoss < 20,
+				Ping:   dns.Ping.PacketLoss <= 20,
 				Lookup: dns.ResolveStatus,
 			}
 		}
@@ -304,7 +304,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 	for iNs, ns := range st.Services.NameServer {
 		ret.NameServers[iNs] = json.NameServer{
 			Name:   ns.Name,
-			Ping:   ns.Ping.PacketLoss < 20,
+			Ping:   ns.Ping.PacketLoss <= 20,
 			Lookup: ns.ResolveStatus,
 		}
 	}
@@ -313,7 +313,7 @@ func (st *Status) ToJson(now time.Time, notice string) *json.Status {
 }
 
 func (n *Node) IsOperational() bool {
-	return n.ApiStatus && n.Ping.PacketLoss < 20
+	return n.ApiStatus && n.Ping.PacketLoss <= 20
 }
 
 func (r *DnsResolver) IsOperational() bool {
@@ -321,5 +321,5 @@ func (r *DnsResolver) IsOperational() bool {
 }
 
 func (pc *PingCheck) IsUp() bool {
-	return pc.PacketLoss < 20
+	return pc.PacketLoss <= 20
 }
