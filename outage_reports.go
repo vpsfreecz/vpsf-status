@@ -8,7 +8,7 @@ import (
 	"github.com/vpsfreecz/vpsadmin-go-client/client"
 )
 
-func checkOutageReports(st *Status) {
+func checkOutageReports(st *Status, checkInterval time.Duration) {
 	api := client.New(st.VpsAdmin.Api.Url)
 
 	for {
@@ -24,12 +24,12 @@ func checkOutageReports(st *Status) {
 		if err != nil {
 			log.Printf("Unable to fetch outages: %+v", err)
 			failOutages(st)
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		} else if !resp.Status {
 			log.Printf("Failed to list outages: %s", resp.Message)
 			failOutages(st)
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		}
 
@@ -75,7 +75,7 @@ func checkOutageReports(st *Status) {
 		}
 
 		st.OutageReports = reports
-		time.Sleep(30 * time.Second)
+		time.Sleep(checkInterval)
 	}
 }
 

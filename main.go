@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
 )
@@ -28,14 +29,16 @@ func main() {
 		log.Fatalf("Unable to parse template: %+v", err)
 	}
 
-	go checkApi(systemStatus)
-	go checkOutageReports(systemStatus)
-	checkVpsAdminWebServices(systemStatus)
-	pingNodes(systemStatus)
-	pingDnsResolvers(systemStatus)
-	checkDnsResolvers(systemStatus)
-	checkWebServices(systemStatus)
-	checkNameServers(systemStatus)
+	checkInterval := time.Duration(cfg.CheckInterval) * time.Second
+
+	go checkApi(systemStatus, checkInterval)
+	go checkOutageReports(systemStatus, checkInterval)
+	checkVpsAdminWebServices(systemStatus, checkInterval)
+	pingNodes(systemStatus, checkInterval)
+	pingDnsResolvers(systemStatus, checkInterval)
+	checkDnsResolvers(systemStatus, checkInterval)
+	checkWebServices(systemStatus, checkInterval)
+	checkNameServers(systemStatus, checkInterval)
 
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/json", app.handleJson)

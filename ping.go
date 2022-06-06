@@ -7,29 +7,29 @@ import (
 	"github.com/go-ping/ping"
 )
 
-func pingNodes(st *Status) {
+func pingNodes(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {
-			go spawnPingCheck(node.Ping)
+			go spawnPingCheck(node.Ping, checkInterval)
 		}
 	}
 }
 
-func pingDnsResolvers(st *Status) {
+func pingDnsResolvers(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, r := range loc.DnsResolverList {
-			go spawnPingCheck(r.Ping)
+			go spawnPingCheck(r.Ping, checkInterval)
 		}
 	}
 }
 
-func spawnPingCheck(pc *PingCheck) {
+func spawnPingCheck(pc *PingCheck, checkInterval time.Duration) {
 	for {
 		pinger, err := ping.NewPinger(pc.IpAddress)
 		if err != nil {
 			log.Printf("Unable to create pinger for %s: %+v", pc.Name, err)
 			pc.PacketLoss = 100
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		}
 
@@ -42,7 +42,7 @@ func spawnPingCheck(pc *PingCheck) {
 		if err != nil {
 			log.Printf("Failed to ping resolver %s: %+v", pc.Name, err)
 			pc.PacketLoss = 100
-			time.Sleep(30 * time.Second)
+			time.Sleep(time.Duration(checkInterval) * time.Second)
 			continue
 		}
 
@@ -55,6 +55,6 @@ func spawnPingCheck(pc *PingCheck) {
 			pc.PacketLoss = stats.PacketLoss
 		}
 
-		time.Sleep(30 * time.Second)
+		time.Sleep(checkInterval)
 	}
 }

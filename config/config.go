@@ -10,6 +10,7 @@ type Config struct {
 	ListenAddress string       `json:"listen_address"`
 	DataDir       string       `json:"data_dir"`
 	NoticeFile    string       `json:"notice_file"`
+	CheckInterval int          `json:"check_interval"`
 	VpsAdmin      VpsAdmin     `json:"vpsadmin"`
 	Locations     []Location   `json:"locations"`
 	WebServices   []WebService `json:"web_services"`
@@ -68,6 +69,10 @@ func ParseConfig(path string) (*Config, error) {
 
 	if cfg.NoticeFile == "" {
 		cfg.NoticeFile = "notice.html"
+	}
+
+	if cfg.CheckInterval == 0 {
+		cfg.CheckInterval = 30
 	}
 
 	return &cfg, nil

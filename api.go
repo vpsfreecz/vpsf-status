@@ -7,7 +7,7 @@ import (
 	"github.com/vpsfreecz/vpsadmin-go-client/client"
 )
 
-func checkApi(st *Status) {
+func checkApi(st *Status, checkInterval time.Duration) {
 	api := client.New(st.VpsAdmin.Api.Url)
 
 	for {
@@ -20,12 +20,12 @@ func checkApi(st *Status) {
 		if err != nil {
 			log.Printf("Unable to check API: %+v", err)
 			failApi(st, now)
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		} else if !resp.Status {
 			log.Printf("Failed to list nodes: %s", resp.Message)
 			failApi(st, now)
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		}
 
@@ -35,7 +35,7 @@ func checkApi(st *Status) {
 			updateNode(node, st, now)
 		}
 
-		time.Sleep(30 * time.Second)
+		time.Sleep(checkInterval)
 	}
 }
 

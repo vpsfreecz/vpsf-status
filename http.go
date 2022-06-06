@@ -6,18 +6,18 @@ import (
 	"time"
 )
 
-func checkVpsAdminWebServices(st *Status) {
-	go spawnHttpCheck(st.VpsAdmin.Webui)
-	go spawnHttpCheck(st.VpsAdmin.Console)
+func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
+	go spawnHttpCheck(st.VpsAdmin.Webui, checkInterval)
+	go spawnHttpCheck(st.VpsAdmin.Console, checkInterval)
 }
 
-func checkWebServices(st *Status) {
+func checkWebServices(st *Status, checkInterval time.Duration) {
 	for _, ws := range st.Services.Web {
-		go spawnHttpCheck(ws)
+		go spawnHttpCheck(ws, checkInterval)
 	}
 }
 
-func spawnHttpCheck(ws *WebService) {
+func spawnHttpCheck(ws *WebService, checkInterval time.Duration) {
 	for {
 		ws.LastCheck = time.Now()
 
@@ -25,7 +25,7 @@ func spawnHttpCheck(ws *WebService) {
 		if err != nil {
 			log.Printf("Unable to check %s: %+v", ws.Label, err)
 			ws.Status = false
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		}
 
@@ -44,7 +44,7 @@ func spawnHttpCheck(ws *WebService) {
 			ws.Status = true
 		}()
 
-		time.Sleep(30 * time.Second)
+		time.Sleep(checkInterval)
 	}
 }
 

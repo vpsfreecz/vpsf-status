@@ -8,21 +8,21 @@ import (
 	"time"
 )
 
-func checkDnsResolvers(st *Status) {
+func checkDnsResolvers(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, r := range loc.DnsResolverList {
-			go spawnDnsResolverCheck(r)
+			go spawnDnsResolverCheck(r, checkInterval)
 		}
 	}
 }
 
-func checkNameServers(st *Status) {
+func checkNameServers(st *Status, checkInterval time.Duration) {
 	for _, ns := range st.Services.NameServer {
-		go spawnDnsResolverCheck(ns)
+		go spawnDnsResolverCheck(ns, checkInterval)
 	}
 }
 
-func spawnDnsResolverCheck(r *DnsResolver) {
+func spawnDnsResolverCheck(r *DnsResolver, checkInterval time.Duration) {
 	for {
 		net_r := &net.Resolver{
 			PreferGo: true,
@@ -40,11 +40,11 @@ func spawnDnsResolverCheck(r *DnsResolver) {
 		if err != nil {
 			log.Printf("DNS lookup failed on %s", r.Name)
 			r.ResolveStatus = false
-			time.Sleep(30 * time.Second)
+			time.Sleep(checkInterval)
 			continue
 		}
 
 		r.ResolveStatus = true
-		time.Sleep(30 * time.Second)
+		time.Sleep(checkInterval)
 	}
 }
