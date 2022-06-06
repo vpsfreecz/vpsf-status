@@ -1,7 +1,7 @@
 {
 	"listen_address": ":8080",
 	"data_dir": ".",
-	"state_dir": ".",
+	"notice_file": "notice.html",
 	"vpsadmin": {
 		"api_url": "https://api.vpsfree.cz",
 		"webui_url": "https://vpsadmin.vpsfree.cz",

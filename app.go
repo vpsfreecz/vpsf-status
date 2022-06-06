@@ -45,7 +45,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 	view := createStatusView(app.status)
 
-	notice, err := readNoticeFile(app.config.StateDir)
+	notice, err := readNoticeFile(app.config.NoticeFile)
 	if err != nil {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
@@ -67,7 +67,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
-	notice, err := readNoticeFile(app.config.StateDir)
+	notice, err := readNoticeFile(app.config.NoticeFile)
 	if err != nil {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
