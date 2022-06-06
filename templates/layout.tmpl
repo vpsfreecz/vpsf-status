@@ -14,7 +14,21 @@
 		</style>
 	</head>
 	<body>
-		{{ template "content" . }}
+		<div class="container">
+			{{ template "content" . }}
+
+			<footer class="row py-3 my-4">
+				<div class="col">
+					<p class="text-start">
+						<a href="/json" class="link-secondary">JSON</a>
+						| <a href="/about" class="link-secondary">About</a>
+					</p>
+				</div>
+				<div class="col">
+					<p class="text-end text-muted">vpsFree.cz</p>
+				</div>
+			</footer>
+		</div>
 
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
 	</body>

@@ -1,416 +1,402 @@
 {{ define "title" }}vpsFree.cz Status{{ end }}
 
 {{ define "content" }}
-<div class="container">
-	<nav class="navbar bg-light">
-		<div class="container-fluid">
-			<div class="navbar-brand clearfix">
-				<a class="float-start" href="/">
-					<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-				</a>
-				<h1 class="navbar-text float-start">Status</h1>
-			</div>
-			<span class="navbar-text">
-				Rendered at: {{ .RenderedAt }}
-			</span>
+<nav class="navbar bg-light">
+	<div class="container-fluid">
+		<div class="navbar-brand clearfix">
+			<a class="float-start" href="/">
+				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+			</a>
+			<h1 class="navbar-text float-start">Status</h1>
 		</div>
-	</nav>
+		<span class="navbar-text">
+			Rendered at: {{ .RenderedAt }}
+		</span>
+	</div>
+</nav>
 
-	{{ if .Notice.Any }}
-	<div class="row">
-		<div class="col">
-			<div class="alert alert-primary" role="alert">
-				{{ .Notice.Html }}
-				<hr>
-				<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
-			</div>
+{{ if .Notice.Any }}
+<div class="row">
+	<div class="col">
+		<div class="alert alert-primary" role="alert">
+			{{ .Notice.Html }}
+			<hr>
+			<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
 		</div>
 	</div>
-	{{ end }}
+</div>
+{{ end }}
 
-	{{ $webuiUrl := .Status.VpsAdmin.Webui.Url }}
-	<div class="row">
-		<div class="col">
-			{{ if .Status.OutageReports.Any }}
-			<h2>
-				Reported
-				{{ if and .Status.OutageReports.AnyMaintenance .Status.OutageReports.AnyOutage }}
-				Maintenances and Outages
-				{{ else if .Status.OutageReports.AnyMaintenance }}
-				Maintenances
-				{{ else }}
-				Outages
-				{{ end }}
-			</h2>
-			<table class="table table-sm">
-				<thead>
-					<tr>
-						<th>Date</th>
-						<th>Duration</th>
-						<th>Planned</th>
-						<th>Systems</th>
-						<th>Type</th>
-						<th>Reason</th>
-						<th>Link</th>
-					</tr>
-				</thead>
-				<tbody>
-					{{ $status := .Status }}
-					{{ range $outage := .Status.OutageReports.List }}
-					<tr class="table-{{ if $outage.Planned }}warning{{ else }}danger{{ end }}">
-						<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
-						<td>{{ $outage.Duration }}</td>
-						<td>
-							{{ if $outage.Planned }}
-							<i class="bi bi-check-lg text-success" aria-label="Planned maintenance"></i>
-							{{ else }}
-							<i class="bi bi-exclamation-circle text-danger" aria-label="Outage"></i>
-							{{ end }}
-						</td>
-						<td>
-							{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
-						</td>
-						<td>{{ $outage.Type }}</td>
-						<td>{{ $outage.EnSummary }}</td>
-						<td>
-							<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
-						</td>
-					</tr>
-					{{ end }}
-				</tbody>
-			</table>
-			{{ else if .Status.OutageReports.Status }}
-				{{ if not .Notice.Any }}
-				<div class="alert alert-success">
-					No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
-				</div>
-				{{ end }}
+{{ $webuiUrl := .Status.VpsAdmin.Webui.Url }}
+<div class="row">
+	<div class="col">
+		{{ if .Status.OutageReports.Any }}
+		<h2>
+			Reported
+			{{ if and .Status.OutageReports.AnyMaintenance .Status.OutageReports.AnyOutage }}
+			Maintenances and Outages
+			{{ else if .Status.OutageReports.AnyMaintenance }}
+			Maintenances
 			{{ else }}
-			<div class="alert alert-danger" role="alert">
-				Unable to fetch outage reports from vpsAdmin.
+			Outages
+			{{ end }}
+		</h2>
+		<table class="table table-sm">
+			<thead>
+				<tr>
+					<th>Date</th>
+					<th>Duration</th>
+					<th>Planned</th>
+					<th>Systems</th>
+					<th>Type</th>
+					<th>Reason</th>
+					<th>Link</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ $status := .Status }}
+				{{ range $outage := .Status.OutageReports.List }}
+				<tr class="table-{{ if $outage.Planned }}warning{{ else }}danger{{ end }}">
+					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
+					<td>{{ $outage.Duration }}</td>
+					<td>
+						{{ if $outage.Planned }}
+						<i class="bi bi-check-lg text-success" aria-label="Planned maintenance"></i>
+						{{ else }}
+						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage"></i>
+						{{ end }}
+					</td>
+					<td>
+						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
+					</td>
+					<td>{{ $outage.Type }}</td>
+					<td>{{ $outage.EnSummary }}</td>
+					<td>
+						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
+					</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+		{{ else if .Status.OutageReports.Status }}
+			{{ if not .Notice.Any }}
+			<div class="alert alert-success">
+				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
 			</div>
 			{{ end }}
+		{{ else }}
+		<div class="alert alert-danger" role="alert">
+			Unable to fetch outage reports from vpsAdmin.
 		</div>
+		{{ end }}
 	</div>
+</div>
 
-	<div class="row">
-		<div class="col">
-			<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
-				vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
-			</h2>
+<div class="row">
+	<div class="col">
+		<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
+			vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+		</h2>
 
-			<div class="accordion" id="accordion-vpsadmin">
-				<div class="accordion-item">
-					<h3 class="accordion-header" id="heading-vpsadmin">
-						<button class="accordion-button text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
-							Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
-						</button>
-					</h3>
-					<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
-						<div class="accordion-body">
-							<table class="table table-sm">
-								<thead>
-									<tr>
-										<th>Service</th>
-										<th>Description</th>
-										<th>Status</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
-										<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
-										<td>Main web interface for vpsAdmin</td>
-										<td>
-											{{ if .Status.VpsAdmin.Webui.Status }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-									</tr>
-									<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
-										<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
-										<td>HTTP API server</td>
-										<td>
-											{{ if .Status.VpsAdmin.Api.Status }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-									</tr>
-									<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
-										<td>Remote Console</td>
-										<td>Interface for VPS remote console</td>
-										<td>
-											{{ if .Status.VpsAdmin.Console.Status }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
+		<div class="accordion" id="accordion-vpsadmin">
+			<div class="accordion-item">
+				<h3 class="accordion-header" id="heading-vpsadmin">
+					<button class="accordion-button text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
+						Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+					</button>
+				</h3>
+				<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
+					<div class="accordion-body">
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Service</th>
+									<th>Description</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
+									<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
+									<td>Main web interface for vpsAdmin</td>
+									<td>
+										{{ if .Status.VpsAdmin.Webui.Status }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+								</tr>
+								<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
+									<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
+									<td>HTTP API server</td>
+									<td>
+										{{ if .Status.VpsAdmin.Api.Status }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+								</tr>
+								<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
+									<td>Remote Console</td>
+									<td>Interface for VPS remote console</td>
+									<td>
+										{{ if .Status.VpsAdmin.Console.Status }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
+</div>
 
-	{{ range $loc := .Status.Locations }}
-	<div class="row mt-4 mb-4">
-		<div class="column">
-			<h2 class="text-{{ if $loc.IsOperational }}success{{ else if $loc.IsDegraded }}warning{{ else }}danger{{ end }}">
-				{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}
-			</h2>
+{{ range $loc := .Status.Locations }}
+<div class="row mt-4 mb-4">
+	<div class="column">
+		<h2 class="text-{{ if $loc.IsOperational }}success{{ else if $loc.IsDegraded }}warning{{ else }}danger{{ end }}">
+			{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}
+		</h2>
 
-			<div class="accordion" id="accordion-location-{{ $loc.Id }}">
-				<div class="accordion-item">
-					<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
-						<button class="accordion-button text-{{ if $loc.AreNodesOperational }}success{{ else if $loc.AreNodesDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
-							Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
-						</button>
-					</h3>
-					<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
-						<div class="accordion-body">
-							<div class="container">
-								<div class="row">
-									<div class="col">
-										<table class="table table-sm">
-											<thead>
-												<tr>
-													<th>Node</th>
-													<th>vpsAdmin</th>
-													<th>Ping</th>
-												</tr>
-											</thead>
-											<tbody>
-												{{ range $node := $loc.OddNodes }}
-												<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
-													<td>{{ $node.Name }}</td>
-													<td>
-														{{ if $node.ApiStatus }}
-															{{ if $node.ApiMaintenance }}
-															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
-															{{ else }}
-															<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-															{{ end }}
+		<div class="accordion" id="accordion-location-{{ $loc.Id }}">
+			<div class="accordion-item">
+				<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
+					<button class="accordion-button text-{{ if $loc.AreNodesOperational }}success{{ else if $loc.AreNodesDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
+						Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
+					</button>
+				</h3>
+				<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
+					<div class="accordion-body">
+						<div class="container">
+							<div class="row">
+								<div class="col">
+									<table class="table table-sm">
+										<thead>
+											<tr>
+												<th>Node</th>
+												<th>vpsAdmin</th>
+												<th>Ping</th>
+											</tr>
+										</thead>
+										<tbody>
+											{{ range $node := $loc.OddNodes }}
+											<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
+												<td>{{ $node.Name }}</td>
+												<td>
+													{{ if $node.ApiStatus }}
+														{{ if $node.ApiMaintenance }}
+														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
 														{{ else }}
-															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 														{{ end }}
-													</td>
-													<td>
-														{{ if $node.Ping.IsUp }}
-														<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
-														{{ else if $node.Ping.IsWarning }}
-														<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
-														{{ else }}
+													{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-														{{ end }}
-													</td>
-												</tr>
-												{{ end }}
-											</tbody>
-										</table>
-									</div>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.Ping.IsUp }}
+													<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+													{{ else if $node.Ping.IsWarning }}
+													<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													{{ end }}
+												</td>
+											</tr>
+											{{ end }}
+										</tbody>
+									</table>
+								</div>
 
-									<div class="col">
-										<table class="table table-sm">
-											<thead>
-												<tr>
-													<th>Node</th>
-													<th>vpsAdmin</th>
-													<th>Ping</th>
-												</tr>
-											</thead>
-											<tbody>
-												{{ range $node := $loc.EvenNodes }}
-												<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
-													<td>{{ $node.Name }}</td>
-													<td>
-														{{ if $node.ApiStatus }}
-															{{ if $node.ApiMaintenance }}
-															<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
-															{{ else }}
-															<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-															{{ end }}
+								<div class="col">
+									<table class="table table-sm">
+										<thead>
+											<tr>
+												<th>Node</th>
+												<th>vpsAdmin</th>
+												<th>Ping</th>
+											</tr>
+										</thead>
+										<tbody>
+											{{ range $node := $loc.EvenNodes }}
+											<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
+												<td>{{ $node.Name }}</td>
+												<td>
+													{{ if $node.ApiStatus }}
+														{{ if $node.ApiMaintenance }}
+														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
 														{{ else }}
-															<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 														{{ end }}
-													</td>
-													<td>
-														{{ if $node.Ping.IsUp }}
-														<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
-														{{ else if $node.Ping.IsWarning }}
-														<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
-														{{ else }}
+													{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-														{{ end }}
-													</td>
-												</tr>
-												{{ end }}
-											</tbody>
-										</table>
-									</div>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.Ping.IsUp }}
+													<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+													{{ else if $node.Ping.IsWarning }}
+													<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													{{ end }}
+												</td>
+											</tr>
+											{{ end }}
+										</tbody>
+									</table>
 								</div>
 							</div>
 						</div>
 					</div>
-				</div> <!-- accordion item -->
+				</div>
+			</div> <!-- accordion item -->
 
-				{{ if $loc.HasDnsResolvers }}
-				<div class="accordion-item">
-					<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
-						<button class="accordion-button text-{{ if $loc.AreDnsResolversOperational }}success{{ else if $loc.AreDnsResolversDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
-							DNS Resolvers {{ $loc.DnsResolversUp }}/{{ $loc.DnsResolversCount }}
-						</button>
-					</h3>
-					<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
-						<div class="accordion-body">
-							<table class="table table-sm">
-								<thead>
-									<tr>
-										<th>Name</th>
-										<th>Ping</th>
-										<th>Lookup</th>
-									</tr>
-								</thead>
-								<tbody>
-									{{ range $dns := $loc.DnsResolverList }}
-									<tr class="table-{{ if $dns.IsOperational }}success{{ else }}danger{{ end }}">
-										<td>{{ $dns.Name }}</td>
-										<td>
-											{{ if $dns.Ping.IsUp }}
-											<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
-											{{ else if $dns.Ping.IsWarning }}
-											<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-										<td>
-											{{ if $dns.ResolveStatus }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
-											{{ end }}
-										</td>
-									</tr>
-									{{ end }}
-								</tbody>
-							</table>
-						</div>
+			{{ if $loc.HasDnsResolvers }}
+			<div class="accordion-item">
+				<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
+					<button class="accordion-button text-{{ if $loc.AreDnsResolversOperational }}success{{ else if $loc.AreDnsResolversDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
+						DNS Resolvers {{ $loc.DnsResolversUp }}/{{ $loc.DnsResolversCount }}
+					</button>
+				</h3>
+				<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
+					<div class="accordion-body">
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Name</th>
+									<th>Ping</th>
+									<th>Lookup</th>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range $dns := $loc.DnsResolverList }}
+								<tr class="table-{{ if $dns.IsOperational }}success{{ else }}danger{{ end }}">
+									<td>{{ $dns.Name }}</td>
+									<td>
+										{{ if $dns.Ping.IsUp }}
+										<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+										{{ else if $dns.Ping.IsWarning }}
+										<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+									<td>
+										{{ if $dns.ResolveStatus }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+										{{ end }}
+									</td>
+								</tr>
+								{{ end }}
+							</tbody>
+						</table>
 					</div>
-				</div> <!-- accordion item -->
-				{{ end }}
+				</div>
+			</div> <!-- accordion item -->
+			{{ end }}
 
-			</div>
 		</div>
 	</div>
-	{{ end }}
+</div>
+{{ end }}
 
-	<div class="row">
-		<div class="col">
-			<h2 class="text-{{ if .Status.Services.IsOperational }}success{{ else if .Status.Services.IsDegraded }}warning{{ else }}danger{{ end }}">
-				Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}
-			</h2>
+<div class="row">
+	<div class="col">
+		<h2 class="text-{{ if .Status.Services.IsOperational }}success{{ else if .Status.Services.IsDegraded }}warning{{ else }}danger{{ end }}">
+			Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}
+		</h2>
 
-			<div class="accordion" id="accordion-services">
-				<div class="accordion-item">
-					<h3 class="accordion-header" id="heading-webservices">
-						<button class="accordion-button text-{{ if .Status.Services.IsWebOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
-							Web Services {{ .Status.Services.WebUp }}/{{ .Status.Services.WebCount }}
-						</button>
-					</h3>
-					<div id="collapse-webservices" class="accordion-collapse collapse" aria-labelledby="heading-webservices">
-						<div class="accordion-body">
-							<table class="table table-sm">
-								<thead>
-									<tr>
-										<th>Service</th>
-										<th>Description</th>
-										<th>Status</th>
-									</tr>
-								</thead>
-								<tbody>
-									{{ range $ws := .Status.Services.Web }}
-									<tr class="table-{{ if $ws.Status }}success{{ else }}danger{{ end }}">
-										<td><a href="{{ $ws.Url }}">{{ $ws.Label }}</a></td>
-										<td>{{ $ws.Description }}</td>
-										<td>
-											{{ if $ws.Status }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-									</tr>
-									{{ end }}
-								</tbody>
-							</table>
-						</div>
+		<div class="accordion" id="accordion-services">
+			<div class="accordion-item">
+				<h3 class="accordion-header" id="heading-webservices">
+					<button class="accordion-button text-{{ if .Status.Services.IsWebOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
+						Web Services {{ .Status.Services.WebUp }}/{{ .Status.Services.WebCount }}
+					</button>
+				</h3>
+				<div id="collapse-webservices" class="accordion-collapse collapse" aria-labelledby="heading-webservices">
+					<div class="accordion-body">
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Service</th>
+									<th>Description</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range $ws := .Status.Services.Web }}
+								<tr class="table-{{ if $ws.Status }}success{{ else }}danger{{ end }}">
+									<td><a href="{{ $ws.Url }}">{{ $ws.Label }}</a></td>
+									<td>{{ $ws.Description }}</td>
+									<td>
+										{{ if $ws.Status }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+								</tr>
+								{{ end }}
+							</tbody>
+						</table>
 					</div>
-				</div> <!-- accordion item -->
+				</div>
+			</div> <!-- accordion item -->
 
-				<div class="accordion-item">
-					<h3 class="accordion-header" id="heading-nameservers">
-						<button class="accordion-button text-{{ if .Status.Services.IsNameServerOperational }}success{{ else if .Status.Services.IsNameServerDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
-							Name Servers {{ .Status.Services.NameServerUp }}/{{ .Status.Services.NameServerCount }}
-						</button>
-					</h3>
-					<div id="collapse-nameservers" class="accordion-collapse collapse" aria-labelledby="heading-nameservers">
-						<div class="accordion-body">
-							<table class="table table-sm">
-								<thead>
-									<tr>
-										<th>Service</th>
-										<th>Ping</th>
-										<th>Lookup</th>
-									</tr>
-								</thead>
-								<tbody>
-									{{ range $ns := .Status.Services.NameServer }}
-									<tr class="table-{{ if $ns.IsOperational }}success{{ else if $ns.IsDegraded }}warning{{ else }}danger{{ end }}">
-										<td>{{ $ns.Name }}</td>
-										<td>
-											{{ if $ns.Ping.IsUp }}
-											<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
-											{{ else if $ns.Ping.IsWarning }}
-											<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
-											{{ end }}
-										</td>
-										<td>
-											{{ if $ns.ResolveStatus }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
-											{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
-											{{ end }}
-										</td>
-									</tr>
-									{{ end }}
-								</tbody>
-							</table>
-						</div>
+			<div class="accordion-item">
+				<h3 class="accordion-header" id="heading-nameservers">
+					<button class="accordion-button text-{{ if .Status.Services.IsNameServerOperational }}success{{ else if .Status.Services.IsNameServerDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
+						Name Servers {{ .Status.Services.NameServerUp }}/{{ .Status.Services.NameServerCount }}
+					</button>
+				</h3>
+				<div id="collapse-nameservers" class="accordion-collapse collapse" aria-labelledby="heading-nameservers">
+					<div class="accordion-body">
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Service</th>
+									<th>Ping</th>
+									<th>Lookup</th>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range $ns := .Status.Services.NameServer }}
+								<tr class="table-{{ if $ns.IsOperational }}success{{ else if $ns.IsDegraded }}warning{{ else }}danger{{ end }}">
+									<td>{{ $ns.Name }}</td>
+									<td>
+										{{ if $ns.Ping.IsUp }}
+										<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+										{{ else if $ns.Ping.IsWarning }}
+										<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										{{ end }}
+									</td>
+									<td>
+										{{ if $ns.ResolveStatus }}
+										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+										{{ end }}
+									</td>
+								</tr>
+								{{ end }}
+							</tbody>
+						</table>
 					</div>
-				</div> <!-- accordion item -->
-			</div>
+				</div>
+			</div> <!-- accordion item -->
 		</div>
 	</div>
-
-	<footer class="row py-3 my-4">
-		<div class="col">
-			<p class="text-start">
-				<a href="/json" class="link-secondary">JSON</a>
-				| <a href="/about" class="link-secondary">About</a>
-			</p>
-		</div>
-		<div class="col">
-			<p class="text-end text-muted">vpsFree.cz</p>
-		</div>
-	</footer>
 </div>
 {{ end }}
