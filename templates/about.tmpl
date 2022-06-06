@@ -1,0 +1,55 @@
+{{ define "title" }}About vpsFree.cz Status{{ end }}
+
+{{ define "content" }}
+<div class="container">
+	<nav class="navbar bg-light">
+		<div class="container-fluid">
+			<div class="navbar-brand clearfix">
+				<a class="float-start" href="/">
+					<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+				</a>
+				<h1 class="navbar-text float-start">Status</h1>
+			</div>
+			<a class="navbar-link" href="/">Back to Status</a>
+		</div>
+	</nav>
+
+	<div class="row">
+		<div class="col">
+			<h2>About vpsFree.cz Status</h2>
+			<p>
+				<i>vpsf-status</i> is an application that monitors the state of vpsFree.cz's
+				infrastructure. It uses an independent network connection and should thus
+				be available in case of issues with our primary connection or other parts
+				of our infrastructure.
+			</p>
+			<p>
+				The checks are run automatically every {{ .Config.CheckInterval }} seconds.
+				Verified issues that impact our members are reported through
+				<a href="{{ .Config.VpsAdmin.WebuiUrl }}" target="_blank">vpsAdmin</a>
+				when possible. See the
+				<a href="{{ .Config.VpsAdmin.WebuiUrl }}/?page=outage&action=list" target="_blank">history</a>
+				of such outages and maintenances. In case of an outage when vpsAdmin
+				is down, we may use this status page to include information
+				about the issue and expected resolution.
+			</p>
+			<p>
+				The source code of <i>vpsf-status</i> can be found on
+				<a href="https://github.com/vpsfreecz/vpsf-status" target="_blank">GitHub</a>.
+			</p>
+		</div>
+	</div>
+
+	<footer class="row py-3 my-4">
+		<div class="col">
+			<p class="text-start">
+				<a href="/json" class="link-secondary">JSON</a>
+				| <a href="/about" class="link-secondary">About</a>
+			</p>
+		</div>
+		<div class="col">
+			<p class="text-end text-muted">vpsFree.cz</p>
+		</div>
+	</footer>
+</div>
+{{ end }}

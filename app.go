@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ type application struct {
 
 type htmlTemplate struct {
 	status *template.Template
+	about  *template.Template
 }
 
 type StatusData struct {
@@ -26,6 +28,10 @@ type StatusData struct {
 	Status     *StatusView
 	RenderedAt string
 	Notice     template.HTML
+}
+
+type AboutData struct {
+	Config *config.Config
 }
 
 func (app *application) parseTemplates() error {
@@ -38,6 +44,16 @@ func (app *application) parseTemplates() error {
 	}
 
 	app.templates.status = status
+
+	about, err := template.ParseFiles(
+		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
+		filepath.Join(app.config.DataDir, "templates/about.tmpl"),
+	)
+	if err != nil {
+		return err
+	}
+
+	app.templates.about = about
 	return nil
 }
 
@@ -50,7 +66,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
 
-	app.setCacheControl(w)
+	app.setCacheControl(w, 1)
 
 	err = app.templates.status.Execute(w, StatusData{
 		Config:     app.config,
@@ -72,7 +88,7 @@ func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Unable to read notice file: %+v", err)
 	}
 
-	app.setCacheControl(w)
+	app.setCacheControl(w, 1)
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := json.ExportTo(w, app.status.ToJson(now, notice)); err != nil {
@@ -80,6 +96,17 @@ func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) setCacheControl(w http.ResponseWriter) {
-	w.Header().Set("Cache-Control", "max-age=1")
+func (app *application) handleAbout(w http.ResponseWriter, r *http.Request) {
+	app.setCacheControl(w, 24*60*60)
+
+	err := app.templates.about.Execute(w, AboutData{
+		Config: app.config,
+	})
+	if err != nil {
+		log.Printf("Template error: %+v", err)
+	}
+}
+
+func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
+	w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", seconds))
 }

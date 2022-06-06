@@ -42,6 +42,7 @@ func main() {
 
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/json", app.handleJson)
+	http.HandleFunc("/about", app.handleAbout)
 	http.Handle(
 		"/static/",
 		http.StripPrefix(
