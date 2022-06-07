@@ -244,9 +244,8 @@ func (st *Status) initialize(cfg *config.Config) {
 	time.Sleep(1 * time.Second)
 
 	checkNameServers(st, checkInterval)
-	time.Sleep(1 * time.Second)
 
-	time.Sleep(checkInterval * 2)
+	time.Sleep(5 * time.Second)
 	st.Initialized = true
 }
 
