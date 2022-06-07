@@ -101,7 +101,7 @@
 		<div class="accordion" id="accordion-vpsadmin">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-vpsadmin">
-					<button class="accordion-button text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
+					<button class="accordion-button collapsed text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
 						Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
 					</button>
 				</h3>
@@ -168,7 +168,7 @@
 		<div class="accordion" id="accordion-location-{{ $loc.Id }}">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
-					<button class="accordion-button text-{{ if $loc.AreNodesOperational }}success{{ else if $loc.AreNodesDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
+					<button class="accordion-button collapsed text-{{ if $loc.AreNodesOperational }}success{{ else if $loc.AreNodesDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
 						Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
 					</button>
 				</h3>
@@ -262,7 +262,7 @@
 			{{ if $loc.HasDnsResolvers }}
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
-					<button class="accordion-button text-{{ if $loc.AreDnsResolversOperational }}success{{ else if $loc.AreDnsResolversDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
+					<button class="accordion-button collapsed text-{{ if $loc.AreDnsResolversOperational }}success{{ else if $loc.AreDnsResolversDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
 						DNS Resolvers {{ $loc.DnsResolversUp }}/{{ $loc.DnsResolversCount }}
 					</button>
 				</h3>
@@ -319,7 +319,7 @@
 		<div class="accordion" id="accordion-services">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-webservices">
-					<button class="accordion-button text-{{ if .Status.Services.IsWebOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
+					<button class="accordion-button collapsed text-{{ if .Status.Services.IsWebOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
 						Web Services {{ .Status.Services.WebUp }}/{{ .Status.Services.WebCount }}
 					</button>
 				</h3>
@@ -355,7 +355,7 @@
 
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nameservers">
-					<button class="accordion-button text-{{ if .Status.Services.IsNameServerOperational }}success{{ else if .Status.Services.IsNameServerDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
+					<button class="accordion-button collapsed text-{{ if .Status.Services.IsNameServerOperational }}success{{ else if .Status.Services.IsNameServerDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
 						Name Servers {{ .Status.Services.NameServerUp }}/{{ .Status.Services.NameServerCount }}
 					</button>
 				</h3>
