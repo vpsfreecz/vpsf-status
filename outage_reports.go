@@ -80,11 +80,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 }
 
 func failOutages(st *Status) {
-	st.OutageReports = &OutageReports{
-		Status: false,
-		Any:    false,
-		List:   make([]*OutageReport, 0),
-	}
+	st.OutageReports.Status = false
 }
 
 func fetchOutageEntities(api *client.Client, report *OutageReport) error {
