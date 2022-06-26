@@ -23,9 +23,9 @@ type Notice struct {
 }
 
 type VpsAdmin struct {
-	Api     bool `json:"api"`
-	Console bool `json:"console"`
-	Webui   bool `json:"webui"`
+	Api     WebService `json:"api"`
+	Console WebService `json:"console"`
+	Webui   WebService `json:"webui"`
 }
 
 type OutageReports struct {
@@ -79,7 +79,7 @@ type WebService struct {
 	Label       string `json:"label"`
 	Description string `json:"description"`
 	Url         string `json:"url"`
-	Status      bool   `json:"status"`
+	Status      string `json:"status"`
 }
 
 type NameServer struct {

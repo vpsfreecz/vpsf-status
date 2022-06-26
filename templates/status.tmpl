@@ -101,7 +101,7 @@
 		<div class="accordion" id="accordion-vpsadmin">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-vpsadmin">
-					<button class="accordion-button collapsed text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
+					<button class="accordion-button collapsed text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else if .Status.VpsAdmin.IsDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
 						Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
 					</button>
 				</h3>
@@ -116,33 +116,39 @@
 								</tr>
 							</thead>
 							<tbody>
-								<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else }}danger{{ end }}">
+								<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else if .Status.VpsAdmin.Webui.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
 									<td>Main web interface for vpsAdmin</td>
 									<td>
-										{{ if .Status.VpsAdmin.Webui.Status }}
+										{{ if .Status.VpsAdmin.Webui.Maintenance }}
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										{{ else if .Status.VpsAdmin.Webui.Status }}
 										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 										{{ else }}
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
-								<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else }}danger{{ end }}">
+								<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else if .Status.VpsAdmin.Api.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
 									<td>HTTP API server</td>
 									<td>
-										{{ if .Status.VpsAdmin.Api.Status }}
+										{{ if .Status.VpsAdmin.Api.Maintenance }}
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										{{ else if .Status.VpsAdmin.Api.Status }}
 										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 										{{ else }}
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
-								<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else }}danger{{ end }}">
+								<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else if .Status.VpsAdmin.Console.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td>Remote Console</td>
 									<td>Interface for VPS remote console</td>
 									<td>
-										{{ if .Status.VpsAdmin.Console.Status }}
+										{{ if .Status.VpsAdmin.Console.Maintenance }}
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										{{ else if .Status.VpsAdmin.Console.Status }}
 										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
 										{{ else }}
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
@@ -319,7 +325,7 @@
 		<div class="accordion" id="accordion-services">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-webservices">
-					<button class="accordion-button collapsed text-{{ if .Status.Services.IsWebOperational }}success{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
+					<button class="accordion-button collapsed text-{{ if .Status.Services.IsWebOperational }}success{{ else if .Status.Services.IsWebDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
 						Web Services {{ .Status.Services.WebUp }}/{{ .Status.Services.WebCount }}
 					</button>
 				</h3>
@@ -335,12 +341,14 @@
 							</thead>
 							<tbody>
 								{{ range $ws := .Status.Services.Web }}
-								<tr class="table-{{ if $ws.Status }}success{{ else }}danger{{ end }}">
+								<tr class="table-{{ if $ws.Status }}success{{ else if $ws.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ $ws.Url }}">{{ $ws.Label }}</a></td>
 									<td>{{ $ws.Description }}</td>
 									<td>
 										{{ if $ws.Status }}
 										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										{{ else if $ws.Maintenance }}
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
 										{{ else }}
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
 										{{ end }}

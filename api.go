@@ -19,17 +19,18 @@ func checkApi(st *Status, checkInterval time.Duration) {
 
 		if err != nil {
 			log.Printf("Unable to check API: %+v", err)
-			failApi(st, now)
+			failApi(st, "", now)
 			time.Sleep(checkInterval)
 			continue
 		} else if !resp.Status {
 			log.Printf("Failed to list nodes: %s", resp.Message)
-			failApi(st, now)
+			failApi(st, resp.Message, now)
 			time.Sleep(checkInterval)
 			continue
 		}
 
 		st.VpsAdmin.Api.Status = true
+		st.VpsAdmin.Api.Maintenance = false
 
 		for _, node := range resp.Output {
 			updateNode(node, st, now)
@@ -39,8 +40,9 @@ func checkApi(st *Status, checkInterval time.Duration) {
 	}
 }
 
-func failApi(st *Status, now time.Time) {
+func failApi(st *Status, message string, now time.Time) {
 	st.VpsAdmin.Api.Status = false
+	st.VpsAdmin.Api.Maintenance = message == "Server under maintenance."
 
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {

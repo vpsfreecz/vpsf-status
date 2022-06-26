@@ -33,15 +33,20 @@ func spawnHttpCheck(ws *WebService, checkInterval time.Duration) {
 			defer resp.Body.Close()
 
 			ws.StatusCode = resp.StatusCode
-			ws.StatusString = resp.Status
 
-			if resp.StatusCode != 200 {
-				log.Printf("Failed to check %s: got HTTP %s", ws.Label, resp.Status)
+			if resp.StatusCode == 200 {
+				ws.Status = true
+				ws.Maintenance = false
+				return
+			} else if resp.StatusCode == 503 {
 				ws.Status = false
+				ws.Maintenance = true
 				return
 			}
 
-			ws.Status = true
+			log.Printf("Failed to check %s: got HTTP %s", ws.Label, resp.Status)
+			ws.Status = false
+			ws.Maintenance = false
 		}()
 
 		time.Sleep(checkInterval)

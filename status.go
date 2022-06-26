@@ -89,15 +89,15 @@ type Services struct {
 }
 
 type WebService struct {
-	Label        string
-	Description  string
-	Url          string
-	CheckUrl     string
-	Method       string
-	Status       bool
-	StatusCode   int
-	StatusString string
-	LastCheck    time.Time
+	Label       string
+	Description string
+	Url         string
+	CheckUrl    string
+	Method      string
+	Status      bool
+	Maintenance bool
+	StatusCode  int
+	LastCheck   time.Time
 }
 
 type PingCheck struct {
@@ -254,9 +254,24 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 
 	ret := &json.Status{
 		VpsAdmin: json.VpsAdmin{
-			Api:     st.VpsAdmin.Api.Status,
-			Console: st.VpsAdmin.Console.Status,
-			Webui:   st.VpsAdmin.Webui.Status,
+			Api: json.WebService{
+				Label:       st.VpsAdmin.Api.Label,
+				Description: st.VpsAdmin.Api.Description,
+				Url:         st.VpsAdmin.Api.Url,
+				Status:      st.VpsAdmin.Api.StatusString(),
+			},
+			Console: json.WebService{
+				Label:       st.VpsAdmin.Console.Label,
+				Description: st.VpsAdmin.Console.Description,
+				Url:         st.VpsAdmin.Console.Url,
+				Status:      st.VpsAdmin.Console.StatusString(),
+			},
+			Webui: json.WebService{
+				Label:       st.VpsAdmin.Webui.Label,
+				Description: st.VpsAdmin.Webui.Description,
+				Url:         st.VpsAdmin.Webui.Url,
+				Status:      st.VpsAdmin.Webui.StatusString(),
+			},
 		},
 		OutageReports: json.OutageReports{
 			Status:    outages.Status,
@@ -334,7 +349,7 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Label:       ws.Label,
 			Description: ws.Description,
 			Url:         ws.Url,
-			Status:      ws.Status,
+			Status:      ws.StatusString(),
 		}
 	}
 
@@ -363,6 +378,16 @@ func (r *DnsResolver) IsOperational() bool {
 
 func (r *DnsResolver) IsDegraded() bool {
 	return r.ResolveStatus && r.Ping.PacketLoss > 20 && r.Ping.PacketLoss < 100
+}
+
+func (ws *WebService) StatusString() string {
+	if ws.Status {
+		return "operational"
+	} else if ws.Maintenance {
+		return "maintenance"
+	} else {
+		return "down"
+	}
 }
 
 func (pc *PingCheck) IsUp() bool {

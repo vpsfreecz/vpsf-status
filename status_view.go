@@ -35,6 +35,7 @@ type ServicesView struct {
 	Count              int
 	WebUp              int
 	WebCount           int
+	WebDegraded        bool
 	NameServerUp       int
 	NameServerCount    int
 	NameServerDegraded bool
@@ -58,7 +59,7 @@ func createVpsAdminView(vpsa VpsAdmin) VpsAdminView {
 
 	ret.TotalUp = 0
 	for _, ws := range []*WebService{vpsa.Api, vpsa.Webui, vpsa.Console} {
-		if ws.Status {
+		if ws.Status || ws.Maintenance {
 			ret.TotalUp += 1
 		}
 	}
@@ -68,6 +69,22 @@ func createVpsAdminView(vpsa VpsAdmin) VpsAdminView {
 
 func (vpsa *VpsAdminView) IsOperational() bool {
 	return vpsa.Api.Status && vpsa.Webui.Status && vpsa.Console.Status
+}
+
+func (vpsa *VpsAdminView) IsDegraded() bool {
+	degraded := false
+
+	for _, ws := range []*WebService{vpsa.Api, vpsa.Webui, vpsa.Console} {
+		if !ws.Status && !ws.Maintenance {
+			return false
+		}
+
+		if ws.Maintenance {
+			degraded = true
+		}
+	}
+
+	return degraded
 }
 
 func createLocationView(locations []*Location) []LocationView {
@@ -176,6 +193,9 @@ func createServicesView(services *Services) ServicesView {
 	for _, ws := range ret.Web {
 		if ws.Status {
 			ret.WebUp += 1
+		} else if ws.Maintenance {
+			ret.WebUp += 1
+			ret.WebDegraded = true
 		}
 	}
 	ret.WebCount = len(ret.Web)
@@ -194,7 +214,7 @@ func createServicesView(services *Services) ServicesView {
 	ret.Up = ret.WebUp + ret.NameServerUp
 	ret.Count = ret.WebCount + ret.NameServerCount
 
-	if ret.NameServerDegraded {
+	if ret.WebDegraded || ret.NameServerDegraded {
 		ret.Degraded = true
 	}
 
@@ -210,7 +230,11 @@ func (s *ServicesView) IsDegraded() bool {
 }
 
 func (s *ServicesView) IsWebOperational() bool {
-	return s.WebUp == s.WebCount
+	return s.WebUp == s.WebCount && !s.WebDegraded
+}
+
+func (s *ServicesView) IsWebDegraded() bool {
+	return s.WebUp == s.WebCount && s.WebDegraded
 }
 
 func (s *ServicesView) IsNameServerOperational() bool {
