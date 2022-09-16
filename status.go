@@ -64,10 +64,15 @@ type Node struct {
 	Name       string
 	LocationId int
 	IpAddress  string
+	OsType     string
 
 	ApiStatus      bool
 	ApiMaintenance bool
 	LastApiCheck   time.Time
+
+	PoolState  string
+	PoolScan   string
+	PoolStatus bool
 
 	Ping *PingCheck
 }
@@ -327,9 +332,13 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 				Id:          node.Id,
 				Name:        node.Name,
 				LocationId:  node.LocationId,
+				OsType:      node.OsType,
 				VpsAdmin:    node.ApiStatus,
 				Ping:        node.Ping.StatusString(),
 				Maintenance: node.ApiMaintenance,
+				PoolState:   node.PoolState,
+				PoolScan:    node.PoolScan,
+				PoolStatus:  node.PoolStatus,
 			}
 		}
 
@@ -365,11 +374,75 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 }
 
 func (n *Node) IsOperational() bool {
-	return n.ApiStatus && n.Ping.PacketLoss <= 20
+	return n.ApiStatus && n.IsStorageOperational() && n.Ping.PacketLoss <= 20
 }
 
 func (n *Node) IsDegraded() bool {
-	return n.ApiStatus && n.Ping.PacketLoss > 20 && n.Ping.PacketLoss < 100
+	return n.ApiStatus && n.PoolStatus && (n.IsStorageDegraded() || (n.Ping.PacketLoss > 20 && n.Ping.PacketLoss < 100))
+}
+
+func (n *Node) IsStorageSupported() bool {
+	return n.OsType == "vpsadminos"
+}
+
+func (n *Node) IsStorageOperational() bool {
+	if !n.IsStorageSupported() {
+		return true
+	}
+
+	return n.PoolStatus && n.PoolState == "online" && n.PoolScan == "none"
+}
+
+func (n *Node) IsStorageDegraded() bool {
+	if !n.IsStorageSupported() {
+		return false
+	}
+
+	return n.PoolStatus && (n.PoolState != "online" || n.PoolScan != "none")
+}
+
+func (n *Node) IsStorageStateIssue() bool {
+	return n.PoolState != "online"
+}
+
+func (n *Node) IsStorageScanIssue() bool {
+	return n.PoolScan != "none"
+}
+
+func (n *Node) GetStorageStateMessage() string {
+	if !n.PoolStatus {
+		return "Unable to determine storage status"
+	}
+
+	switch n.PoolState {
+	case "online":
+		return "Storage is online"
+	case "degraded":
+		return "One or more disks have failed, storage continues to function"
+	case "suspended":
+		return "Storage not operational"
+	case "faulted":
+		return "Storage not operational"
+	default:
+		return "Storage is in a unknown state"
+	}
+}
+
+func (n *Node) GetStorageScanMessage() string {
+	if !n.PoolStatus {
+		return "Unable to determine storage status"
+	}
+
+	switch n.PoolScan {
+	case "none":
+		return "Not running"
+	case "scrub":
+		return "Storage is being scrubbed to check data integrity"
+	case "resilver":
+		return "Storage is being resilvered to replace disks"
+	default:
+		return "Storage scan is in a unknown state"
+	}
 }
 
 func (r *DnsResolver) IsOperational() bool {

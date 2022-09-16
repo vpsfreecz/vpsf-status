@@ -188,6 +188,8 @@
 											<tr>
 												<th>Node</th>
 												<th>vpsAdmin</th>
+												<th>Storage</th>
+												<th>Data</th>
 												<th>Ping</th>
 											</tr>
 										</thead>
@@ -204,6 +206,28 @@
 														{{ end }}
 													{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.IsStorageOperational }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else if $node.IsStorageStateIssue }}
+													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+													{{ else if $node.PoolStatus }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.IsStorageOperational }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else if $node.IsStorageScanIssue }}
+													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ else if $node.PoolStatus }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
 													{{ end }}
 												</td>
 												<td>
@@ -227,6 +251,8 @@
 											<tr>
 												<th>Node</th>
 												<th>vpsAdmin</th>
+												<th>Storage</th>
+												<th>Data</th>
 												<th>Ping</th>
 											</tr>
 										</thead>
@@ -243,6 +269,28 @@
 														{{ end }}
 													{{ else }}
 														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.IsStorageOperational }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else if $node.IsStorageStateIssue }}
+													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+													{{ else if $node.PoolStatus }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+													{{ end }}
+												</td>
+												<td>
+													{{ if $node.IsStorageOperational }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else if $node.IsStorageScanIssue }}
+													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ else if $node.PoolStatus }}
+													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													{{ else }}
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
 													{{ end }}
 												</td>
 												<td>

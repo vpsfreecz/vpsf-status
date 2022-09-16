@@ -61,22 +61,37 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 
 	stNode.LastApiCheck = now
 	stNode.LocationId = int(apiNode.Location.Id)
+	stNode.OsType = apiNode.HypervisorType
+
+	stNode.PoolState = apiNode.PoolState
+	stNode.PoolScan = apiNode.PoolScan
 
 	if apiNode.MaintenanceLock != "no" {
 		stNode.ApiStatus = true
 		stNode.ApiMaintenance = true
+		stNode.PoolStatus = true
 		return
 	}
 
 	stNode.ApiMaintenance = false
+	stNode.ApiStatus = false
+	stNode.PoolStatus = false
 
-	lastReport, err := time.Parse("2006-01-02T15:04:05Z", apiNode.LastReport)
+	nodeLastReport, err := time.Parse("2006-01-02T15:04:05Z", apiNode.LastReport)
 	if err != nil {
 		log.Printf("Unable to parse node last_report of %v", apiNode.LastReport)
-		stNode.ApiStatus = false
 		return
 	}
 
-	diff := now.Sub(lastReport)
-	stNode.ApiStatus = diff <= (150 * time.Second)
+	nodeDiff := now.Sub(nodeLastReport)
+	stNode.ApiStatus = nodeDiff <= (150 * time.Second)
+
+	poolLastReport, err := time.Parse("2006-01-02T15:04:05Z", apiNode.PoolCheckedAt)
+	if err != nil {
+		log.Printf("Unable to parse node pool_checked_at of %v", apiNode.PoolCheckedAt)
+		return
+	}
+
+	poolDiff := now.Sub(poolLastReport)
+	stNode.PoolStatus = poolDiff <= (150 * time.Second)
 }
