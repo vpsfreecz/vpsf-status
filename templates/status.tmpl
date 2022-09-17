@@ -218,7 +218,9 @@
 													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
 													{{ end }}
 
-													{{ if $node.IsStorageScanIssue }}
+													{{ if $node.IsStorageScrubIssue }}
+													<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ else if $node.IsStorageResilverIssue }}
 													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
 													{{ end }}
 												</td>
@@ -273,7 +275,9 @@
 													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
 													{{ end }}
 
-													{{ if $node.IsStorageScanIssue }}
+													{{ if $node.IsStorageScrubIssue }}
+													<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ else if $node.IsStorageResilverIssue }}
 													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
 													{{ end }}
 												</td>

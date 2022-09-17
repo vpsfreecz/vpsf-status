@@ -405,8 +405,12 @@ func (n *Node) IsStorageStateIssue() bool {
 	return n.PoolState != "online"
 }
 
-func (n *Node) IsStorageScanIssue() bool {
-	return n.PoolScan == "scrub" || n.PoolScan == "resilver"
+func (n *Node) IsStorageScrubIssue() bool {
+	return n.PoolScan == "scrub"
+}
+
+func (n *Node) IsStorageResilverIssue() bool {
+	return n.PoolScan == "resilver"
 }
 
 func (n *Node) GetStorageStateMessage() string {
