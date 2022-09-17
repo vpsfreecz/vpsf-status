@@ -406,7 +406,7 @@ func (n *Node) IsStorageStateIssue() bool {
 }
 
 func (n *Node) IsStorageScanIssue() bool {
-	return n.PoolScan != "none"
+	return n.PoolScan == "scrub" || n.PoolScan == "resilver"
 }
 
 func (n *Node) GetStorageStateMessage() string {
