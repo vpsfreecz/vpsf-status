@@ -390,7 +390,7 @@ func (n *Node) IsStorageOperational() bool {
 		return true
 	}
 
-	return n.PoolStatus && n.PoolState == "online" && n.PoolScan == "none"
+	return n.ApiStatus && n.PoolStatus && n.PoolState == "online" && n.PoolScan == "none"
 }
 
 func (n *Node) IsStorageDegraded() bool {
@@ -398,7 +398,7 @@ func (n *Node) IsStorageDegraded() bool {
 		return false
 	}
 
-	return n.PoolStatus && (n.PoolState != "online" || n.PoolScan != "none")
+	return n.ApiStatus && n.PoolStatus && (n.PoolState != "online" || n.PoolScan != "none")
 }
 
 func (n *Node) IsStorageStateIssue() bool {
