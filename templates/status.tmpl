@@ -61,9 +61,9 @@
 					<td>{{ $outage.Duration }}</td>
 					<td>
 						{{ if $outage.Planned }}
-						<i class="bi bi-check-lg text-success" aria-label="Planned maintenance"></i>
+						<i class="bi bi-check-lg text-success" aria-label="Planned maintenance" title="Planned maintenance"></i>
 						{{ else }}
-						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage"></i>
+						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage" title="Outage"></i>
 						{{ end }}
 					</td>
 					<td>
@@ -121,11 +121,11 @@
 									<td>Main web interface for vpsAdmin</td>
 									<td>
 										{{ if .Status.VpsAdmin.Webui.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 										{{ else if .Status.VpsAdmin.Webui.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -134,11 +134,11 @@
 									<td>HTTP API server</td>
 									<td>
 										{{ if .Status.VpsAdmin.Api.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 										{{ else if .Status.VpsAdmin.Api.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -147,11 +147,11 @@
 									<td>Interface for VPS remote console</td>
 									<td>
 										{{ if .Status.VpsAdmin.Console.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 										{{ else if .Status.VpsAdmin.Console.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -199,25 +199,25 @@
 												<td>
 													{{ if $node.ApiStatus }}
 														{{ if $node.ApiMaintenance }}
-														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 														{{ else }}
-														<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 														{{ end }}
 													{{ else }}
-														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 													{{ end }}
 												</td>
 												<td>
 													{{ if not $node.IsStorageSupported }}
 													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
 													{{ else if $node.IsStorageOperational }}
-													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
 													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
 													{{ else if $node.PoolStatus }}
-													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 													{{ end }}
 
 													{{ if $node.IsStorageScrubIssue }}
@@ -228,11 +228,11 @@
 												</td>
 												<td>
 													{{ if $node.Ping.IsUp }}
-													<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
 													{{ else if $node.Ping.IsWarning }}
-													<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+													<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
 													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 													{{ end }}
 												</td>
 											</tr>
@@ -258,25 +258,25 @@
 												<td>
 													{{ if $node.ApiStatus }}
 														{{ if $node.ApiMaintenance }}
-														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 														{{ else }}
-														<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+														<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 														{{ end }}
 													{{ else }}
-														<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+														<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 													{{ end }}
 												</td>
 												<td>
 													{{ if not $node.IsStorageSupported }}
 													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
 													{{ else if $node.IsStorageOperational }}
-													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
 													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
 													{{ else if $node.PoolStatus }}
-													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 													{{ end }}
 
 													{{ if $node.IsStorageScrubIssue }}
@@ -287,11 +287,11 @@
 												</td>
 												<td>
 													{{ if $node.Ping.IsUp }}
-													<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+													<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
 													{{ else if $node.Ping.IsWarning }}
-													<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+													<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
 													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+													<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 													{{ end }}
 												</td>
 											</tr>
@@ -328,18 +328,18 @@
 									<td>{{ $dns.Name }}</td>
 									<td>
 										{{ if $dns.Ping.IsUp }}
-										<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
 										{{ else if $dns.Ping.IsWarning }}
-										<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 									<td>
 										{{ if $dns.ResolveStatus }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -386,11 +386,11 @@
 									<td>{{ $ws.Description }}</td>
 									<td>
 										{{ if $ws.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else if $ws.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -423,18 +423,18 @@
 									<td>{{ $ns.Name }}</td>
 									<td>
 										{{ if $ns.Ping.IsUp }}
-										<i class="bi bi-check-lg text-success" aria-label="Responding"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
 										{{ else if $ns.Ping.IsWarning }}
-										<i class="bi bi-question-circle text-warning" aria-label="Degraded"></i>
+										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
 									<td>
 										{{ if $ns.ResolveStatus }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Error"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 										{{ end }}
 									</td>
 								</tr>
