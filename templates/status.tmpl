@@ -208,7 +208,9 @@
 													{{ end }}
 												</td>
 												<td>
-													{{ if $node.IsStorageOperational }}
+													{{ if not $node.IsStorageSupported }}
+													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+													{{ else if $node.IsStorageOperational }}
 													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
 													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
@@ -265,7 +267,9 @@
 													{{ end }}
 												</td>
 												<td>
-													{{ if $node.IsStorageOperational }}
+													{{ if not $node.IsStorageSupported }}
+													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+													{{ else if $node.IsStorageOperational }}
 													<i class="bi bi-check-lg text-success" aria-label="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
 													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
