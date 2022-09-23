@@ -65,6 +65,7 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 
 	stNode.PoolState = apiNode.PoolState
 	stNode.PoolScan = apiNode.PoolScan
+	stNode.PoolScanPercent = apiNode.PoolScanPercent
 
 	if apiNode.MaintenanceLock != "no" {
 		stNode.ApiStatus = true

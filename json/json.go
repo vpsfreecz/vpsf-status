@@ -61,16 +61,17 @@ type Location struct {
 }
 
 type Node struct {
-	Id          int    `json:"id"`
-	Name        string `json:"name"`
-	LocationId  int    `json:"location_id"`
-	OsType      string `json:"os_type"`
-	VpsAdmin    bool   `json:"vpsadmin"`
-	Ping        string `json:"ping"`
-	Maintenance bool   `json:"maintenance"`
-	PoolState   string `json:"pool_state"`
-	PoolScan    string `json:"pool_scan"`
-	PoolStatus  bool   `json:"pool_status"`
+	Id              int     `json:"id"`
+	Name            string  `json:"name"`
+	LocationId      int     `json:"location_id"`
+	OsType          string  `json:"os_type"`
+	VpsAdmin        bool    `json:"vpsadmin"`
+	Ping            string  `json:"ping"`
+	Maintenance     bool    `json:"maintenance"`
+	PoolState       string  `json:"pool_state"`
+	PoolScan        string  `json:"pool_scan"`
+	PoolScanPercent float64 `json:"pool_scan_percent"`
+	PoolStatus      bool    `json:"pool_status"`
 }
 
 type DnsResolver struct {

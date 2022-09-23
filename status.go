@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
@@ -70,9 +71,10 @@ type Node struct {
 	ApiMaintenance bool
 	LastApiCheck   time.Time
 
-	PoolState  string
-	PoolScan   string
-	PoolStatus bool
+	PoolState       string
+	PoolScan        string
+	PoolScanPercent float64
+	PoolStatus      bool
 
 	Ping *PingCheck
 }
@@ -329,16 +331,17 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 
 		for iNode, node := range loc.NodeList {
 			jsonLoc.Nodes[iNode] = json.Node{
-				Id:          node.Id,
-				Name:        node.Name,
-				LocationId:  node.LocationId,
-				OsType:      node.OsType,
-				VpsAdmin:    node.ApiStatus,
-				Ping:        node.Ping.StatusString(),
-				Maintenance: node.ApiMaintenance,
-				PoolState:   node.PoolState,
-				PoolScan:    node.PoolScan,
-				PoolStatus:  node.PoolStatus,
+				Id:              node.Id,
+				Name:            node.Name,
+				LocationId:      node.LocationId,
+				OsType:          node.OsType,
+				VpsAdmin:        node.ApiStatus,
+				Ping:            node.Ping.StatusString(),
+				Maintenance:     node.ApiMaintenance,
+				PoolState:       node.PoolState,
+				PoolScan:        node.PoolScan,
+				PoolScanPercent: node.PoolScanPercent,
+				PoolStatus:      node.PoolStatus,
 			}
 		}
 
@@ -441,9 +444,9 @@ func (n *Node) GetStorageScanMessage() string {
 	case "none":
 		return "Not running"
 	case "scrub":
-		return "Storage is being scrubbed to check data integrity"
+		return fmt.Sprintf("Storage is being scrubbed to check data integrity, %.1f %% done", n.PoolScanPercent)
 	case "resilver":
-		return "Storage is being resilvered to replace disks"
+		return fmt.Sprintf("Storage is being resilvered to replace disks, %.1f %% done", n.PoolScanPercent)
 	default:
 		return "Storage scan is in a unknown state"
 	}
