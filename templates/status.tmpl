@@ -210,6 +210,8 @@
 												<td>
 													{{ if not $node.IsStorageSupported }}
 													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+													{{ else if $node.ApiMaintenance }}
+													<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 													{{ else if $node.IsStorageOperational }}
 													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
@@ -220,10 +222,12 @@
 													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 													{{ end }}
 
-													{{ if $node.IsStorageScrubIssue }}
-													<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-													{{ else if $node.IsStorageResilverIssue }}
-													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ if not $node.ApiMaintenance }}
+														{{ if $node.IsStorageScrubIssue }}
+														<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+														{{ else if $node.IsStorageResilverIssue }}
+														<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+														{{ end }}
 													{{ end }}
 												</td>
 												<td>
@@ -269,6 +273,8 @@
 												<td>
 													{{ if not $node.IsStorageSupported }}
 													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+													{{ else if $node.ApiMaintenance }}
+													<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
 													{{ else if $node.IsStorageOperational }}
 													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
 													{{ else if $node.IsStorageStateIssue }}
@@ -279,10 +285,12 @@
 													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 													{{ end }}
 
-													{{ if $node.IsStorageScrubIssue }}
-													<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-													{{ else if $node.IsStorageResilverIssue }}
-													<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+													{{ if not $node.ApiMaintenance }}
+														{{ if $node.IsStorageScrubIssue }}
+														<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+														{{ else if $node.IsStorageResilverIssue }}
+														<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+														{{ end }}
 													{{ end }}
 												</td>
 												<td>
