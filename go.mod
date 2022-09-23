@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/go-ping/ping v1.1.0
-	github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20220916175116-3db6e03e713c
+	github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20220923124036-56f3c9c0434a
 )
 
 require (
