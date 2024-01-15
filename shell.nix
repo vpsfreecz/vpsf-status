@@ -2,6 +2,6 @@
 pkgs.mkShell {
   nativeBuildInputs = with pkgs; [
     gnumake
-    go_1_17
+    go
   ];
 }
