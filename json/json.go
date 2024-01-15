@@ -31,6 +31,7 @@ type VpsAdmin struct {
 type OutageReports struct {
 	Status    bool           `json:"status"`
 	Announced []OutageReport `json:"announced"`
+	Recent    []OutageReport `json:"recent"`
 }
 
 type OutageReport struct {

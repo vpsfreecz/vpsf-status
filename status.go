@@ -25,11 +25,15 @@ type VpsAdmin struct {
 }
 
 type OutageReports struct {
-	Status         bool
-	List           []*OutageReport
-	Any            bool
-	AnyMaintenance bool
-	AnyOutage      bool
+	Status               bool
+	ActiveList           []*OutageReport
+	RecentList           []*OutageReport
+	AnyActive            bool
+	AnyActiveMaintenance bool
+	AnyActiveOutage      bool
+	AnyRecent            bool
+	AnyRecentMaintenance bool
+	AnyRecentOutage      bool
 }
 
 type OutageReport struct {
@@ -124,7 +128,8 @@ func openConfig(cfg *config.Config) *Status {
 			NameServer: make([]*DnsResolver, len(cfg.NameServers)),
 		},
 		OutageReports: &OutageReports{
-			List: make([]*OutageReport, 0),
+			ActiveList: make([]*OutageReport, 0),
+			RecentList: make([]*OutageReport, 0),
 		},
 	}
 
@@ -282,7 +287,8 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 		},
 		OutageReports: json.OutageReports{
 			Status:    outages.Status,
-			Announced: make([]json.OutageReport, len(outages.List)),
+			Announced: make([]json.OutageReport, len(outages.ActiveList)),
+			Recent:    make([]json.OutageReport, len(outages.RecentList)),
 		},
 		Locations:   make([]json.Location, len(st.LocationList)),
 		WebServices: make([]json.WebService, len(st.Services.Web)),
@@ -295,7 +301,7 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 		GeneratedAt: now,
 	}
 
-	for iOutage, outage := range outages.List {
+	for iOutage, outage := range outages.ActiveList {
 		jsonOutage := json.OutageReport{
 			Id:            outage.Id,
 			BeginsAt:      outage.BeginsAt,
@@ -319,6 +325,32 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 		}
 
 		ret.OutageReports.Announced[iOutage] = jsonOutage
+	}
+
+	for iOutage, outage := range outages.RecentList {
+		jsonOutage := json.OutageReport{
+			Id:            outage.Id,
+			BeginsAt:      outage.BeginsAt,
+			Duration:      int(outage.Duration.Minutes()),
+			Planned:       outage.Planned,
+			State:         outage.State,
+			Type:          outage.Type,
+			CsSummary:     outage.CsSummary,
+			CsDescription: outage.CsDescription,
+			EnSummary:     outage.EnSummary,
+			EnDescription: outage.EnDescription,
+			Entities:      make([]json.OutageEntity, len(outage.AffectedEntities)),
+		}
+
+		for iEnt, ent := range outage.AffectedEntities {
+			jsonOutage.Entities[iEnt] = json.OutageEntity{
+				Name:  ent.Name,
+				Id:    ent.Id,
+				Label: ent.Label,
+			}
+		}
+
+		ret.OutageReports.Recent[iOutage] = jsonOutage
 	}
 
 	for iLoc, loc := range st.LocationList {

@@ -15,7 +15,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 		list := api.Outage.Index.Prepare()
 
 		input := list.NewInput()
-		input.SetState("announced")
+		input.SetRecentSince(time.Now().AddDate(0, 0, -2).Format(time.RFC3339))
 		input.SetOrder("oldest")
 		input.SetLimit(5)
 
@@ -34,8 +34,9 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 		}
 
 		reports := &OutageReports{
-			Status: true,
-			List:   make([]*OutageReport, 0),
+			Status:     true,
+			ActiveList: make([]*OutageReport, 0),
+			RecentList: make([]*OutageReport, 0),
 		}
 
 		for _, outage := range resp.Output {
@@ -63,15 +64,27 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 				log.Printf("Unable to fetch entities of outage #%d: %+v", v.Id, err)
 			}
 
-			reports.Any = true
+			if v.State == "announced" {
+				reports.AnyActive = true
 
-			if v.Planned {
-				reports.AnyMaintenance = true
+				if v.Planned {
+					reports.AnyActiveMaintenance = true
+				} else {
+					reports.AnyActiveOutage = true
+				}
+
+				reports.ActiveList = append(reports.ActiveList, &v)
 			} else {
-				reports.AnyOutage = true
-			}
+				reports.AnyRecent = true
 
-			reports.List = append(reports.List, &v)
+				if v.Planned {
+					reports.AnyRecentMaintenance = true
+				} else {
+					reports.AnyRecentOutage = true
+				}
+
+				reports.RecentList = append(reports.RecentList, &v)
+			}
 		}
 
 		st.OutageReports = reports
