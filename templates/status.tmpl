@@ -46,9 +46,9 @@
 				<tr>
 					<th>Date</th>
 					<th>Duration</th>
-					<th>Planned</th>
-					<th>Systems</th>
 					<th>Type</th>
+					<th>Systems</th>
+					<th>Impact</th>
 					<th>Reason</th>
 					<th>Link</th>
 				</tr>
@@ -56,12 +56,12 @@
 			<tbody>
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.ActiveList }}
-				<tr class="table-{{ if $outage.Planned }}warning{{ else }}danger{{ end }}">
+				<tr class="table-{{ if $outage.IsMaintenance }}warning{{ else }}danger{{ end }}">
 					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
 					<td>{{ $outage.Duration }}</td>
 					<td>
-						{{ if $outage.Planned }}
-						<i class="bi bi-check-lg text-success" aria-label="Planned maintenance" title="Planned maintenance"></i>
+						{{ if $outage.IsMaintenance }}
+						<i class="bi bi-check-lg text-success" aria-label="Maintenance" title="Maintenance"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage" title="Outage"></i>
 						{{ end }}
@@ -69,7 +69,7 @@
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.Type }}</td>
+					<td>{{ $outage.Impact }}</td>
 					<td>{{ $outage.EnSummary }}</td>
 					<td>
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
@@ -94,9 +94,9 @@
 				<tr>
 					<th>Date</th>
 					<th>Duration</th>
-					<th>Planned</th>
-					<th>Systems</th>
 					<th>Type</th>
+					<th>Systems</th>
+					<th>Impact</th>
 					<th>Reason</th>
 					<th>Link</th>
 				</tr>
@@ -104,12 +104,12 @@
 			<tbody>
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.RecentList }}
-				<tr class="table-{{ if $outage.Planned }}warning{{ else }}danger{{ end }}">
+				<tr class="table-{{ if $outage.IsMaintenance }}warning{{ else }}danger{{ end }}">
 					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
 					<td>{{ $outage.Duration }}</td>
 					<td>
-						{{ if $outage.Planned }}
-						<i class="bi bi-check-lg text-success" aria-label="Planned maintenance" title="Planned maintenance"></i>
+						{{ if $outage.IsMaintenance }}
+						<i class="bi bi-check-lg text-success" aria-label="Maintenance" title="Maintenance"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage" title="Outage"></i>
 						{{ end }}
@@ -117,7 +117,7 @@
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.Type }}</td>
+					<td>{{ $outage.Impact }}</td>
 					<td>{{ $outage.EnSummary }}</td>
 					<td>
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>

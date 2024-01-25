@@ -43,9 +43,9 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 			v := OutageReport{
 				Id:               outage.Id,
 				Duration:         time.Duration(outage.Duration) * time.Minute,
-				Planned:          outage.Planned,
-				State:            outage.State,
 				Type:             outage.Type,
+				State:            outage.State,
+				Impact:           outage.Impact,
 				CsSummary:        outage.CsSummary,
 				CsDescription:    outage.CsDescription,
 				EnSummary:        outage.EnSummary,
@@ -67,7 +67,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 			if v.State == "announced" {
 				reports.AnyActive = true
 
-				if v.Planned {
+				if v.Type == "maintenance" {
 					reports.AnyActiveMaintenance = true
 				} else {
 					reports.AnyActiveOutage = true
@@ -77,7 +77,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 			} else {
 				reports.AnyRecent = true
 
-				if v.Planned {
+				if v.Type == "maintenance" {
 					reports.AnyRecentMaintenance = true
 				} else {
 					reports.AnyRecentOutage = true

@@ -38,9 +38,9 @@ type OutageReport struct {
 	Id            int64          `json:"id"`
 	BeginsAt      time.Time      `json:"begins_at"`
 	Duration      int            `json:"duration"`
-	Planned       bool           `json:"planned"`
-	State         string         `json:"state"`
 	Type          string         `json:"type"`
+	State         string         `json:"state"`
+	Impact        string         `json:"impact"`
 	CsSummary     string         `json:"cs_summary"`
 	CsDescription string         `json:"cs_description"`
 	EnSummary     string         `json:"en_summary"`

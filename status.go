@@ -40,9 +40,9 @@ type OutageReport struct {
 	Id               int64
 	BeginsAt         time.Time
 	Duration         time.Duration
-	Planned          bool
-	State            string
 	Type             string
+	State            string
+	Impact           string
 	CsSummary        string
 	CsDescription    string
 	EnSummary        string
@@ -306,9 +306,9 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Id:            outage.Id,
 			BeginsAt:      outage.BeginsAt,
 			Duration:      int(outage.Duration.Minutes()),
-			Planned:       outage.Planned,
-			State:         outage.State,
 			Type:          outage.Type,
+			State:         outage.State,
+			Impact:        outage.Impact,
 			CsSummary:     outage.CsSummary,
 			CsDescription: outage.CsDescription,
 			EnSummary:     outage.EnSummary,
@@ -332,9 +332,9 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Id:            outage.Id,
 			BeginsAt:      outage.BeginsAt,
 			Duration:      int(outage.Duration.Minutes()),
-			Planned:       outage.Planned,
-			State:         outage.State,
 			Type:          outage.Type,
+			State:         outage.State,
+			Impact:        outage.Impact,
 			CsSummary:     outage.CsSummary,
 			CsDescription: outage.CsDescription,
 			EnSummary:     outage.EnSummary,
@@ -406,6 +406,14 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 	}
 
 	return ret
+}
+
+func (r *OutageReport) IsMaintenance() bool {
+	return r.Type == "maintenance"
+}
+
+func (r *OutageReport) IsOutage() bool {
+	return r.Type == "outage"
 }
 
 func (n *Node) IsOperational() bool {
