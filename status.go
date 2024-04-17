@@ -236,6 +236,8 @@ func (st *Status) initialize(cfg *config.Config) {
 
 	time.Sleep(5 * time.Second)
 
+	go checkNoticeFile(st, cfg.NoticeFile, checkInterval)
+
 	go checkApi(st, checkInterval)
 	time.Sleep(1 * time.Second)
 

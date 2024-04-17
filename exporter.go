@@ -10,6 +10,7 @@ import (
 type Exporter struct {
 	registry            *prometheus.Registry
 	up                  prometheus.Gauge
+	notice              prometheus.Gauge
 	vpsAdminStatus      *prometheus.GaugeVec
 	nodeVpsAdminStatus  *prometheus.GaugeVec
 	nodePing            *prometheus.GaugeVec
@@ -31,6 +32,12 @@ func newExporter() *Exporter {
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_up",
 				Help: "1 = operational, 0 = initializing",
+			},
+		),
+		notice: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "vpsfstatus_notice",
+				Help: "0 = no issue reported, 1 = there is a notice",
 			},
 		),
 		vpsAdminStatus: prometheus.NewGaugeVec(
@@ -121,6 +128,7 @@ func newExporter() *Exporter {
 
 	exporter.registry.MustRegister(
 		exporter.up,
+		exporter.notice,
 		exporter.vpsAdminStatus,
 		exporter.nodeVpsAdminStatus,
 		exporter.nodePing,
