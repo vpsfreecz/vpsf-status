@@ -32,6 +32,7 @@ func main() {
 
 	http.HandleFunc("/", app.handleIndex)
 	http.HandleFunc("/json", app.handleJson)
+	http.Handle("/metrics", systemStatus.Exporter.httpHandler())
 	http.HandleFunc("/about", app.handleAbout)
 	http.Handle(
 		"/static/",

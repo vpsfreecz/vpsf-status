@@ -4,20 +4,35 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
-	go spawnHttpCheck(st.VpsAdmin.Webui, checkInterval)
-	go spawnHttpCheck(st.VpsAdmin.Console, checkInterval)
+	go spawnHttpCheck(
+		st.VpsAdmin.Webui,
+		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "webui"}),
+		checkInterval,
+	)
+
+	go spawnHttpCheck(
+		st.VpsAdmin.Console,
+		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "console"}),
+		checkInterval,
+	)
 }
 
 func checkWebServices(st *Status, checkInterval time.Duration) {
 	for _, ws := range st.Services.Web {
-		go spawnHttpCheck(ws, checkInterval)
+		go spawnHttpCheck(
+			ws,
+			st.Exporter.webServiceStatus.With(prometheus.Labels{"service": ws.Label}),
+			checkInterval,
+		)
 	}
 }
 
-func spawnHttpCheck(ws *WebService, checkInterval time.Duration) {
+func spawnHttpCheck(ws *WebService, gauge prometheus.Gauge, checkInterval time.Duration) {
 	for {
 		ws.LastCheck = time.Now()
 
@@ -37,16 +52,19 @@ func spawnHttpCheck(ws *WebService, checkInterval time.Duration) {
 			if resp.StatusCode == 200 {
 				ws.Status = true
 				ws.Maintenance = false
+				gauge.Set(0)
 				return
 			} else if resp.StatusCode == 503 {
 				ws.Status = false
 				ws.Maintenance = true
+				gauge.Set(1)
 				return
 			}
 
 			log.Printf("Failed to check %s: got HTTP %s", ws.Label, resp.Status)
 			ws.Status = false
 			ws.Maintenance = false
+			gauge.Set(2)
 		}()
 
 		time.Sleep(checkInterval)

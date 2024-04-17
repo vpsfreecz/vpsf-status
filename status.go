@@ -16,6 +16,7 @@ type Status struct {
 	LocationMap   map[string]*Location
 	GlobalNodeMap map[string]*Node
 	Services      *Services
+	Exporter      *Exporter
 }
 
 type VpsAdmin struct {
@@ -131,6 +132,7 @@ func openConfig(cfg *config.Config) *Status {
 			ActiveList: make([]*OutageReport, 0),
 			RecentList: make([]*OutageReport, 0),
 		},
+		Exporter: newExporter(),
 	}
 
 	st.VpsAdmin.Api = &WebService{
@@ -255,10 +257,14 @@ func (st *Status) initialize(cfg *config.Config) {
 	checkWebServices(st, checkInterval)
 	time.Sleep(1 * time.Second)
 
+	pingNameServers(st, checkInterval)
+	time.Sleep(1 * time.Second)
+
 	checkNameServers(st, checkInterval)
 
 	time.Sleep(5 * time.Second)
 	st.Initialized = true
+	st.Exporter.up.Set(1)
 }
 
 func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
