@@ -105,7 +105,7 @@ func fetchOutageEntities(api *client.Client, report *OutageReport) error {
 	if err != nil {
 		return err
 	} else if !resp.Status {
-		return fmt.Errorf("Failed to list outage entities: %s", resp.Message)
+		return fmt.Errorf("failed to list outage entities: %s", resp.Message)
 	}
 
 	for _, entity := range resp.Output {
