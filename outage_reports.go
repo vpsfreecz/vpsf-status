@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"slices"
 	"time"
 
 	"github.com/vpsfreecz/vpsadmin-go-client/client"
@@ -84,6 +85,8 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 
 				reports.RecentList = append(reports.RecentList, &v)
 			}
+
+			slices.Reverse(reports.RecentList)
 		}
 
 		st.OutageReports = reports
