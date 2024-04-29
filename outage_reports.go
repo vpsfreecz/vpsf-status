@@ -17,7 +17,6 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 		input := list.NewInput()
 		input.SetRecentSince(time.Now().AddDate(0, 0, -2).Format(time.RFC3339))
 		input.SetOrder("oldest")
-		input.SetLimit(5)
 
 		resp, err := list.Call()
 
