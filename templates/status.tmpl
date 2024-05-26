@@ -78,7 +78,8 @@
 				{{ end }}
 			</tbody>
 		</table>
-		{{ else if .Status.OutageReports.AnyRecent }}
+		{{ end }}
+		{{ if .Status.OutageReports.AnyRecent }}
 		<h2>
 			Resolved
 			{{ if and .Status.OutageReports.AnyRecentMaintenance .Status.OutageReports.AnyRecentOutage }}
@@ -126,13 +127,14 @@
 				{{ end }}
 			</tbody>
 		</table>
-		{{ else if .Status.OutageReports.Status }}
+		{{ end }}
+		{{ if and (.Status.OutageReports.Status) (not .Status.OutageReports.AnyActive) (not .Status.OutageReports.AnyRecent) }}
 			{{ if not .Notice.Any }}
 			<div class="alert alert-success">
 				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
 			</div>
 			{{ end }}
-		{{ else }}
+		{{ else if not .Status.OutageReports.Status }}
 		<div class="alert alert-danger" role="alert">
 			Unable to fetch outage reports from vpsAdmin.
 		</div>
