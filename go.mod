@@ -1,6 +1,6 @@
 module github.com/vpsfreecz/vpsf-status
 
-go 1.21
+go 1.22
 
 require (
 	github.com/go-ping/ping v1.1.0
