@@ -382,7 +382,7 @@
 							</thead>
 							<tbody>
 								{{ range $dns := $loc.DnsResolverList }}
-								<tr class="table-{{ if $dns.IsOperational }}success{{ else }}danger{{ end }}">
+								<tr class="table-{{ if $dns.IsOperational }}success{{ else if $dns.IsDegraded }}warning{{ else }}danger{{ end }}">
 									<td>{{ $dns.Name }}</td>
 									<td>
 										{{ if $dns.Ping.IsUp }}

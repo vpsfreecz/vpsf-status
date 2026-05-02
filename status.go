@@ -501,11 +501,11 @@ func (n *Node) GetStorageScanMessage() string {
 }
 
 func (r *DnsResolver) IsOperational() bool {
-	return r.ResolveStatus
+	return r.ResolveStatus && r.Ping.IsUp()
 }
 
 func (r *DnsResolver) IsDegraded() bool {
-	return r.ResolveStatus && r.Ping.PacketLoss > 20 && r.Ping.PacketLoss < 100
+	return r.ResolveStatus && r.Ping.IsWarning()
 }
 
 func (ws *WebService) StatusString() string {

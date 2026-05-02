@@ -9,6 +9,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+type pingResult struct {
+	PacketsSent int
+	PacketsRecv int
+	PacketLoss  float64
+}
+
+type pingRunner func(*PingCheck) (pingResult, error)
+
 func pingNodes(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {
@@ -50,45 +58,55 @@ func pingNameServers(st *Status, checkInterval time.Duration) {
 
 func spawnPingCheck(pc *PingCheck, gauge prometheus.Gauge, checkInterval time.Duration) {
 	for {
-		pinger, err := ping.NewPinger(pc.IpAddress)
-		if err != nil {
-			log.Printf("Unable to create pinger for %s: %+v", pc.Name, err)
-			pc.PacketLoss = 100
-			gauge.Set(2)
-			time.Sleep(checkInterval)
-			continue
-		}
-
-		pinger.Count = 5
-		pinger.Timeout = time.Duration(10 * time.Second)
-
-		pc.LastCheck = time.Now()
-
-		err = pinger.Run()
-		if err != nil {
-			log.Printf("Failed to ping resolver %s: %+v", pc.Name, err)
-			pc.PacketLoss = 100
-			gauge.Set(2)
-			time.Sleep(time.Duration(checkInterval) * time.Second)
-			continue
-		}
-
-		stats := pinger.Statistics()
-
-		if stats.PacketsSent == stats.PacketsRecv {
-			pc.PacketLoss = 0
-			gauge.Set(0)
-		} else {
-			log.Printf("Ping stats for %s: %+v", pc.Name, stats)
-			pc.PacketLoss = stats.PacketLoss
-
-			if pc.PacketLoss < 100 {
-				gauge.Set(1)
-			} else {
-				gauge.Set(2)
-			}
-		}
-
+		checkPingOnce(pc, gauge, runPing, time.Now())
 		time.Sleep(checkInterval)
 	}
+}
+
+func checkPingOnce(pc *PingCheck, gauge prometheus.Gauge, runner pingRunner, now time.Time) {
+	pc.LastCheck = now
+
+	stats, err := runner(pc)
+	if err != nil {
+		log.Printf("Failed to ping %s: %+v", pc.Name, err)
+		pc.PacketLoss = 100
+		gauge.Set(2)
+		return
+	}
+
+	if stats.PacketsSent == stats.PacketsRecv {
+		pc.PacketLoss = 0
+		gauge.Set(0)
+		return
+	}
+
+	log.Printf("Ping stats for %s: %+v", pc.Name, stats)
+	pc.PacketLoss = stats.PacketLoss
+
+	if pc.PacketLoss < 100 {
+		gauge.Set(1)
+	} else {
+		gauge.Set(2)
+	}
+}
+
+func runPing(pc *PingCheck) (pingResult, error) {
+	pinger, err := ping.NewPinger(pc.IpAddress)
+	if err != nil {
+		return pingResult{}, err
+	}
+
+	pinger.Count = 5
+	pinger.Timeout = 10 * time.Second
+
+	if err := pinger.Run(); err != nil {
+		return pingResult{}, err
+	}
+
+	stats := pinger.Statistics()
+	return pingResult{
+		PacketsSent: stats.PacketsSent,
+		PacketsRecv: stats.PacketsRecv,
+		PacketLoss:  stats.PacketLoss,
+	}, nil
 }
