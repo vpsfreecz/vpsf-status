@@ -1,6 +1,8 @@
 {
 	"listen_address": ":8080",
 	"data_dir": ".",
+	"history_dir": "/tmp/vpsf-status-history",
+	"history_days": 90,
 	"notice_file": "notice.html",
 	"vpsadmin": {
 		"api_url": "https://api.vpsfree.cz",
@@ -13,19 +15,43 @@
 			"label": "Praha",
 			"nodes": [
 				{
-					"id": 101,
-					"name": "node1.prg",
-					"ip_address": "172.16.0.10"
+					"id": 120,
+					"name": "node19.prg",
+					"ip_address": "172.16.0.29"
 				},
 				{
-					"id": 102,
-					"name": "node2.prg",
-					"ip_address": "172.16.0.11"
+					"id": 121,
+					"name": "node20.prg",
+					"ip_address": "172.16.0.30"
 				},
 				{
-					"id": 103,
-					"name": "node3.prg",
-					"ip_address": "172.16.0.11"
+					"id": 122,
+					"name": "node21.prg",
+					"ip_address": "172.16.0.31"
+				},
+				{
+					"id": 123,
+					"name": "node22.prg",
+					"ip_address": "172.16.0.32"
+				},
+				{
+					"id": 124,
+					"name": "node23.prg",
+					"ip_address": "172.16.0.33"
+				},
+				{
+					"id": 125,
+					"name": "node24.prg",
+					"ip_address": "172.16.0.34"
+				},
+				{
+					"id": 126,
+					"name": "node25.prg",
+					"ip_address": "172.16.0.35"
+				},
+				{
+					"name": "backuper2.prg",
+					"ip_address": "172.16.0.8"
 				},
 				{
 					"id": 400,
@@ -33,19 +59,23 @@
 					"ip_address": "172.16.0.66"
 				},
 				{
-					"id": 150,
-					"name": "backuper.prg",
-					"ip_address": "172.16.0.5"
+					"id": 401,
+					"name": "node2.stg",
+					"ip_address": "172.16.0.67"
+				},
+				{
+					"name": "node1.pgnd",
+					"ip_address": "172.16.2.10"
 				}
 			],
 			"dns_resolvers": [
 				{
-					"name": "google dns",
-					"ip_address": "8.8.8.8"
+					"name": "ns1.prg.vpsfree.cz",
+					"ip_address": "37.205.9.100"
 				},
 				{
-					"name": "cloudflare dns",
-					"ip_address": "1.1.1.1"
+					"name": "ns2.prg.vpsfree.cz",
+					"ip_address": "37.205.10.88"
 				}
 			]
 		},
@@ -54,12 +84,23 @@
 			"label": "Brno",
 			"nodes": [
 				{
-					"name": "node1.brq",
-					"ip_address": "172.19.0.10"
+					"name": "node5.brq",
+					"ip_address": "172.19.0.14"
 				},
 				{
-					"name": "node4.brq",
-					"ip_address": "172.19.0.13"
+					"id": 215,
+					"name": "node6.brq",
+					"ip_address": "172.19.0.15"
+				}
+			],
+			"dns_resolvers": [
+				{
+					"name": "ns1.brq.vpsfree.cz",
+					"ip_address": "37.205.11.200"
+				},
+				{
+					"name": "ns2.brq.vpsfree.cz",
+					"ip_address": "37.205.11.222"
 				}
 			]
 		}

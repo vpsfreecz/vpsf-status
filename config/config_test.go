@@ -79,7 +79,7 @@ func TestParseConfigSample(t *testing.T) {
 		t.Fatalf("ParseConfig sample: %v", err)
 	}
 
-	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" {
+	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" || cfg.HistoryDir != "/tmp/vpsf-status-history" || cfg.HistoryDays != 90 {
 		t.Fatalf("sample paths/listen values = %+v", cfg)
 	}
 	if cfg.VpsAdmin.ApiUrl == "" || cfg.VpsAdmin.WebuiUrl == "" || cfg.VpsAdmin.ConsoleUrl == "" {
@@ -88,8 +88,11 @@ func TestParseConfigSample(t *testing.T) {
 	if len(cfg.Locations) != 2 || len(cfg.WebServices) != 3 || len(cfg.NameServers) != 2 {
 		t.Fatalf("sample config counts = locations:%d web:%d nameservers:%d", len(cfg.Locations), len(cfg.WebServices), len(cfg.NameServers))
 	}
-	if cfg.Locations[0].Nodes[0].Id != 101 || cfg.Locations[0].Nodes[0].Name != "node1.prg" {
+	if cfg.Locations[0].Nodes[0].Id != 120 || cfg.Locations[0].Nodes[0].Name != "node19.prg" {
 		t.Fatalf("sample first node = %+v", cfg.Locations[0].Nodes[0])
+	}
+	if len(cfg.Locations[1].DnsResolvers) != 2 || cfg.Locations[1].DnsResolvers[0].Name != "ns1.brq.vpsfree.cz" || cfg.Locations[1].DnsResolvers[0].IpAddress != "37.205.11.200" {
+		t.Fatalf("sample Brno resolvers = %+v", cfg.Locations[1].DnsResolvers)
 	}
 }
 
