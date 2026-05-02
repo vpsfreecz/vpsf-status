@@ -957,8 +957,79 @@ func (hs *HistoryStore) ProbeEventsFor(kind string, id string, now time.Time, da
 	return ret
 }
 
+func (hs *HistoryStore) ProbeEventsForAvailability(kind string, id string, method string, start time.Time, end time.Time) []ProbeEvent {
+	if hs == nil || kind == "" || id == "" || method == "" || !start.Before(end) {
+		return nil
+	}
+
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+
+	ret := make([]ProbeEvent, 0)
+	row := hs.db.QueryRow(`
+		SELECT entity_kind, entity_id, entity_label, method, status, message, changed_at
+		FROM probe_events
+		WHERE entity_kind = ? AND entity_id = ? AND method = ? AND changed_at < ?
+		ORDER BY changed_at DESC, id DESC
+		LIMIT 1
+	`, kind, id, method, formatHistoryTime(start))
+	if event, err := scanProbeEvent(row); err == nil {
+		ret = append(ret, event)
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return nil
+	}
+
+	rows, err := hs.db.Query(`
+		SELECT entity_kind, entity_id, entity_label, method, status, message, changed_at
+		FROM probe_events
+		WHERE entity_kind = ? AND entity_id = ? AND method = ? AND changed_at >= ? AND changed_at <= ?
+		ORDER BY changed_at ASC, id ASC
+	`, kind, id, method, formatHistoryTime(start), formatHistoryTime(end))
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		event, err := scanProbeEvent(rows)
+		if err != nil {
+			return nil
+		}
+		ret = append(ret, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+
+	return ret
+}
+
 type scanner interface {
 	Scan(dest ...any) error
+}
+
+func scanProbeEvent(row scanner) (ProbeEvent, error) {
+	var changedAt string
+	event := ProbeEvent{}
+	if err := row.Scan(
+		&event.EntityKind,
+		&event.EntityID,
+		&event.EntityLabel,
+		&event.Method,
+		&event.Status,
+		&event.Message,
+		&changedAt,
+	); err != nil {
+		return ProbeEvent{}, err
+	}
+
+	t, err := parseHistoryTime(changedAt)
+	if err != nil {
+		return ProbeEvent{}, err
+	}
+	event.ChangedAt = t
+	return event, nil
 }
 
 func scanProbeState(row scanner) (ProbeState, error) {

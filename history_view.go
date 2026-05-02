@@ -70,6 +70,9 @@ type historyEntityMapping struct {
 	locationTextNodeKeys    map[string][]string
 	environmentIDNodeKeys   map[int64][]string
 	environmentTextNodeKeys map[string][]string
+	dnsResolverTextKeys     map[string]string
+	nameServerTextKeys      map[string]string
+	webServiceTextKeys      map[string]string
 	allNodeKeys             []string
 	archivedNodes           map[string]historyArchivedNode
 }
@@ -560,6 +563,9 @@ func newHistoryEntityMapping(st *Status) *historyEntityMapping {
 		locationTextNodeKeys:    make(map[string][]string),
 		environmentIDNodeKeys:   make(map[int64][]string),
 		environmentTextNodeKeys: make(map[string][]string),
+		dnsResolverTextKeys:     make(map[string]string),
+		nameServerTextKeys:      make(map[string]string),
+		webServiceTextKeys:      make(map[string]string),
 		allNodeKeys:             make([]string, 0),
 		archivedNodes:           make(map[string]historyArchivedNode),
 	}
@@ -578,6 +584,21 @@ func newHistoryEntityMapping(st *Status) *historyEntityMapping {
 			}
 			ret.addNodeMapping(key, int64(node.Id), node.Name, locationID)
 		}
+
+		for _, resolver := range loc.DnsResolverList {
+			key := historyKey(historyEntityDnsResolver, resolver.Name)
+			ret.addTextHistoryMapping(ret.dnsResolverTextKeys, key, resolver.Name, resolver.IpAddress)
+		}
+	}
+
+	for _, ws := range st.Services.Web {
+		key := historyKey(historyEntityWebService, ws.Label)
+		ret.addTextHistoryMapping(ret.webServiceTextKeys, key, ws.Label, ws.Url, ws.CheckUrl, hostText(ws.Url), hostText(ws.CheckUrl))
+	}
+
+	for _, ns := range st.Services.NameServer {
+		key := historyKey(historyEntityNameServer, ns.Name)
+		ret.addTextHistoryMapping(ret.nameServerTextKeys, key, ns.Name, ns.IpAddress)
 	}
 
 	if st.History != nil {
@@ -623,6 +644,18 @@ func (m *historyEntityMapping) addNodeMapping(key string, nodeID int64, text str
 	}
 	if locationID != 0 {
 		m.locationIDNodeKeys[locationID] = addUniqueHistoryKey(m.locationIDNodeKeys[locationID], key)
+	}
+}
+
+func (m *historyEntityMapping) addTextHistoryMapping(dst map[string]string, key string, labels ...string) {
+	for _, label := range labels {
+		normalized := normalizeEntityText(label)
+		if normalized == "" {
+			continue
+		}
+		if _, exists := dst[normalized]; !exists {
+			dst[normalized] = key
+		}
 	}
 }
 
@@ -845,12 +878,42 @@ func (m *historyEntityMapping) outageHistoryKeys(report *OutageReport) map[strin
 			continue
 		}
 
+		if key, ok := m.serviceHistoryKey(entity, m.dnsResolverTextKeys); ok {
+			ret[key] = struct{}{}
+			continue
+		}
+		if key, ok := m.serviceHistoryKey(entity, m.nameServerTextKeys); ok {
+			ret[key] = struct{}{}
+			continue
+		}
+		if key, ok := m.serviceHistoryKey(entity, m.webServiceTextKeys); ok {
+			ret[key] = struct{}{}
+			continue
+		}
+
 		for _, key := range vpsAdminServiceHistoryKeys(m.status, entity) {
 			ret[key] = struct{}{}
 		}
 	}
 
 	return ret
+}
+
+func (m *historyEntityMapping) serviceHistoryKey(entity OutageEntity, keys map[string]string) (string, bool) {
+	for _, candidate := range []string{entity.Label, entity.Name} {
+		if key, ok := keys[normalizeEntityText(candidate)]; ok {
+			return key, true
+		}
+	}
+
+	text := normalizeEntityText(entity.Name + " " + entity.Label)
+	for label, key := range keys {
+		if label != "" && strings.Contains(text, label) {
+			return key, true
+		}
+	}
+
+	return "", false
 }
 
 func archivedNodesByGroup(nodes []historyArchivedNode) map[int][]historyArchivedNode {

@@ -50,7 +50,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 }
 
 func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time) {
-	resp, err := api.ListOutages(now.AddDate(0, 0, -historyDaysForStatus(st)).Format(time.RFC3339), "oldest")
+	resp, err := api.ListOutages(outageReportFetchStart(st, now).Format(time.RFC3339), "oldest")
 
 	if err != nil {
 		log.Printf("Unable to fetch outages: %+v", err)
@@ -116,6 +116,10 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 	reports := createCurrentOutageReports(allReports, now)
 	slices.Reverse(reports.RecentList)
 	st.OutageReports = reports
+}
+
+func outageReportFetchStart(st *Status, now time.Time) time.Time {
+	return availabilityFetchStart(now, historyDaysForStatus(st))
 }
 
 func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *OutageReports {

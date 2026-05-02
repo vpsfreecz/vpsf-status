@@ -66,7 +66,7 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 
 	refreshOutageReportsOnce(st, api, fixedNow)
 
-	if api.order != "oldest" || api.recentSince != fixedNow.AddDate(0, 0, -historyDefaultDays).Format(time.RFC3339) {
+	if api.order != "oldest" || api.recentSince != fixedNow.AddDate(-1, 0, 0).Format(time.RFC3339) {
 		t.Fatalf("ListOutages called with recentSince=%q order=%q", api.recentSince, api.order)
 	}
 
@@ -112,7 +112,7 @@ func TestRefreshOutageReportsOnceKeepsOldReportsOnlyInHistory(t *testing.T) {
 	}
 }
 
-func TestRefreshOutageReportsOnceUsesConfiguredHistoryDays(t *testing.T) {
+func TestRefreshOutageReportsOnceFetchesAtLeastAvailabilityWindow(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	st.HistoryDays = 14
 	api := &fakeOutageClient{
@@ -121,8 +121,22 @@ func TestRefreshOutageReportsOnceUsesConfiguredHistoryDays(t *testing.T) {
 
 	refreshOutageReportsOnce(st, api, fixedNow)
 
-	if api.recentSince != fixedNow.AddDate(0, 0, -14).Format(time.RFC3339) {
-		t.Fatalf("recentSince = %q, want 14 day window", api.recentSince)
+	if api.recentSince != fixedNow.AddDate(-1, 0, 0).Format(time.RFC3339) {
+		t.Fatalf("recentSince = %q, want 1 year availability window", api.recentSince)
+	}
+}
+
+func TestRefreshOutageReportsOncePreservesLongerConfiguredHistoryWindow(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	st.HistoryDays = 400
+	api := &fakeOutageClient{
+		resp: outageIndexResponse(true, "", nil),
+	}
+
+	refreshOutageReportsOnce(st, api, fixedNow)
+
+	if api.recentSince != fixedNow.AddDate(0, 0, -400).Format(time.RFC3339) {
+		t.Fatalf("recentSince = %q, want 400 day configured history window", api.recentSince)
 	}
 }
 
