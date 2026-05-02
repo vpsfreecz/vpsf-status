@@ -7,14 +7,21 @@ import (
 )
 
 type EntityDetailView struct {
-	Kind        string
-	ID          string
-	Label       string
-	Group       string
-	StatusText  string
-	StatusClass string
-	History     HistoryBarView
-	Events      []ProbeEventView
+	Kind         string
+	ID           string
+	Label        string
+	Group        string
+	StatusText   string
+	StatusClass  string
+	History      HistoryBarView
+	Availability []AvailabilityView
+	Events       []ProbeEventView
+}
+
+type AvailabilityView struct {
+	Label     string
+	Percent   string
+	Available bool
 }
 
 type ProbeEventView struct {
@@ -27,6 +34,10 @@ type ProbeEventView struct {
 
 func (e EntityDetailView) HasEvents() bool {
 	return len(e.Events) > 0
+}
+
+func (e EntityDetailView) HasAvailability() bool {
+	return len(e.Availability) > 0
 }
 
 func createEntityDetailView(st *Status, kind string, id string, now time.Time) (EntityDetailView, bool) {
@@ -86,6 +97,18 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 		ret.StatusText, ret.StatusClass = dnsResolverStatusText(resolver)
 	default:
 		return EntityDetailView{}, false
+	}
+
+	for _, stat := range entityAvailability(st, kind, id, now) {
+		view := AvailabilityView{
+			Label:     stat.Label,
+			Available: stat.Available,
+			Percent:   "n/a",
+		}
+		if stat.Available {
+			view.Percent = formatAvailabilityPercent(stat.Percent)
+		}
+		ret.Availability = append(ret.Availability, view)
 	}
 
 	if st.History != nil {

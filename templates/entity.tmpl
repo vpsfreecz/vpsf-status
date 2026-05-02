@@ -27,6 +27,30 @@
 	</div>
 </div>
 
+{{ if .Entity.HasAvailability }}
+<div class="row mt-4">
+	<div class="col">
+		<h2>Availability</h2>
+		<table class="table table-sm w-auto">
+			<thead>
+				<tr>
+					<th>Period</th>
+					<th class="text-end">Availability</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range $stat := .Entity.Availability }}
+				<tr>
+					<td>{{ $stat.Label }}</td>
+					<td class="text-end{{ if not $stat.Available }} text-muted{{ end }}">{{ $stat.Percent }}</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	</div>
+</div>
+{{ end }}
+
 <div class="row mt-4">
 	<div class="col">
 		<h2>Probe log</h2>

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	stdjson "encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -97,12 +98,49 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"node1.prg",
+		"Availability",
+		"30 days",
+		"90 days",
+		"180 days",
+		"1 year",
+		"99.981%",
 		"Probe log",
 		"Ping",
 		"Down",
 		"not responding",
 		"Probe: node1.prg Ping not responding",
 		"history-day-maintenance",
+	)
+
+	body := rr.Body.String()
+	if strings.Index(body, "Availability") > strings.Index(body, "Probe log") {
+		t.Fatalf("availability should be rendered above probe log")
+	}
+}
+
+func TestRoutesServeEntityDetailAvailabilityFromOutageFallbackWithoutProbeLogRows(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	windowStart := fixedNow.AddDate(0, 0, -30)
+	if err := st.History.ReplaceOutages([]*OutageReport{
+		availabilityTestOutage(7001, windowStart.Add(24*time.Hour), 24*time.Hour, []OutageEntity{
+			{Name: "Node", Id: 101, Label: "Node node1.prg"},
+		}),
+	}, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"Availability",
+		"96.667%",
+		"Probe log",
+		"No probe changes recorded.",
 	)
 }
 
