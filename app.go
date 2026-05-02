@@ -22,6 +22,7 @@ type application struct {
 type htmlTemplate struct {
 	loading *template.Template
 	status  *template.Template
+	entity  *template.Template
 	about   *template.Template
 }
 
@@ -36,6 +37,12 @@ type AboutData struct {
 	Config *config.Config
 }
 
+type EntityData struct {
+	Config     *config.Config
+	Entity     EntityDetailView
+	RenderedAt string
+}
+
 func (app *application) parseTemplates() error {
 	if tpl, err := app.parseTemplateWithLayout("loading.tmpl"); err == nil {
 		app.templates.loading = tpl
@@ -45,6 +52,12 @@ func (app *application) parseTemplates() error {
 
 	if tpl, err := app.parseTemplateWithLayout("status.tmpl"); err == nil {
 		app.templates.status = tpl
+	} else {
+		return err
+	}
+
+	if tpl, err := app.parseTemplateWithLayout("entity.tmpl"); err == nil {
+		app.templates.entity = tpl
 	} else {
 		return err
 	}
@@ -61,6 +74,7 @@ func (app *application) parseTemplates() error {
 func (app *application) parseTemplateWithLayout(name string) (*template.Template, error) {
 	tpl, err := template.ParseFiles(
 		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
+		filepath.Join(app.config.DataDir, "templates/history_bar.tmpl"),
 		filepath.Join(app.config.DataDir, fmt.Sprintf("templates/%s", name)),
 	)
 	if err != nil {
@@ -108,6 +122,26 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
+	now := app.currentTime()
+	entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	app.setCacheControl(w, 1)
+
+	err := app.templates.entity.Execute(w, EntityData{
+		Config:     app.config,
+		Entity:     entity,
+		RenderedAt: now.Format(time.UnixDate),
+	})
+	if err != nil {
+		log.Printf("Template error: %+v", err)
+	}
+}
+
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 	now := app.currentTime()
 
@@ -142,6 +176,7 @@ func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
 func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleIndex)
+	mux.HandleFunc("/entity", app.handleEntity)
 	mux.HandleFunc("/json", app.handleJson)
 	mux.Handle("/metrics", app.status.Exporter.httpHandler())
 	mux.HandleFunc("/about", app.handleAbout)

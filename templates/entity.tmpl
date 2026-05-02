@@ -1,0 +1,59 @@
+{{ define "title" }}{{ .Entity.Label }} - vpsFree.cz Status{{ end }}
+
+{{ define "content" }}
+<nav class="navbar bg-light">
+	<div class="container-fluid">
+		<div class="navbar-brand clearfix">
+			<a class="float-start" href="/">
+				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
+			</a>
+			<h1 class="navbar-text float-start">Status</h1>
+		</div>
+		<span class="navbar-text">
+			Rendered at: {{ .RenderedAt }}
+		</span>
+	</div>
+</nav>
+
+<div class="row">
+	<div class="col">
+		<p><a href="/">Status</a></p>
+		<h2 class="text-{{ .Entity.StatusClass }}">{{ .Entity.Label }}</h2>
+		<p>
+			<span class="badge text-bg-secondary">{{ .Entity.Group }}</span>
+			<span class="badge text-bg-{{ .Entity.StatusClass }}">{{ .Entity.StatusText }}</span>
+		</p>
+		{{ template "history_bar" .Entity.History }}
+	</div>
+</div>
+
+<div class="row mt-4">
+	<div class="col">
+		<h2>Probe log</h2>
+		{{ if .Entity.HasEvents }}
+		<table class="table table-sm">
+			<thead>
+				<tr>
+					<th>Time</th>
+					<th>Method</th>
+					<th>Status</th>
+					<th>Message</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range $event := .Entity.Events }}
+				<tr class="table-{{ $event.StatusClass }}">
+					<td>{{ $event.ChangedAt }}</td>
+					<td>{{ $event.Method }}</td>
+					<td>{{ $event.Status }}</td>
+					<td>{{ $event.Message }}</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+		{{ else }}
+		<div class="alert alert-secondary">No probe changes recorded.</div>
+		{{ end }}
+	</div>
+</div>
+{{ end }}

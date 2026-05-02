@@ -11,6 +11,22 @@
 		h1 { padding-top: 1.2rem !important; padding-bottom: 0 !important; font-size: 1.5rem; }
 		.bi { font-size: 1.5em; }
 		td { vertical-align: middle; }
+		.history-row td { padding-top: .45rem; padding-bottom: 1rem; border-top: 0; }
+		.history-bar { display: grid; gap: 2px; width: 100%; min-height: 2rem; }
+		.history-day-wrap { position: relative; display: block; min-width: 2px; outline: none; }
+		.history-day { display: block; min-width: 2px; height: 2rem; border-radius: 2px; }
+		.history-day-split { display: flex; flex-direction: column; gap: 0; overflow: hidden; }
+		.history-lane { display: block; flex: 1 1 0; min-height: 0; }
+		.history-day-ok { background: #198754; }
+		.history-day-maintenance { background: #ffc107; }
+		.history-day-outage { background: #dc3545; }
+		.history-popover { display: none; position: absolute; left: 50%; bottom: 100%; z-index: 1080; width: max-content; min-width: 14rem; max-width: 22rem; padding: .65rem .75rem; color: #212529; background: #fff; border: 1px solid rgba(0,0,0,.2); border-radius: .3rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transform: translateX(-50%); font-size: .875rem; line-height: 1.25; white-space: normal; }
+		.history-day-wrap:hover .history-popover, .history-day-wrap:focus-within .history-popover { display: block; }
+		.history-day-wrap:focus-visible .history-day { box-shadow: 0 0 0 .2rem rgba(13,110,253,.25); }
+		.history-popover-date { display: block; margin-bottom: .35rem; font-weight: 600; }
+		.history-popover-list { margin: 0; padding-left: 1rem; }
+		.history-popover-list li + li { margin-top: .25rem; }
+		.history-popover-empty { color: #6c757d; }
 		</style>
 	</head>
 	<body>

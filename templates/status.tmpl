@@ -147,6 +147,9 @@
 		<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
 			vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
 		</h2>
+		<div class="mb-3">
+			{{ template "history_bar" .Status.VpsAdmin.History }}
+		</div>
 
 		<div class="accordion" id="accordion-vpsadmin">
 			<div class="accordion-item">
@@ -167,7 +170,7 @@
 							</thead>
 							<tbody>
 								<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else if .Status.VpsAdmin.Webui.Maintenance }}warning{{ else }}danger{{ end }}">
-									<td><a href="{{ .Status.VpsAdmin.Webui.Url }}">vpsadmin.vpsfree.cz</a></td>
+									<td><a href="{{ .Status.DetailURL "vpsadmin" "webui" }}">vpsadmin.vpsfree.cz</a></td>
 									<td>Main web interface for vpsAdmin</td>
 									<td>
 										{{ if .Status.VpsAdmin.Webui.Maintenance }}
@@ -179,8 +182,11 @@
 										{{ end }}
 									</td>
 								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" (.Status.HistoryFor "vpsadmin" "webui") }}</td>
+								</tr>
 								<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else if .Status.VpsAdmin.Api.Maintenance }}warning{{ else }}danger{{ end }}">
-									<td><a href="{{ .Status.VpsAdmin.Api.Url }}">api.vpsfree.cz</a></td>
+									<td><a href="{{ .Status.DetailURL "vpsadmin" "api" }}">api.vpsfree.cz</a></td>
 									<td>HTTP API server</td>
 									<td>
 										{{ if .Status.VpsAdmin.Api.Maintenance }}
@@ -192,8 +198,11 @@
 										{{ end }}
 									</td>
 								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" (.Status.HistoryFor "vpsadmin" "api") }}</td>
+								</tr>
 								<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else if .Status.VpsAdmin.Console.Maintenance }}warning{{ else }}danger{{ end }}">
-									<td>Remote Console</td>
+									<td><a href="{{ .Status.DetailURL "vpsadmin" "console" }}">Remote Console</a></td>
 									<td>Interface for VPS remote console</td>
 									<td>
 										{{ if .Status.VpsAdmin.Console.Maintenance }}
@@ -204,6 +213,9 @@
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
+								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" (.Status.HistoryFor "vpsadmin" "console") }}</td>
 								</tr>
 							</tbody>
 						</table>
@@ -220,6 +232,9 @@
 		<h2 class="text-{{ if $loc.IsOperational }}success{{ else if $loc.IsDegraded }}warning{{ else }}danger{{ end }}">
 			{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}
 		</h2>
+		<div class="mb-3">
+			{{ template "history_bar" $loc.History }}
+		</div>
 
 		<div class="accordion" id="accordion-location-{{ $loc.Id }}">
 			<div class="accordion-item">
@@ -230,135 +245,69 @@
 				</h3>
 				<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
 					<div class="accordion-body">
-						<div class="container">
-							<div class="row">
-								<div class="col">
-									<table class="table table-sm">
-										<thead>
-											<tr>
-												<th>Node</th>
-												<th>vpsAdmin</th>
-												<th>Storage</th>
-												<th>Ping</th>
-											</tr>
-										</thead>
-										<tbody>
-											{{ range $node := $loc.OddNodes }}
-											<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
-												<td>{{ $node.Name }}</td>
-												<td>
-													{{ if $node.ApiStatus }}
-														{{ if $node.ApiMaintenance }}
-														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
-														{{ else }}
-														<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
-														{{ end }}
-													{{ else }}
-														<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
-													{{ end }}
-												</td>
-												<td>
-													{{ if not $node.IsStorageSupported }}
-													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
-													{{ else if $node.ApiMaintenance }}
-													<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
-													{{ else if $node.IsStorageOperational }}
-													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
-													{{ else if $node.IsStorageStateIssue }}
-													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
-													{{ else if $node.PoolStatus }}
-													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
-													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
-													{{ end }}
-
-													{{ if not $node.ApiMaintenance }}
-														{{ if $node.IsStorageScrubIssue }}
-														<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-														{{ else if $node.IsStorageResilverIssue }}
-														<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-														{{ end }}
-													{{ end }}
-												</td>
-												<td>
-													{{ if $node.Ping.IsUp }}
-													<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
-													{{ else if $node.Ping.IsWarning }}
-													<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
-													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
-													{{ end }}
-												</td>
-											</tr>
+						<table class="table table-sm">
+							<thead>
+								<tr>
+									<th>Node</th>
+									<th>vpsAdmin</th>
+									<th>Storage</th>
+									<th>Ping</th>
+								</tr>
+							</thead>
+							<tbody>
+								{{ range $node := $loc.NodeList }}
+								<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
+									<td><a href="{{ $.Status.DetailURL "node" $node.Name }}">{{ $node.Name }}</a></td>
+									<td>
+										{{ if $node.ApiStatus }}
+											{{ if $node.ApiMaintenance }}
+											<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+											{{ else }}
+											<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
 											{{ end }}
-										</tbody>
-									</table>
-								</div>
+										{{ else }}
+											<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										{{ end }}
+									</td>
+									<td>
+										{{ if not $node.IsStorageSupported }}
+										<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+										{{ else if $node.ApiMaintenance }}
+										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										{{ else if $node.IsStorageOperational }}
+										<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
+										{{ else if $node.IsStorageStateIssue }}
+										<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+										{{ else if $node.PoolStatus }}
+										<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
+										{{ end }}
 
-								<div class="col">
-									<table class="table table-sm">
-										<thead>
-											<tr>
-												<th>Node</th>
-												<th>vpsAdmin</th>
-												<th>Storage</th>
-												<th>Ping</th>
-											</tr>
-										</thead>
-										<tbody>
-											{{ range $node := $loc.EvenNodes }}
-											<tr class="table-{{ if $node.IsOperational }}success{{ else if $node.IsDegraded }}warning{{ else }}danger{{ end }}">
-												<td>{{ $node.Name }}</td>
-												<td>
-													{{ if $node.ApiStatus }}
-														{{ if $node.ApiMaintenance }}
-														<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
-														{{ else }}
-														<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
-														{{ end }}
-													{{ else }}
-														<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
-													{{ end }}
-												</td>
-												<td>
-													{{ if not $node.IsStorageSupported }}
-													<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
-													{{ else if $node.ApiMaintenance }}
-													<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
-													{{ else if $node.IsStorageOperational }}
-													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
-													{{ else if $node.IsStorageStateIssue }}
-													<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
-													{{ else if $node.PoolStatus }}
-													<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
-													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
-													{{ end }}
-
-													{{ if not $node.ApiMaintenance }}
-														{{ if $node.IsStorageScrubIssue }}
-														<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-														{{ else if $node.IsStorageResilverIssue }}
-														<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
-														{{ end }}
-													{{ end }}
-												</td>
-												<td>
-													{{ if $node.Ping.IsUp }}
-													<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
-													{{ else if $node.Ping.IsWarning }}
-													<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
-													{{ else }}
-													<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
-													{{ end }}
-												</td>
-											</tr>
+										{{ if not $node.ApiMaintenance }}
+											{{ if $node.IsStorageScrubIssue }}
+											<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+											{{ else if $node.IsStorageResilverIssue }}
+											<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
 											{{ end }}
-										</tbody>
-									</table>
-								</div>
-							</div>
-						</div>
+										{{ end }}
+									</td>
+									<td>
+										{{ if $node.Ping.IsUp }}
+										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
+										{{ else if $node.Ping.IsWarning }}
+										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
+										{{ else }}
+										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										{{ end }}
+									</td>
+								</tr>
+								<tr class="history-row">
+									<td colspan="4">{{ template "history_bar" ($.Status.HistoryFor "node" $node.Name) }}</td>
+								</tr>
+								{{ end }}
+							</tbody>
+						</table>
 					</div>
 				</div>
 			</div> <!-- accordion item -->
@@ -383,7 +332,7 @@
 							<tbody>
 								{{ range $dns := $loc.DnsResolverList }}
 								<tr class="table-{{ if $dns.IsOperational }}success{{ else if $dns.IsDegraded }}warning{{ else }}danger{{ end }}">
-									<td>{{ $dns.Name }}</td>
+									<td><a href="{{ $.Status.DetailURL "dns_resolver" $dns.Name }}">{{ $dns.Name }}</a></td>
 									<td>
 										{{ if $dns.Ping.IsUp }}
 										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
@@ -400,6 +349,9 @@
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 										{{ end }}
 									</td>
+								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" ($.Status.HistoryFor "dns_resolver" $dns.Name) }}</td>
 								</tr>
 								{{ end }}
 							</tbody>
@@ -419,6 +371,9 @@
 		<h2 class="text-{{ if .Status.Services.IsOperational }}success{{ else if .Status.Services.IsDegraded }}warning{{ else }}danger{{ end }}">
 			Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}
 		</h2>
+		<div class="mb-3">
+			{{ template "history_bar" .Status.Services.History }}
+		</div>
 
 		<div class="accordion" id="accordion-services">
 			<div class="accordion-item">
@@ -440,7 +395,7 @@
 							<tbody>
 								{{ range $ws := .Status.Services.Web }}
 								<tr class="table-{{ if $ws.Status }}success{{ else if $ws.Maintenance }}warning{{ else }}danger{{ end }}">
-									<td><a href="{{ $ws.Url }}">{{ $ws.Label }}</a></td>
+									<td><a href="{{ $.Status.DetailURL "web_service" $ws.Label }}">{{ $ws.Label }}</a></td>
 									<td>{{ $ws.Description }}</td>
 									<td>
 										{{ if $ws.Status }}
@@ -451,6 +406,9 @@
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
 										{{ end }}
 									</td>
+								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" ($.Status.HistoryFor "web_service" $ws.Label) }}</td>
 								</tr>
 								{{ end }}
 							</tbody>
@@ -478,7 +436,7 @@
 							<tbody>
 								{{ range $ns := .Status.Services.NameServer }}
 								<tr class="table-{{ if $ns.IsOperational }}success{{ else if $ns.IsDegraded }}warning{{ else }}danger{{ end }}">
-									<td>{{ $ns.Name }}</td>
+									<td><a href="{{ $.Status.DetailURL "nameserver" $ns.Name }}">{{ $ns.Name }}</a></td>
 									<td>
 										{{ if $ns.Ping.IsUp }}
 										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
@@ -495,6 +453,9 @@
 										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
 										{{ end }}
 									</td>
+								</tr>
+								<tr class="history-row">
+									<td colspan="3">{{ template "history_bar" ($.Status.HistoryFor "nameserver" $ns.Name) }}</td>
 								</tr>
 								{{ end }}
 							</tbody>

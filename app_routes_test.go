@@ -55,14 +55,96 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		"Services 3/3",
 		"Name Servers 1/1",
 		"node1.prg",
+		`href="/entity?kind=node&amp;id=node1.prg"`,
 		"node2.prg",
 		"resolver-prg",
 		"vpsfree.cz",
 		"ns1.vpsfree.cz",
+		"history-day-ok",
+		`aria-label="vpsAdmin history"`,
+		`aria-label="Praha history"`,
+		`aria-label="Brno history"`,
+		`aria-label="Services history"`,
+		"history-bar-split",
+		"history-lane",
 		`aria-label="Operational"`,
 		`aria-label="Responding"`,
 	)
-	requireNotContains(t, body, "Reported Maintenances", "Unable to fetch outage reports")
+	requireNotContains(t, body, "Reported Maintenances", "Unable to fetch outage reports", "Last 90 days", "Overall status history")
+}
+
+func TestRoutesServeEntityDetail(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	target := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateDown, "not responding", fixedNow.Add(-10*time.Minute)); err != nil {
+		t.Fatalf("record down status: %v", err)
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateOperational, "responding", fixedNow.Add(-2*time.Minute)); err != nil {
+		t.Fatalf("record recovery: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"node1.prg",
+		"Probe log",
+		"Ping",
+		"Down",
+		"not responding",
+		"Probe: node1.prg Ping not responding",
+		"history-day-maintenance",
+	)
+}
+
+func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	if err := st.History.ReplaceOutages([]*OutageReport{
+		{
+			Id:        2001,
+			BeginsAt:  fixedNow.Add(-24 * time.Hour),
+			Duration:  30 * time.Minute,
+			Type:      "outage",
+			State:     "resolved",
+			EnSummary: "Power failure",
+			AffectedEntities: []OutageEntity{
+				{Name: "Node", Id: 101, Label: "Node node1.prg"},
+			},
+		},
+	}, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"history-popover",
+		"Outage: Power failure",
+		`href="https://vpsadmin.vpsfree.cz/?page=outage&amp;action=show&amp;id=2001"`,
+		`target="_blank"`,
+	)
+}
+
+func TestRoutesServeEntityDetailNotFound(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=missing")
+	requireStatus(t, rr, http.StatusNotFound)
 }
 
 func TestRoutesServeIndexPartialDownState(t *testing.T) {
