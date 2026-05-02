@@ -1,7 +1,8 @@
 build:
-	go fmt
-	go fmt github.com/vpsfreecz/vpsf-status/config
-	go fmt github.com/vpsfreecz/vpsf-status/json
+	go fmt ./...
 	go build
 
-.PHONY: build
+hooks:
+	lefthook install
+
+.PHONY: build hooks

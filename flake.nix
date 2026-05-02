@@ -26,6 +26,7 @@
             nativeBuildInputs = with pkgs; [
               gnumake
               go
+              lefthook
             ];
 
             shellHook = ''
