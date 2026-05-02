@@ -125,6 +125,7 @@ func TestRefreshVpsAdminNodesOnceMarksMissingConfiguredNodesDown(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
 
+	setNodeState(st, st.LocationMap["Praha"], st.GlobalNodeMap["node2.prg"], true, false, "vpsadminos", true, "degraded", "resilver", 42.5, 0)
 	resp := nodeStatusResponse(true, "", []*client.ActionNodePublicStatusOutput{
 		apiNode("node1.prg", fixedNow.Add(-30*time.Second), fixedNow.Add(-30*time.Second), "online", "none", 0, "no"),
 	})
@@ -135,11 +136,17 @@ func TestRefreshVpsAdminNodesOnceMarksMissingConfiguredNodesDown(t *testing.T) {
 	if missing.ApiStatus || missing.ApiMaintenance || missing.PoolStatus {
 		t.Fatalf("missing configured node should be marked down: %+v", missing)
 	}
+	if missing.PoolState != "unknown" || missing.PoolScan != "none" || missing.PoolScanPercent != 0 {
+		t.Fatalf("missing configured node should have unknown pool metrics: %+v", missing)
+	}
 
 	families := scrapeMetrics(t, app)
 	labels := map[string]string{"location_id": "3", "location_label": "Praha", "node_id": "102", "node_name": "node2.prg"}
 	requireMetricValue(t, families["vpsfstatus_node_vpsadmin_status"], labels, 2)
 	requireMetricValue(t, families["vpsfstatus_node_pool_status"], labels, 2)
+	requireMetricValue(t, families["vpsfstatus_node_pool_state"], labels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan"], labels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], labels, 0)
 }
 
 func TestRefreshVpsAdminNodesOnceHandlesAPIFailures(t *testing.T) {
@@ -167,6 +174,7 @@ func TestRefreshVpsAdminNodesOnceHandlesAPIFailures(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			app, st, _ := newTestApplication(t)
 			setOperationalFixture(st)
+			setNodeState(st, st.LocationMap["Praha"], st.GlobalNodeMap["node1.prg"], true, false, "vpsadminos", true, "faulted", "resilver", 42.5, 0)
 
 			refreshVpsAdminNodesOnce(st, fakeNodeStatusClient{resp: tt.resp, err: tt.err}, fixedNow)
 
@@ -180,15 +188,19 @@ func TestRefreshVpsAdminNodesOnceHandlesAPIFailures(t *testing.T) {
 					}
 				}
 			}
+			node := st.GlobalNodeMap["node1.prg"]
+			if node.PoolState != "unknown" || node.PoolScan != "none" || node.PoolScanPercent != 0 {
+				t.Fatalf("node should have unknown pool metrics after API failure: %+v", node)
+			}
 
 			families := scrapeMetrics(t, app)
+			labels := map[string]string{"location_id": "3", "location_label": "Praha", "node_id": "101", "node_name": "node1.prg"}
 			requireMetricValue(t, families["vpsfstatus_vpsadmin_status"], map[string]string{"service": "api"}, tt.wantGauge)
-			requireMetricValue(
-				t,
-				families["vpsfstatus_node_vpsadmin_status"],
-				map[string]string{"location_id": "3", "location_label": "Praha", "node_id": "101", "node_name": "node1.prg"},
-				tt.wantGauge,
-			)
+			requireMetricValue(t, families["vpsfstatus_node_vpsadmin_status"], labels, tt.wantGauge)
+			requireMetricValue(t, families["vpsfstatus_node_pool_status"], labels, tt.wantGauge)
+			requireMetricValue(t, families["vpsfstatus_node_pool_state"], labels, 0)
+			requireMetricValue(t, families["vpsfstatus_node_pool_scan"], labels, 0)
+			requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], labels, 0)
 		})
 	}
 }

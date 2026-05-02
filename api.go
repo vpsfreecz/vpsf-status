@@ -92,6 +92,7 @@ func failApi(st *Status, message string, now time.Time) {
 			labels := nodePrometheusLabels(loc, node)
 			st.Exporter.nodeVpsAdminStatus.With(labels).Set(status)
 			st.Exporter.nodePoolStatus.With(labels).Set(status)
+			markNodePoolUnknown(st, labels, node)
 		}
 	}
 
@@ -204,6 +205,17 @@ func markNodeMissingFromAPI(st *Status, loc *Location, node *Node, now time.Time
 	labels := nodePrometheusLabels(loc, node)
 	st.Exporter.nodeVpsAdminStatus.With(labels).Set(2)
 	st.Exporter.nodePoolStatus.With(labels).Set(2)
+	markNodePoolUnknown(st, labels, node)
+}
+
+func markNodePoolUnknown(st *Status, labels prometheus.Labels, node *Node) {
+	node.PoolState = "unknown"
+	node.PoolScan = "none"
+	node.PoolScanPercent = 0
+
+	st.Exporter.nodePoolState.With(labels).Set(0)
+	st.Exporter.nodePoolScan.With(labels).Set(0)
+	st.Exporter.nodePoolScanPercent.With(labels).Set(0)
 }
 
 func nodePrometheusLabels(loc *Location, node *Node) prometheus.Labels {
