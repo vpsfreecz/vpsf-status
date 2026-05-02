@@ -1,0 +1,141 @@
+package main
+
+import (
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+type fakeHTTPDoer struct {
+	statusCode int
+	err        error
+	requests   []*http.Request
+}
+
+func (f *fakeHTTPDoer) Do(req *http.Request) (*http.Response, error) {
+	f.requests = append(f.requests, req)
+	if f.err != nil {
+		return nil, f.err
+	}
+
+	return &http.Response{
+		StatusCode: f.statusCode,
+		Status:     http.StatusText(f.statusCode),
+		Body:       io.NopCloser(strings.NewReader("")),
+	}, nil
+}
+
+func TestCheckHTTPOnce(t *testing.T) {
+	tests := []struct {
+		name        string
+		statusCode  int
+		err         error
+		wantStatus  bool
+		wantMaint   bool
+		wantCode    int
+		wantGauge   float64
+		wantMethod  string
+		method      string
+		wantRequest string
+	}{
+		{
+			name:        "200",
+			statusCode:  http.StatusOK,
+			wantStatus:  true,
+			wantCode:    http.StatusOK,
+			wantGauge:   0,
+			wantMethod:  http.MethodHead,
+			wantRequest: "https://check.example/status",
+		},
+		{
+			name:        "503",
+			statusCode:  http.StatusServiceUnavailable,
+			wantMaint:   true,
+			wantCode:    http.StatusServiceUnavailable,
+			wantGauge:   1,
+			wantMethod:  http.MethodHead,
+			wantRequest: "https://check.example/status",
+		},
+		{
+			name:        "non 200",
+			statusCode:  http.StatusNotFound,
+			wantCode:    http.StatusNotFound,
+			wantGauge:   2,
+			wantMethod:  http.MethodHead,
+			wantRequest: "https://check.example/status",
+		},
+		{
+			name:        "request error",
+			err:         errors.New("dial failed"),
+			wantCode:    0,
+			wantGauge:   2,
+			wantMethod:  http.MethodHead,
+			wantRequest: "https://check.example/status",
+		},
+		{
+			name:        "GET method",
+			statusCode:  http.StatusOK,
+			wantStatus:  true,
+			wantCode:    http.StatusOK,
+			wantGauge:   0,
+			wantMethod:  http.MethodGet,
+			method:      "get",
+			wantRequest: "https://check.example/status",
+		},
+		{
+			name:        "fallback to display URL",
+			statusCode:  http.StatusOK,
+			wantStatus:  true,
+			wantCode:    http.StatusOK,
+			wantGauge:   0,
+			wantMethod:  http.MethodHead,
+			wantRequest: "https://display.example/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ws := &WebService{
+				Label:    "service",
+				Url:      "https://display.example/",
+				CheckUrl: "https://check.example/status",
+				Method:   tt.method,
+			}
+			if tt.name == "fallback to display URL" {
+				ws.CheckUrl = ""
+			}
+
+			client := &fakeHTTPDoer{statusCode: tt.statusCode, err: tt.err}
+			gauge := prometheus.NewGauge(prometheus.GaugeOpts{Name: "test_http_status"})
+
+			checkHTTPOnce(ws, gauge, client, fixedNow)
+
+			if ws.Status != tt.wantStatus || ws.Maintenance != tt.wantMaint || ws.StatusCode != tt.wantCode {
+				t.Fatalf("web service = %+v, want status=%v maintenance=%v code=%d", ws, tt.wantStatus, tt.wantMaint, tt.wantCode)
+			}
+			if !ws.LastCheck.Equal(fixedNow) {
+				t.Fatalf("LastCheck = %s, want %s", ws.LastCheck, fixedNow)
+			}
+			if got := gaugeValue(t, gauge); got != tt.wantGauge {
+				t.Fatalf("gauge = %v, want %v", got, tt.wantGauge)
+			}
+			if len(client.requests) != 1 {
+				t.Fatalf("requests = %d, want 1", len(client.requests))
+			}
+			req := client.requests[0]
+			if req.Method != tt.wantMethod {
+				t.Fatalf("method = %s, want %s", req.Method, tt.wantMethod)
+			}
+			if req.URL.String() != tt.wantRequest {
+				t.Fatalf("request URL = %s, want %s", req.URL.String(), tt.wantRequest)
+			}
+			if ws.Url != "https://display.example/" {
+				t.Fatalf("display URL changed to %s", ws.Url)
+			}
+		})
+	}
+}
