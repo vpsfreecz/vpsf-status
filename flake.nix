@@ -27,6 +27,7 @@
               gnumake
               go
               lefthook
+              stdenv.cc
             ];
 
             shellHook = ''
