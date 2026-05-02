@@ -5,6 +5,7 @@ import (
 	stdjson "encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	statusjson "github.com/vpsfreecz/vpsf-status/json"
 )
@@ -122,6 +123,120 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 	)
 }
 
+func TestRoutesServeIndexNoticeSuppressesNoIssues(t *testing.T) {
+	app, st, cfg := newTestApplication(t)
+	setOperationalFixture(st)
+	writeNotice(t, cfg, "<p>Maintenance notice</p>")
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(t, body, "Maintenance notice")
+	requireNotContains(t, body, "No issues reported.")
+}
+
+func TestRoutesServeIndexWebMaintenanceAndStorageBranches(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	setWebServiceState(st, st.Services.Web[1], false, true, http.StatusServiceUnavailable)
+	node1 := st.GlobalNodeMap["node1.prg"]
+	setNodeState(st, st.LocationMap["Praha"], node1, true, false, "openvz", false, "unknown", "none", 0, 0)
+	node2 := st.GlobalNodeMap["node2.prg"]
+	setNodeState(st, st.LocationMap["Praha"], node2, true, false, "vpsadminos", true, "suspended", "scrub", 15, 0)
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"Praha 3/3",
+		"Nodes 2/2",
+		"Services 3/3",
+		"Web Services 2/2",
+		`aria-label="Under maintenance"`,
+		`aria-label="Not supported"`,
+		"Storage not operational",
+		"Storage is being scrubbed to check data integrity, 15.0 % done",
+	)
+}
+
+func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	st.OutageReports = &OutageReports{
+		Status:               true,
+		AnyActive:            true,
+		AnyActiveMaintenance: true,
+		AnyActiveOutage:      true,
+		AnyRecent:            true,
+		AnyRecentMaintenance: true,
+		AnyRecentOutage:      true,
+		ActiveList: []*OutageReport{
+			{
+				Id:        1001,
+				BeginsAt:  fixedNow.Add(2 * time.Hour),
+				Duration:  90 * time.Minute,
+				Type:      "maintenance",
+				State:     "announced",
+				Impact:    "partial",
+				EnSummary: "Router replacement",
+				AffectedEntities: []OutageEntity{
+					{Name: "node", Id: 101, Label: "node1.prg"},
+				},
+			},
+			{
+				Id:        1002,
+				BeginsAt:  fixedNow.Add(3 * time.Hour),
+				Duration:  45 * time.Minute,
+				Type:      "outage",
+				State:     "announced",
+				Impact:    "full",
+				EnSummary: "Switch down",
+				AffectedEntities: []OutageEntity{
+					{Name: "location", Id: 3, Label: "Praha"},
+				},
+			},
+		},
+		RecentList: []*OutageReport{
+			{
+				Id:        1003,
+				BeginsAt:  fixedNow.Add(-2 * time.Hour),
+				Duration:  30 * time.Minute,
+				Type:      "maintenance",
+				State:     "resolved",
+				Impact:    "partial",
+				EnSummary: "Old maintenance",
+				AffectedEntities: []OutageEntity{
+					{Name: "node", Id: 102, Label: "node2.prg"},
+				},
+			},
+			{
+				Id:        1004,
+				BeginsAt:  fixedNow.Add(-1 * time.Hour),
+				Duration:  15 * time.Minute,
+				Type:      "outage",
+				State:     "resolved",
+				Impact:    "full",
+				EnSummary: "Recent outage",
+				AffectedEntities: []OutageEntity{
+					{Name: "location", Id: 4, Label: "Brno"},
+				},
+			},
+		},
+	}
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(t, body, "Reported", "Resolved", "Switch down", "Old maintenance")
+	requireOccurrences(t, body, "Maintenances and Outages", 2)
+}
+
 func TestRoutesServeIndexAllDownState(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
@@ -214,6 +329,18 @@ func TestRoutesServeJSONContract(t *testing.T) {
 		t.Fatalf("decode raw JSON: %v", err)
 	}
 	requireJSONContractKeys(t, raw)
+	requireJSONString(t, raw, "generated_at", "2026-05-02T10:30:00Z")
+
+	rawNotice := requireMapValue(t, raw, "notice")
+	requireJSONBool(t, rawNotice, "any", true)
+	requireJSONString(t, rawNotice, "text", "<p>Maintenance notice</p>")
+	requireJSONString(t, rawNotice, "updated_at", fixedNoticeTime.Local().Format(time.RFC3339))
+
+	rawVpsAdmin := requireMapValue(t, raw, "vpsadmin")
+	rawVpsAdminAPI := requireMapValue(t, rawVpsAdmin, "api")
+	requireJSONString(t, rawVpsAdminAPI, "label", "https://api.vpsfree.cz")
+	requireJSONString(t, rawVpsAdminAPI, "url", "https://api.vpsfree.cz")
+	requireJSONString(t, rawVpsAdminAPI, "status", "operational")
 
 	var body statusjson.Status
 	if err := stdjson.NewDecoder(bytes.NewReader(rawBytes)).Decode(&body); err != nil {
@@ -246,6 +373,27 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	if got := body.OutageReports.Recent[0]; got.Id != 1002 || got.Type != "outage" || got.State != "resolved" || got.Entities[0].Label != "Praha" {
 		t.Fatalf("recent outage = %+v", got)
 	}
+	rawOutages := requireMapValue(t, raw, "outage_reports")
+	rawAnnounced := requireSliceMap(t, requireSliceValue(t, rawOutages, "announced"), 0)
+	requireJSONNumber(t, rawAnnounced, "id", 1001)
+	requireJSONString(t, rawAnnounced, "begins_at", "2026-05-02T12:30:00Z")
+	requireJSONNumber(t, rawAnnounced, "duration", 90)
+	requireJSONString(t, rawAnnounced, "type", "maintenance")
+	requireJSONString(t, rawAnnounced, "state", "announced")
+	requireJSONString(t, rawAnnounced, "impact", "partial")
+	requireJSONString(t, rawAnnounced, "en_summary", "Router replacement")
+	requireJSONString(t, rawAnnounced, "en_description", "Planned router replacement.")
+	rawAnnouncedEntity := requireSliceMap(t, requireSliceValue(t, rawAnnounced, "entities"), 0)
+	requireJSONString(t, rawAnnouncedEntity, "name", "node")
+	requireJSONNumber(t, rawAnnouncedEntity, "id", 101)
+	requireJSONString(t, rawAnnouncedEntity, "label", "node1.prg")
+	rawRecent := requireSliceMap(t, requireSliceValue(t, rawOutages, "recent"), 0)
+	requireJSONNumber(t, rawRecent, "id", 1002)
+	requireJSONString(t, rawRecent, "begins_at", "2026-05-02T09:30:00Z")
+	requireJSONNumber(t, rawRecent, "duration", 30)
+	requireJSONString(t, rawRecent, "type", "outage")
+	requireJSONString(t, rawRecent, "state", "resolved")
+	requireJSONString(t, rawRecent, "impact", "full")
 
 	if len(body.Locations) != 2 || body.Locations[0].Label != "Praha" || len(body.Locations[0].Nodes) != 2 {
 		t.Fatalf("locations = %+v", body.Locations)
@@ -263,6 +411,54 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	if len(body.NameServers) != 1 || body.NameServers[0].Name != "ns1.vpsfree.cz" || body.NameServers[0].Ping != "down" || !body.NameServers[0].Lookup {
 		t.Fatalf("nameservers = %+v", body.NameServers)
 	}
+
+	rawLocation := requireSliceMap(t, requireSliceValue(t, raw, "locations"), 0)
+	requireJSONNumber(t, rawLocation, "id", 3)
+	requireJSONString(t, rawLocation, "label", "Praha")
+	rawNode := requireSliceMap(t, requireSliceValue(t, rawLocation, "nodes"), 1)
+	requireJSONNumber(t, rawNode, "id", 102)
+	requireJSONString(t, rawNode, "name", "node2.prg")
+	requireJSONNumber(t, rawNode, "location_id", 3)
+	requireJSONString(t, rawNode, "os_type", "vpsadminos")
+	requireJSONBool(t, rawNode, "vpsadmin", true)
+	requireJSONString(t, rawNode, "ping", "degraded")
+	requireJSONBool(t, rawNode, "maintenance", false)
+	requireJSONString(t, rawNode, "pool_state", "degraded")
+	requireJSONString(t, rawNode, "pool_scan", "resilver")
+	requireJSONNumber(t, rawNode, "pool_scan_percent", 42.5)
+	requireJSONBool(t, rawNode, "pool_status", true)
+	rawWebService := requireSliceMap(t, requireSliceValue(t, raw, "web_services"), 1)
+	requireJSONString(t, rawWebService, "label", "kb.vpsfree.cz")
+	requireJSONString(t, rawWebService, "description", "Knowledge Base in Czech")
+	requireJSONString(t, rawWebService, "url", "https://kb.vpsfree.cz")
+	requireJSONString(t, rawWebService, "status", "down")
+	rawNameServer := requireSliceMap(t, requireSliceValue(t, raw, "nameservers"), 0)
+	requireJSONString(t, rawNameServer, "name", "ns1.vpsfree.cz")
+	requireJSONString(t, rawNameServer, "ping", "down")
+	requireJSONBool(t, rawNameServer, "lookup", true)
+}
+
+func TestRoutesServeJSONEmptyNoticeAndOutageShape(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	rr := getThroughRoutes(t, app, "/json")
+	requireStatus(t, rr, http.StatusOK)
+
+	var raw map[string]any
+	if err := stdjson.Unmarshal(rr.Body.Bytes(), &raw); err != nil {
+		t.Fatalf("decode raw JSON: %v", err)
+	}
+
+	notice := requireMapValue(t, raw, "notice")
+	requireJSONBool(t, notice, "any", false)
+	requireJSONString(t, notice, "text", "")
+	requireJSONString(t, notice, "updated_at", "0001-01-01T00:00:00Z")
+
+	outages := requireMapValue(t, raw, "outage_reports")
+	requireJSONBool(t, outages, "status", true)
+	requireSliceLength(t, requireSliceValue(t, outages, "announced"), 0)
+	requireSliceLength(t, requireSliceValue(t, outages, "recent"), 0)
 }
 
 func requireJSONContractKeys(t *testing.T, raw map[string]any) {

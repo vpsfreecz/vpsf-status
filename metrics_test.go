@@ -88,6 +88,19 @@ func TestRoutesServePrometheusMetricsContract(t *testing.T) {
 	requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], nodeLabels, 42.5)
 	requireMetricValue(t, families["vpsfstatus_node_pool_status"], nodeLabels, 0)
 
+	operationalNodeLabels := map[string]string{
+		"location_id":    "3",
+		"location_label": "Praha",
+		"node_id":        "101",
+		"node_name":      "node1.prg",
+	}
+	requireMetricValue(t, families["vpsfstatus_node_vpsadmin_status"], operationalNodeLabels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_ping_status"], operationalNodeLabels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_state"], operationalNodeLabels, 1)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan"], operationalNodeLabels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], operationalNodeLabels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_status"], operationalNodeLabels, 0)
+
 	dnsResolverPing := requireGaugeFamily(t, families, "vpsfstatus_dns_resolver_ping_status", "0 = responding, 1 = degraded, 2 = not responding")
 	requireMetricCount(t, dnsResolverPing, 1)
 	requireMetricLabelSets(t, dnsResolverPing, map[string]string{"name": "resolver-prg"})
@@ -111,4 +124,37 @@ func TestRoutesServePrometheusMetricsContract(t *testing.T) {
 	requireMetricCount(t, nameServerLookup, 1)
 	requireMetricLabelSets(t, nameServerLookup, map[string]string{"name": "ns1.vpsfree.cz"})
 	requireMetricValue(t, nameServerLookup, map[string]string{"name": "ns1.vpsfree.cz"}, 0)
+}
+
+func TestRoutesServePrometheusInitialGaugeDefaults(t *testing.T) {
+	app, _, _ := newTestApplication(t)
+
+	families := scrapeMetrics(t, app)
+
+	up := requireGaugeFamily(t, families, "vpsfstatus_up", "1 = operational, 0 = initializing")
+	requireUnlabeledMetricValue(t, up, 0)
+	notice := requireGaugeFamily(t, families, "vpsfstatus_notice", "0 = no issue reported, 1 = there is a notice")
+	requireUnlabeledMetricValue(t, notice, 0)
+}
+
+func TestRoutesServePrometheusNodeMetricValuesForDownNode(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	node := st.GlobalNodeMap["node2.prg"]
+	setNodeState(st, st.LocationMap["Praha"], node, false, false, "vpsadminos", false, "unknown", "none", 0, 100)
+
+	families := scrapeMetrics(t, app)
+	labels := map[string]string{
+		"location_id":    "3",
+		"location_label": "Praha",
+		"node_id":        "102",
+		"node_name":      "node2.prg",
+	}
+	requireMetricValue(t, families["vpsfstatus_node_vpsadmin_status"], labels, 2)
+	requireMetricValue(t, families["vpsfstatus_node_ping_status"], labels, 2)
+	requireMetricValue(t, families["vpsfstatus_node_pool_state"], labels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan"], labels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], labels, 0)
+	requireMetricValue(t, families["vpsfstatus_node_pool_status"], labels, 2)
 }

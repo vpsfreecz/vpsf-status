@@ -139,3 +139,28 @@ func TestCheckHTTPOnce(t *testing.T) {
 		})
 	}
 }
+
+func TestCheckHTTPOnceHandlesInvalidURLWithoutRequest(t *testing.T) {
+	ws := &WebService{
+		Label:    "service",
+		Url:      "https://display.example/",
+		CheckUrl: "http://[::1",
+	}
+	client := &fakeHTTPDoer{statusCode: http.StatusOK}
+	gauge := prometheus.NewGauge(prometheus.GaugeOpts{Name: "test_invalid_http_status"})
+
+	checkHTTPOnce(ws, gauge, client, fixedNow)
+
+	if ws.Status || ws.Maintenance || ws.StatusCode != 0 {
+		t.Fatalf("web service = %+v, want down with no status code", ws)
+	}
+	if !ws.LastCheck.Equal(fixedNow) {
+		t.Fatalf("LastCheck = %s, want %s", ws.LastCheck, fixedNow)
+	}
+	if got := gaugeValue(t, gauge); got != 2 {
+		t.Fatalf("gauge = %v, want 2", got)
+	}
+	if len(client.requests) != 0 {
+		t.Fatalf("requests = %d, want 0", len(client.requests))
+	}
+}

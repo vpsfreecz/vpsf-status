@@ -121,6 +121,43 @@ func TestRefreshVpsAdminNodesOnceHandlesMaintenanceLock(t *testing.T) {
 	requireMetricValue(t, families["vpsfstatus_node_pool_status"], labels, 1)
 }
 
+func TestRefreshVpsAdminNodesOnceExportsPoolEnumMetrics(t *testing.T) {
+	for i, state := range poolStates {
+		t.Run("pool state "+state, func(t *testing.T) {
+			app, st, _ := newTestApplication(t)
+			setOperationalFixture(st)
+
+			resp := nodeStatusResponse(true, "", []*client.ActionNodePublicStatusOutput{
+				apiNode("node1.prg", fixedNow.Add(-30*time.Second), fixedNow.Add(-30*time.Second), state, "none", 0, "no"),
+			})
+
+			refreshVpsAdminNodesOnce(st, fakeNodeStatusClient{resp: resp}, fixedNow)
+
+			families := scrapeMetrics(t, app)
+			labels := map[string]string{"location_id": "3", "location_label": "Praha", "node_id": "101", "node_name": "node1.prg"}
+			requireMetricValue(t, families["vpsfstatus_node_pool_state"], labels, float64(i))
+		})
+	}
+
+	for i, scan := range poolScans {
+		t.Run("pool scan "+scan, func(t *testing.T) {
+			app, st, _ := newTestApplication(t)
+			setOperationalFixture(st)
+
+			resp := nodeStatusResponse(true, "", []*client.ActionNodePublicStatusOutput{
+				apiNode("node1.prg", fixedNow.Add(-30*time.Second), fixedNow.Add(-30*time.Second), "online", scan, 12.5, "no"),
+			})
+
+			refreshVpsAdminNodesOnce(st, fakeNodeStatusClient{resp: resp}, fixedNow)
+
+			families := scrapeMetrics(t, app)
+			labels := map[string]string{"location_id": "3", "location_label": "Praha", "node_id": "101", "node_name": "node1.prg"}
+			requireMetricValue(t, families["vpsfstatus_node_pool_scan"], labels, float64(i))
+			requireMetricValue(t, families["vpsfstatus_node_pool_scan_percent"], labels, 12.5)
+		})
+	}
+}
+
 func TestRefreshVpsAdminNodesOnceMarksMissingConfiguredNodesDown(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)

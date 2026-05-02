@@ -42,14 +42,19 @@ func readNoticeFile(path string) (Notice, error) {
 
 func checkNoticeFile(st *Status, path string, checkInterval time.Duration) {
 	for {
-		notice, err := readNoticeFile(path)
-
-		if err == nil && notice.Any {
-			st.Exporter.notice.Set(1)
-		} else {
-			st.Exporter.notice.Set(0)
-		}
-
+		checkNoticeFileOnce(st, path)
 		time.Sleep(checkInterval)
 	}
+}
+
+func checkNoticeFileOnce(st *Status, path string) error {
+	notice, err := readNoticeFile(path)
+
+	if err == nil && notice.Any {
+		st.Exporter.notice.Set(1)
+	} else {
+		st.Exporter.notice.Set(0)
+	}
+
+	return err
 }

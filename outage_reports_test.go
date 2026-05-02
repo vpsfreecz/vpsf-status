@@ -104,6 +104,38 @@ func TestRefreshOutageReportsOnceHandlesAPIFailure(t *testing.T) {
 	}
 }
 
+func TestRefreshOutageReportsOncePreservesStaleReportsOnAPIFailure(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	st.OutageReports = &OutageReports{
+		Status:               true,
+		AnyActive:            true,
+		AnyActiveMaintenance: true,
+		AnyRecent:            true,
+		AnyRecentOutage:      true,
+		ActiveList: []*OutageReport{
+			{Id: 1001, Type: "maintenance", State: "announced"},
+		},
+		RecentList: []*OutageReport{
+			{Id: 1002, Type: "outage", State: "resolved"},
+		},
+	}
+
+	refreshOutageReportsOnce(st, &fakeOutageClient{err: errors.New("api failed")}, fixedNow)
+
+	if st.OutageReports.Status {
+		t.Fatal("outage status should be false after API error")
+	}
+	if !st.OutageReports.AnyActive || !st.OutageReports.AnyActiveMaintenance || !st.OutageReports.AnyRecent || !st.OutageReports.AnyRecentOutage {
+		t.Fatalf("stale outage flags should be preserved after API failure: %+v", st.OutageReports)
+	}
+	if len(st.OutageReports.ActiveList) != 1 || st.OutageReports.ActiveList[0].Id != 1001 {
+		t.Fatalf("stale active reports should be preserved after API failure: %+v", st.OutageReports.ActiveList)
+	}
+	if len(st.OutageReports.RecentList) != 1 || st.OutageReports.RecentList[0].Id != 1002 {
+		t.Fatalf("stale recent reports should be preserved after API failure: %+v", st.OutageReports.RecentList)
+	}
+}
+
 func TestRefreshOutageReportsOncePreservesOutageWhenEntityFetchFails(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{

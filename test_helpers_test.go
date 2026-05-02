@@ -341,6 +341,14 @@ func requireNotContains(t *testing.T, body string, substrings ...string) {
 	}
 }
 
+func requireOccurrences(t *testing.T, body string, substring string, count int) {
+	t.Helper()
+
+	if got := strings.Count(body, substring); got != count {
+		t.Fatalf("expected %q to occur %d times, got %d\nbody:\n%s", substring, count, got, body)
+	}
+}
+
 func requireMapKeys(t *testing.T, m map[string]any, keys ...string) {
 	t.Helper()
 
@@ -369,6 +377,42 @@ func requireMapValue(t *testing.T, m map[string]any, key string) map[string]any 
 	return value
 }
 
+func requireJSONString(t *testing.T, m map[string]any, key string, want string) {
+	t.Helper()
+
+	value, ok := m[key].(string)
+	if !ok {
+		t.Fatalf("%q = %#v, want string", key, m[key])
+	}
+	if value != want {
+		t.Fatalf("%q = %q, want %q", key, value, want)
+	}
+}
+
+func requireJSONBool(t *testing.T, m map[string]any, key string, want bool) {
+	t.Helper()
+
+	value, ok := m[key].(bool)
+	if !ok {
+		t.Fatalf("%q = %#v, want bool", key, m[key])
+	}
+	if value != want {
+		t.Fatalf("%q = %v, want %v", key, value, want)
+	}
+}
+
+func requireJSONNumber(t *testing.T, m map[string]any, key string, want float64) {
+	t.Helper()
+
+	value, ok := m[key].(float64)
+	if !ok {
+		t.Fatalf("%q = %#v, want number", key, m[key])
+	}
+	if value != want {
+		t.Fatalf("%q = %v, want %v", key, value, want)
+	}
+}
+
 func requireSliceValue(t *testing.T, m map[string]any, key string) []any {
 	t.Helper()
 
@@ -378,6 +422,14 @@ func requireSliceValue(t *testing.T, m map[string]any, key string) []any {
 	}
 
 	return value
+}
+
+func requireSliceLength(t *testing.T, values []any, length int) {
+	t.Helper()
+
+	if len(values) != length {
+		t.Fatalf("array length = %d, want %d", len(values), length)
+	}
 }
 
 func requireSliceMap(t *testing.T, values []any, index int) map[string]any {

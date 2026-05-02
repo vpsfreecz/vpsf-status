@@ -67,6 +67,26 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 	}
 }
 
+func TestParseConfigSample(t *testing.T) {
+	cfg, err := ParseConfig(filepath.Join("..", "config-sample.json"))
+	if err != nil {
+		t.Fatalf("ParseConfig sample: %v", err)
+	}
+
+	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" {
+		t.Fatalf("sample paths/listen values = %+v", cfg)
+	}
+	if cfg.VpsAdmin.ApiUrl == "" || cfg.VpsAdmin.WebuiUrl == "" || cfg.VpsAdmin.ConsoleUrl == "" {
+		t.Fatalf("sample vpsAdmin URLs = %+v", cfg.VpsAdmin)
+	}
+	if len(cfg.Locations) != 2 || len(cfg.WebServices) != 3 || len(cfg.NameServers) != 2 {
+		t.Fatalf("sample config counts = locations:%d web:%d nameservers:%d", len(cfg.Locations), len(cfg.WebServices), len(cfg.NameServers))
+	}
+	if cfg.Locations[0].Nodes[0].Id != 101 || cfg.Locations[0].Nodes[0].Name != "node1.prg" {
+		t.Fatalf("sample first node = %+v", cfg.Locations[0].Nodes[0])
+	}
+}
+
 func TestParseConfigReturnsInvalidJSONError(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "config.json")
 	if err := os.WriteFile(path, []byte(`{"listen_address":`), 0o644); err != nil {
