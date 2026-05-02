@@ -15,39 +15,62 @@ var (
 	poolScans  = []string{"none", "scrub", "resilver"}
 )
 
+type vpsAdminNodeStatusClient interface {
+	PublicNodeStatus() (*client.ActionNodePublicStatusResponse, error)
+}
+
+type liveVpsAdminNodeStatusClient struct {
+	api *client.Client
+}
+
+func (c liveVpsAdminNodeStatusClient) PublicNodeStatus() (*client.ActionNodePublicStatusResponse, error) {
+	return c.api.Node.PublicStatus.Prepare().Call()
+}
+
 func checkApi(st *Status, checkInterval time.Duration) {
-	api := client.New(st.VpsAdmin.Api.Url)
+	api := liveVpsAdminNodeStatusClient{api: client.New(st.VpsAdmin.Api.Url)}
 
 	for {
-		publicStatus := api.Node.PublicStatus.Prepare()
 		now := time.Now()
-		st.VpsAdmin.Api.LastCheck = now
-
-		resp, err := publicStatus.Call()
-
-		if err != nil {
-			log.Printf("Unable to check API: %+v", err)
-			failApi(st, "", now)
-			time.Sleep(checkInterval)
-			continue
-		} else if !resp.Status {
-			log.Printf("Failed to list nodes: %s", resp.Message)
-			failApi(st, resp.Message, now)
-			time.Sleep(checkInterval)
-			continue
-		}
-
-		st.VpsAdmin.Api.Status = true
-		st.VpsAdmin.Api.Maintenance = false
-
-		for _, node := range resp.Output {
-			updateNode(node, st, now)
-		}
-
-		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "api"}).Set(0)
-
+		refreshVpsAdminNodesOnce(st, api, now)
 		time.Sleep(checkInterval)
 	}
+}
+
+func refreshVpsAdminNodesOnce(st *Status, api vpsAdminNodeStatusClient, now time.Time) {
+	st.VpsAdmin.Api.LastCheck = now
+
+	resp, err := api.PublicNodeStatus()
+	if err != nil {
+		log.Printf("Unable to check API: %+v", err)
+		failApi(st, "", now)
+		return
+	} else if !resp.Status {
+		log.Printf("Failed to list nodes: %s", resp.Message)
+		failApi(st, resp.Message, now)
+		return
+	}
+
+	st.VpsAdmin.Api.Status = true
+	st.VpsAdmin.Api.Maintenance = false
+
+	seen := make(map[string]struct{}, len(resp.Output))
+	for _, node := range resp.Output {
+		if st.GlobalNodeMap[node.Name] != nil {
+			seen[node.Name] = struct{}{}
+		}
+		updateNode(node, st, now)
+	}
+
+	for _, loc := range st.LocationList {
+		for _, node := range loc.NodeList {
+			if _, ok := seen[node.Name]; !ok {
+				markNodeMissingFromAPI(st, loc, node, now)
+			}
+		}
+	}
+
+	st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "api"}).Set(0)
 }
 
 func failApi(st *Status, message string, now time.Time) {
@@ -57,7 +80,18 @@ func failApi(st *Status, message string, now time.Time) {
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {
 			node.ApiStatus = false
+			node.ApiMaintenance = st.VpsAdmin.Api.Maintenance
+			node.PoolStatus = false
 			node.LastApiCheck = now
+
+			status := 2.0
+			if st.VpsAdmin.Api.Maintenance {
+				status = 1
+			}
+
+			labels := nodePrometheusLabels(loc, node)
+			st.Exporter.nodeVpsAdminStatus.With(labels).Set(status)
+			st.Exporter.nodePoolStatus.With(labels).Set(status)
 		}
 	}
 
@@ -77,12 +111,7 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 		return
 	}
 
-	labels := prometheus.Labels{
-		"location_id":    strconv.FormatInt(apiNode.Location.Id, 10),
-		"location_label": apiNode.Location.Label,
-		"node_id":        strconv.Itoa(stNode.Id),
-		"node_name":      apiNode.Name,
-	}
+	labels := nodePrometheusLabelsForAPI(st, stNode, apiNode)
 
 	nodeStatusGauge := st.Exporter.nodeVpsAdminStatus.With(labels)
 	poolStateGauge := st.Exporter.nodePoolState.With(labels)
@@ -91,7 +120,9 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 	poolStatusGauge := st.Exporter.nodePoolStatus.With(labels)
 
 	stNode.LastApiCheck = now
-	stNode.LocationId = int(apiNode.Location.Id)
+	if apiNode.Location != nil {
+		stNode.LocationId = int(apiNode.Location.Id)
+	}
 	stNode.OsType = apiNode.HypervisorType
 
 	stNode.PoolState = apiNode.PoolState
@@ -116,8 +147,8 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 		stNode.ApiStatus = true
 		stNode.ApiMaintenance = true
 		stNode.PoolStatus = true
-		nodeStatusGauge.Set(0)
-		poolStatusGauge.Set(0)
+		nodeStatusGauge.Set(1)
+		poolStatusGauge.Set(1)
 		return
 	}
 
@@ -149,12 +180,61 @@ func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now ti
 
 	if stNode.ApiMaintenance {
 		nodeStatusGauge.Set(1)
-		poolStatusGauge.Set(1)
 	} else if stNode.ApiStatus {
 		nodeStatusGauge.Set(0)
-		poolStatusGauge.Set(0)
 	} else {
 		nodeStatusGauge.Set(2)
+	}
+
+	if stNode.ApiMaintenance {
+		poolStatusGauge.Set(1)
+	} else if stNode.PoolStatus {
+		poolStatusGauge.Set(0)
+	} else {
 		poolStatusGauge.Set(2)
+	}
+}
+
+func markNodeMissingFromAPI(st *Status, loc *Location, node *Node, now time.Time) {
+	node.ApiStatus = false
+	node.ApiMaintenance = false
+	node.PoolStatus = false
+	node.LastApiCheck = now
+
+	labels := nodePrometheusLabels(loc, node)
+	st.Exporter.nodeVpsAdminStatus.With(labels).Set(2)
+	st.Exporter.nodePoolStatus.With(labels).Set(2)
+}
+
+func nodePrometheusLabels(loc *Location, node *Node) prometheus.Labels {
+	return prometheus.Labels{
+		"location_id":    strconv.Itoa(loc.Id),
+		"location_label": loc.Label,
+		"node_id":        strconv.Itoa(node.Id),
+		"node_name":      node.Name,
+	}
+}
+
+func nodePrometheusLabelsForAPI(st *Status, node *Node, apiNode *client.ActionNodePublicStatusOutput) prometheus.Labels {
+	locationID := node.LocationId
+	locationLabel := ""
+
+	if apiNode.Location != nil {
+		locationID = int(apiNode.Location.Id)
+		locationLabel = apiNode.Location.Label
+	} else {
+		for _, loc := range st.LocationList {
+			if loc.Id == locationID {
+				locationLabel = loc.Label
+				break
+			}
+		}
+	}
+
+	return prometheus.Labels{
+		"location_id":    strconv.Itoa(locationID),
+		"location_label": locationLabel,
+		"node_id":        strconv.Itoa(node.Id),
+		"node_name":      node.Name,
 	}
 }
