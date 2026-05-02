@@ -30,6 +30,7 @@ func newTestApplication(t *testing.T) (*application, *Status, *config.Config) {
 	cfg := &config.Config{
 		ListenAddress: ":0",
 		DataDir:       ".",
+		HistoryDir:    filepath.Join(t.TempDir(), "history"),
 		NoticeFile:    filepath.Join(t.TempDir(), "notice.html"),
 		CheckInterval: 30,
 		VpsAdmin: config.VpsAdmin{
@@ -76,6 +77,11 @@ func newTestApplication(t *testing.T) (*application, *Status, *config.Config) {
 	}
 
 	st := openConfig(cfg)
+	history, err := openHistoryStore(cfg.HistoryDir)
+	if err != nil {
+		t.Fatalf("open history store: %v", err)
+	}
+	st.History = history
 	app := &application{
 		config: cfg,
 		status: st,

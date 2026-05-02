@@ -21,7 +21,9 @@ func pingNodes(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {
 			go spawnPingCheck(
+				st,
 				node.Ping,
+				ProbeTarget{EntityKind: historyEntityNode, EntityID: node.Name, EntityLabel: node.Name, Method: "Ping"},
 				st.Exporter.nodePing.With(prometheus.Labels{
 					"location_id":    strconv.Itoa(loc.Id),
 					"location_label": loc.Label,
@@ -38,7 +40,9 @@ func pingDnsResolvers(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, r := range loc.DnsResolverList {
 			go spawnPingCheck(
+				st,
 				r.Ping,
+				ProbeTarget{EntityKind: historyEntityDnsResolver, EntityID: r.Name, EntityLabel: r.Name, Method: "Ping"},
 				st.Exporter.dnsResolverPing.With(prometheus.Labels{"name": r.Name}),
 				checkInterval,
 			)
@@ -49,16 +53,21 @@ func pingDnsResolvers(st *Status, checkInterval time.Duration) {
 func pingNameServers(st *Status, checkInterval time.Duration) {
 	for _, ns := range st.Services.NameServer {
 		go spawnPingCheck(
+			st,
 			ns.Ping,
+			ProbeTarget{EntityKind: historyEntityNameServer, EntityID: ns.Name, EntityLabel: ns.Name, Method: "Ping"},
 			st.Exporter.nameServerPing.With(prometheus.Labels{"name": ns.Name}),
 			checkInterval,
 		)
 	}
 }
 
-func spawnPingCheck(pc *PingCheck, gauge prometheus.Gauge, checkInterval time.Duration) {
+func spawnPingCheck(st *Status, pc *PingCheck, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration) {
 	for {
-		checkPingOnce(pc, gauge, runPing, time.Now())
+		now := time.Now()
+		checkPingOnce(pc, gauge, runPing, now)
+		status, message := pingProbeStatus(pc)
+		recordProbeStatus(st, target, status, message, now)
 		time.Sleep(checkInterval)
 	}
 }

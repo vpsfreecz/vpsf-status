@@ -15,13 +15,17 @@ type httpRequestDoer interface {
 
 func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
 	go spawnHttpCheck(
+		st,
 		st.VpsAdmin.Webui,
+		ProbeTarget{EntityKind: historyEntityVpsAdmin, EntityID: "webui", EntityLabel: vpsAdminServiceLabel("webui"), Method: "HTTP"},
 		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "webui"}),
 		checkInterval,
 	)
 
 	go spawnHttpCheck(
+		st,
 		st.VpsAdmin.Console,
+		ProbeTarget{EntityKind: historyEntityVpsAdmin, EntityID: "console", EntityLabel: vpsAdminServiceLabel("console"), Method: "HTTP"},
 		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "console"}),
 		checkInterval,
 	)
@@ -30,16 +34,21 @@ func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
 func checkWebServices(st *Status, checkInterval time.Duration) {
 	for _, ws := range st.Services.Web {
 		go spawnHttpCheck(
+			st,
 			ws,
+			ProbeTarget{EntityKind: historyEntityWebService, EntityID: ws.Label, EntityLabel: ws.Label, Method: "HTTP"},
 			st.Exporter.webServiceStatus.With(prometheus.Labels{"service": ws.Label}),
 			checkInterval,
 		)
 	}
 }
 
-func spawnHttpCheck(ws *WebService, gauge prometheus.Gauge, checkInterval time.Duration) {
+func spawnHttpCheck(st *Status, ws *WebService, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration) {
 	for {
-		checkHTTPOnce(ws, gauge, http.DefaultClient, time.Now())
+		now := time.Now()
+		checkHTTPOnce(ws, gauge, http.DefaultClient, now)
+		status, message := webServiceProbeStatus(ws)
+		recordProbeStatus(st, target, status, message, now)
 		time.Sleep(checkInterval)
 	}
 }

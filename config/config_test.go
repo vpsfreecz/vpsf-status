@@ -53,6 +53,12 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 	if cfg.NoticeFile != "notice.html" {
 		t.Fatalf("NoticeFile = %q, want notice.html", cfg.NoticeFile)
 	}
+	if cfg.HistoryDir != "/var/lib/vpsf-status" {
+		t.Fatalf("HistoryDir = %q, want /var/lib/vpsf-status", cfg.HistoryDir)
+	}
+	if cfg.HistoryDays != DefaultHistoryDays {
+		t.Fatalf("HistoryDays = %d, want %d", cfg.HistoryDays, DefaultHistoryDays)
+	}
 	if cfg.CheckInterval != 30 {
 		t.Fatalf("CheckInterval = %d, want 30", cfg.CheckInterval)
 	}
@@ -95,6 +101,33 @@ func TestParseConfigReturnsInvalidJSONError(t *testing.T) {
 
 	if _, err := ParseConfig(path); err == nil {
 		t.Fatal("ParseConfig returned nil error for invalid JSON")
+	}
+}
+
+func TestParseConfigPreservesHistoryDays(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"history_days": 180}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := ParseConfig(path)
+	if err != nil {
+		t.Fatalf("ParseConfig: %v", err)
+	}
+
+	if cfg.HistoryDays != 180 {
+		t.Fatalf("HistoryDays = %d, want 180", cfg.HistoryDays)
+	}
+}
+
+func TestParseConfigRejectsNegativeHistoryDays(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"history_days": -1}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	if _, err := ParseConfig(path); err == nil {
+		t.Fatal("ParseConfig returned nil error for negative history_days")
 	}
 }
 

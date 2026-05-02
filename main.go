@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
 )
@@ -20,6 +21,14 @@ func main() {
 	}
 
 	systemStatus := openConfig(cfg)
+	history, err := openHistoryStore(cfg.HistoryDir)
+	if err != nil {
+		log.Fatalf("Unable to initialize history storage: %+v", err)
+	}
+	systemStatus.History = history
+	if err := recordConfiguredEntitySnapshots(systemStatus, time.Now()); err != nil {
+		log.Printf("Unable to store entity snapshots: %+v", err)
+	}
 
 	app := application{config: cfg, status: systemStatus}
 

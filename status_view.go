@@ -1,15 +1,19 @@
 package main
 
+import "time"
+
 type StatusView struct {
 	VpsAdmin      VpsAdminView
 	Locations     []LocationView
 	Services      ServicesView
 	OutageReports *OutageReports
+	History       map[string]HistoryBarView
 }
 
 type VpsAdminView struct {
 	VpsAdmin
 
+	History    HistoryBarView
 	TotalUp    int
 	TotalCount int
 }
@@ -26,6 +30,7 @@ type LocationView struct {
 	DnsResolversCount    int
 	DnsResolversDegraded bool
 	Degraded             bool
+	History              HistoryBarView
 }
 
 type ServicesView struct {
@@ -40,15 +45,26 @@ type ServicesView struct {
 	NameServerCount    int
 	NameServerDegraded bool
 	Degraded           bool
+	History            HistoryBarView
 }
 
-func createStatusView(st *Status) StatusView {
-	return StatusView{
+func createStatusView(st *Status, now time.Time) StatusView {
+	ret := StatusView{
 		VpsAdmin:      createVpsAdminView(st.VpsAdmin),
 		Locations:     createLocationView(st.LocationList),
 		Services:      createServicesView(st.Services),
 		OutageReports: st.OutageReports,
 	}
+
+	groups, history := createHistoryViews(st, now)
+	ret.History = history
+	ret.VpsAdmin.History = groups.VpsAdmin
+	for i := range ret.Locations {
+		ret.Locations[i].History = groups.Locations[ret.Locations[i].Id]
+	}
+	ret.Services.History = groups.Services
+
+	return ret
 }
 
 func createVpsAdminView(vpsa VpsAdmin) VpsAdminView {

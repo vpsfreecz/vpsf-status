@@ -2,12 +2,17 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
+
+const DefaultHistoryDays = 90
 
 type Config struct {
 	ListenAddress string       `json:"listen_address"`
 	DataDir       string       `json:"data_dir"`
+	HistoryDir    string       `json:"history_dir"`
+	HistoryDays   int          `json:"history_days"`
 	NoticeFile    string       `json:"notice_file"`
 	CheckInterval int          `json:"check_interval"`
 	VpsAdmin      VpsAdmin     `json:"vpsadmin"`
@@ -66,6 +71,17 @@ func ParseConfig(path string) (*Config, error) {
 
 	if cfg.NoticeFile == "" {
 		cfg.NoticeFile = "notice.html"
+	}
+
+	if cfg.HistoryDir == "" {
+		cfg.HistoryDir = "/var/lib/vpsf-status"
+	}
+
+	if cfg.HistoryDays < 0 {
+		return nil, fmt.Errorf("history_days must not be negative")
+	}
+	if cfg.HistoryDays == 0 {
+		cfg.HistoryDays = DefaultHistoryDays
 	}
 
 	if cfg.CheckInterval == 0 {

@@ -9,20 +9,30 @@ import (
 )
 
 type Status struct {
-	Initialized   bool
-	VpsAdmin      VpsAdmin
-	OutageReports *OutageReports
-	LocationList  []*Location
-	LocationMap   map[string]*Location
-	GlobalNodeMap map[string]*Node
-	Services      *Services
-	Exporter      *Exporter
+	Initialized       bool
+	VpsAdmin          VpsAdmin
+	VpsAdminLocations map[int64]VpsAdminLocation
+	OutageReports     *OutageReports
+	History           *HistoryStore
+	HistoryDays       int
+	LocationList      []*Location
+	LocationMap       map[string]*Location
+	GlobalNodeMap     map[string]*Node
+	Services          *Services
+	Exporter          *Exporter
 }
 
 type VpsAdmin struct {
 	Api     *WebService
 	Webui   *WebService
 	Console *WebService
+}
+
+type VpsAdminLocation struct {
+	Id               int64
+	Label            string
+	EnvironmentId    int64
+	EnvironmentLabel string
 }
 
 type OutageReports struct {
@@ -40,6 +50,7 @@ type OutageReports struct {
 type OutageReport struct {
 	Id               int64
 	BeginsAt         time.Time
+	FinishedAt       time.Time
 	Duration         time.Duration
 	Type             string
 	State            string
@@ -121,9 +132,11 @@ type PingCheck struct {
 
 func openConfig(cfg *config.Config) *Status {
 	st := Status{
-		LocationList:  make([]*Location, len(cfg.Locations)),
-		LocationMap:   make(map[string]*Location),
-		GlobalNodeMap: make(map[string]*Node),
+		VpsAdminLocations: make(map[int64]VpsAdminLocation),
+		HistoryDays:       cfg.HistoryDays,
+		LocationList:      make([]*Location, len(cfg.Locations)),
+		LocationMap:       make(map[string]*Location),
+		GlobalNodeMap:     make(map[string]*Node),
 		Services: &Services{
 			Web:        make([]*WebService, len(cfg.WebServices)),
 			NameServer: make([]*DnsResolver, len(cfg.NameServers)),
@@ -133,6 +146,9 @@ func openConfig(cfg *config.Config) *Status {
 			RecentList: make([]*OutageReport, 0),
 		},
 		Exporter: newExporter(),
+	}
+	if st.HistoryDays == 0 {
+		st.HistoryDays = config.DefaultHistoryDays
 	}
 
 	st.VpsAdmin.Api = &WebService{
@@ -229,6 +245,36 @@ func openConfig(cfg *config.Config) *Status {
 	}
 
 	return &st
+}
+
+func recordConfiguredEntitySnapshots(st *Status, now time.Time) error {
+	if st == nil || st.History == nil {
+		return nil
+	}
+
+	snapshots := make([]HistoryEntitySnapshot, 0)
+	for _, loc := range st.LocationList {
+		for _, node := range loc.NodeList {
+			locationID := int64(node.LocationId)
+			if locationID == 0 {
+				locationID = int64(loc.Id)
+			}
+
+			snapshots = append(snapshots, HistoryEntitySnapshot{
+				EntityKind:         historyEntityNode,
+				EntityID:           node.Name,
+				EntityLabel:        node.Name,
+				NodeID:             int64(node.Id),
+				GroupKind:          historyGroupLocation,
+				GroupID:            loc.Id,
+				GroupLabel:         loc.Label,
+				VpsAdminLocationID: locationID,
+				LastSeen:           now,
+			})
+		}
+	}
+
+	return st.History.RecordEntitySnapshots(snapshots)
 }
 
 func (st *Status) initialize(cfg *config.Config) {

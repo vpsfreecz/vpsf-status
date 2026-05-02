@@ -12,6 +12,7 @@ import (
 type outageReportsClient interface {
 	ListOutages(recentSince string, order string) (*client.ActionOutageIndexResponse, error)
 	ListOutageEntities(outageID int64) (*client.ActionOutageEntityIndexResponse, error)
+	ListLocations() (*client.ActionLocationIndexResponse, error)
 }
 
 type liveOutageReportsClient struct {
@@ -35,6 +36,10 @@ func (c liveOutageReportsClient) ListOutageEntities(outageID int64) (*client.Act
 	return list.Call()
 }
 
+func (c liveOutageReportsClient) ListLocations() (*client.ActionLocationIndexResponse, error) {
+	return c.api.Location.Index.Prepare().Call()
+}
+
 func checkOutageReports(st *Status, checkInterval time.Duration) {
 	api := liveOutageReportsClient{api: client.New(st.VpsAdmin.Api.Url)}
 
@@ -45,7 +50,7 @@ func checkOutageReports(st *Status, checkInterval time.Duration) {
 }
 
 func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time) {
-	resp, err := api.ListOutages(now.AddDate(0, 0, -2).Format(time.RFC3339), "oldest")
+	resp, err := api.ListOutages(now.AddDate(0, 0, -historyDaysForStatus(st)).Format(time.RFC3339), "oldest")
 
 	if err != nil {
 		log.Printf("Unable to fetch outages: %+v", err)
@@ -57,11 +62,13 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 		return
 	}
 
-	reports := &OutageReports{
-		Status:     true,
-		ActiveList: make([]*OutageReport, 0),
-		RecentList: make([]*OutageReport, 0),
+	if locations, err := fetchVpsAdminLocations(api); err != nil {
+		log.Printf("Unable to fetch vpsAdmin locations: %+v", err)
+	} else {
+		st.VpsAdminLocations = locations
 	}
+
+	allReports := make([]*OutageReport, 0, len(resp.Output))
 
 	for _, outage := range resp.Output {
 		v := OutageReport{
@@ -84,35 +91,67 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 			log.Printf("Unable to parse outage time %v: %+v", outage.BeginsAt, err)
 		}
 
+		if outage.FinishedAt != "" {
+			finishedAt, err := time.Parse("2006-01-02T15:04:05Z", outage.FinishedAt)
+			if err == nil {
+				v.FinishedAt = finishedAt
+			} else {
+				log.Printf("Unable to parse outage finish time %v: %+v", outage.FinishedAt, err)
+			}
+		}
+
 		if err := fetchOutageEntities(api, &v); err != nil {
 			log.Printf("Unable to fetch entities of outage #%d: %+v", v.Id, err)
 		}
 
-		if v.State == "announced" {
+		allReports = append(allReports, &v)
+	}
+
+	if st.History != nil {
+		if err := st.History.ReplaceOutages(allReports, now); err != nil {
+			log.Printf("Unable to store outage history: %+v", err)
+		}
+	}
+
+	reports := createCurrentOutageReports(allReports, now)
+	slices.Reverse(reports.RecentList)
+	st.OutageReports = reports
+}
+
+func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *OutageReports {
+	reports := &OutageReports{
+		Status:     true,
+		ActiveList: make([]*OutageReport, 0),
+		RecentList: make([]*OutageReport, 0),
+	}
+
+	recentSince := now.AddDate(0, 0, -2)
+
+	for _, report := range allReports {
+		if report.State == "announced" {
 			reports.AnyActive = true
 
-			if v.Type == "maintenance" {
+			if report.Type == "maintenance" {
 				reports.AnyActiveMaintenance = true
 			} else {
 				reports.AnyActiveOutage = true
 			}
 
-			reports.ActiveList = append(reports.ActiveList, &v)
-		} else {
+			reports.ActiveList = append(reports.ActiveList, report)
+		} else if !report.BeginsAt.IsZero() && !report.BeginsAt.Before(recentSince) {
 			reports.AnyRecent = true
 
-			if v.Type == "maintenance" {
+			if report.Type == "maintenance" {
 				reports.AnyRecentMaintenance = true
 			} else {
 				reports.AnyRecentOutage = true
 			}
 
-			reports.RecentList = append(reports.RecentList, &v)
+			reports.RecentList = append(reports.RecentList, report)
 		}
 	}
 
-	slices.Reverse(reports.RecentList)
-	st.OutageReports = reports
+	return reports
 }
 
 func failOutages(st *Status) {
@@ -136,4 +175,34 @@ func fetchOutageEntities(api outageReportsClient, report *OutageReport) error {
 	}
 
 	return nil
+}
+
+func fetchVpsAdminLocations(api outageReportsClient) (map[int64]VpsAdminLocation, error) {
+	resp, err := api.ListLocations()
+	if err != nil {
+		return nil, err
+	} else if !resp.Status {
+		return nil, fmt.Errorf("failed to list locations: %s", resp.Message)
+	}
+
+	ret := make(map[int64]VpsAdminLocation, len(resp.Output))
+	for _, loc := range resp.Output {
+		if loc == nil {
+			continue
+		}
+
+		v := VpsAdminLocation{
+			Id:    loc.Id,
+			Label: loc.Label,
+		}
+
+		if loc.Environment != nil {
+			v.EnvironmentId = loc.Environment.Id
+			v.EnvironmentLabel = loc.Environment.Label
+		}
+
+		ret[v.Id] = v
+	}
+
+	return ret, nil
 }

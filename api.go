@@ -60,17 +60,25 @@ func refreshVpsAdminNodesOnce(st *Status, api vpsAdminNodeStatusClient, now time
 			seen[node.Name] = struct{}{}
 		}
 		updateNode(node, st, now)
+		if stNode := st.GlobalNodeMap[node.Name]; stNode != nil {
+			recordNodeProbes(st, stNode, now)
+		}
 	}
 
 	for _, loc := range st.LocationList {
 		for _, node := range loc.NodeList {
 			if _, ok := seen[node.Name]; !ok {
 				markNodeMissingFromAPI(st, loc, node, now)
+				recordNodeProbes(st, node, now)
 			}
 		}
 	}
+	if err := recordConfiguredEntitySnapshots(st, now); err != nil {
+		log.Printf("Unable to store entity snapshots: %+v", err)
+	}
 
 	st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "api"}).Set(0)
+	recordVpsAdminServiceProbe(st, "api", st.VpsAdmin.Api, now)
 }
 
 func failApi(st *Status, message string, now time.Time) {
@@ -102,6 +110,13 @@ func failApi(st *Status, message string, now time.Time) {
 		gauge.Set(1)
 	} else {
 		gauge.Set(2)
+	}
+
+	recordVpsAdminServiceProbe(st, "api", st.VpsAdmin.Api, now)
+	for _, loc := range st.LocationList {
+		for _, node := range loc.NodeList {
+			recordNodeProbes(st, node, now)
+		}
 	}
 }
 

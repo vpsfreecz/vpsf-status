@@ -72,7 +72,7 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 	now := app.currentTime()
-	view := createStatusView(app.status)
+	view := createStatusView(app.status, now)
 
 	notice, err := readNoticeFile(app.config.NoticeFile)
 	if err != nil {

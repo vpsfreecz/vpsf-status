@@ -16,7 +16,9 @@ func checkDnsResolvers(st *Status, checkInterval time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, r := range loc.DnsResolverList {
 			go spawnDnsResolverCheck(
+				st,
 				r,
+				ProbeTarget{EntityKind: historyEntityDnsResolver, EntityID: r.Name, EntityLabel: r.Name, Method: "Lookup"},
 				st.Exporter.dnsResolverLookup.With(prometheus.Labels{"name": r.Name}),
 				checkInterval,
 			)
@@ -27,16 +29,26 @@ func checkDnsResolvers(st *Status, checkInterval time.Duration) {
 func checkNameServers(st *Status, checkInterval time.Duration) {
 	for _, ns := range st.Services.NameServer {
 		go spawnDnsResolverCheck(
+			st,
 			ns,
+			ProbeTarget{EntityKind: historyEntityNameServer, EntityID: ns.Name, EntityLabel: ns.Name, Method: "Lookup"},
 			st.Exporter.nameServerLookup.With(prometheus.Labels{"name": ns.Name}),
 			checkInterval,
 		)
 	}
 }
 
-func spawnDnsResolverCheck(r *DnsResolver, gauge prometheus.Gauge, checkInterval time.Duration) {
+func spawnDnsResolverCheck(st *Status, r *DnsResolver, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration) {
 	for {
-		checkDNSResolverOnce(r, gauge, lookupThroughDNSResolver, time.Now())
+		now := time.Now()
+		checkDNSResolverOnce(r, gauge, lookupThroughDNSResolver, now)
+		status := historyProbeStateError
+		message := "lookup failed"
+		if r.ResolveStatus {
+			status = historyProbeStateOperational
+			message = "lookup succeeded"
+		}
+		recordProbeStatus(st, target, status, message, now)
 		time.Sleep(checkInterval)
 	}
 }

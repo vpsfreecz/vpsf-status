@@ -12,6 +12,8 @@ type fakeOutageClient struct {
 	resp        *client.ActionOutageIndexResponse
 	err         error
 	entities    map[int64]*client.ActionOutageEntityIndexResponse
+	locations   *client.ActionLocationIndexResponse
+	locationErr error
 	recentSince string
 	order       string
 }
@@ -34,6 +36,16 @@ func (f *fakeOutageClient) ListOutageEntities(outageID int64) (*client.ActionOut
 	return outageEntityResponse(true, nil), nil
 }
 
+func (f *fakeOutageClient) ListLocations() (*client.ActionLocationIndexResponse, error) {
+	if f.locationErr != nil {
+		return nil, f.locationErr
+	}
+	if f.locations != nil {
+		return f.locations, nil
+	}
+	return locationIndexResponse(true, nil), nil
+}
+
 func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{
@@ -47,11 +59,14 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 			1001: outageEntityResponse(true, []*client.ActionOutageEntityIndexOutput{{Name: "node", EntityId: 101, Label: "node1.prg"}}),
 			1004: outageEntityResponse(true, []*client.ActionOutageEntityIndexOutput{{Name: "location", EntityId: 3, Label: "Praha"}}),
 		},
+		locations: locationIndexResponse(true, []*client.ActionLocationIndexOutput{
+			{Id: 7, Label: "Staging", Environment: &client.ActionEnvironmentShowOutput{Id: 5, Label: "Staging"}},
+		}),
 	}
 
 	refreshOutageReportsOnce(st, api, fixedNow)
 
-	if api.order != "oldest" || api.recentSince != fixedNow.AddDate(0, 0, -2).Format(time.RFC3339) {
+	if api.order != "oldest" || api.recentSince != fixedNow.AddDate(0, 0, -historyDefaultDays).Format(time.RFC3339) {
 		t.Fatalf("ListOutages called with recentSince=%q order=%q", api.recentSince, api.order)
 	}
 
@@ -70,6 +85,44 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 	}
 	if got := reports.RecentList[0].AffectedEntities[0]; got.Name != "location" || got.Id != 3 || got.Label != "Praha" {
 		t.Fatalf("recent outage entity = %+v", got)
+	}
+	if got := st.VpsAdminLocations[7]; got.Id != 7 || got.Label != "Staging" || got.EnvironmentId != 5 || got.EnvironmentLabel != "Staging" {
+		t.Fatalf("vpsAdmin location metadata = %+v", got)
+	}
+}
+
+func TestRefreshOutageReportsOnceKeepsOldReportsOnlyInHistory(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	api := &fakeOutageClient{
+		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
+			apiOutage(1001, "outage", "resolved", fixedNow.Add(-10*24*time.Hour), 30, "full", "Old outage"),
+			apiOutage(1002, "outage", "resolved", fixedNow.Add(-1*time.Hour), 15, "full", "Recent outage"),
+		}),
+	}
+
+	refreshOutageReportsOnce(st, api, fixedNow)
+
+	if len(st.OutageReports.RecentList) != 1 || st.OutageReports.RecentList[0].Id != 1002 {
+		t.Fatalf("recent reports = %+v", st.OutageReports.RecentList)
+	}
+
+	historyReports := st.History.OutageReports()
+	if len(historyReports) != 2 {
+		t.Fatalf("history reports = %+v, want 2", historyReports)
+	}
+}
+
+func TestRefreshOutageReportsOnceUsesConfiguredHistoryDays(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	st.HistoryDays = 14
+	api := &fakeOutageClient{
+		resp: outageIndexResponse(true, "", nil),
+	}
+
+	refreshOutageReportsOnce(st, api, fixedNow)
+
+	if api.recentSince != fixedNow.AddDate(0, 0, -14).Format(time.RFC3339) {
+		t.Fatalf("recentSince = %q, want 14 day window", api.recentSince)
 	}
 }
 
@@ -157,6 +210,25 @@ func TestRefreshOutageReportsOncePreservesOutageWhenEntityFetchFails(t *testing.
 	}
 }
 
+func TestRefreshOutageReportsOncePreservesOutagesWhenLocationFetchFails(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	api := &fakeOutageClient{
+		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
+			apiOutage(1001, "outage", "announced", fixedNow, 15, "full", "Location fetch failed"),
+		}),
+		locationErr: errors.New("locations failed"),
+	}
+
+	refreshOutageReportsOnce(st, api, fixedNow)
+
+	if !st.OutageReports.Status || len(st.OutageReports.ActiveList) != 1 {
+		t.Fatalf("outage should be preserved: %+v", st.OutageReports)
+	}
+	if got := st.OutageReports.ActiveList[0]; got.Id != 1001 {
+		t.Fatalf("outage = %+v", got)
+	}
+}
+
 func TestRefreshOutageReportsOnceHandlesMalformedBeginTime(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	outage := apiOutage(1001, "maintenance", "announced", fixedNow, 15, "partial", "Bad time")
@@ -199,6 +271,13 @@ func apiOutage(id int64, outageType string, state string, beginsAt time.Time, du
 
 func outageEntityResponse(status bool, output []*client.ActionOutageEntityIndexOutput) *client.ActionOutageEntityIndexResponse {
 	return &client.ActionOutageEntityIndexResponse{
+		Envelope: &client.Envelope{Status: status},
+		Output:   output,
+	}
+}
+
+func locationIndexResponse(status bool, output []*client.ActionLocationIndexOutput) *client.ActionLocationIndexResponse {
+	return &client.ActionLocationIndexResponse{
 		Envelope: &client.Envelope{Status: status},
 		Output:   output,
 	}
