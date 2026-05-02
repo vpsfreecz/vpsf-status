@@ -2,7 +2,6 @@ package config
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 )
 
@@ -55,17 +54,15 @@ type NameServer struct {
 }
 
 func ParseConfig(path string) (*Config, error) {
-	file, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
 
-	defer file.Close()
-
-	byteResult, _ := ioutil.ReadAll(file)
-
 	var cfg = Config{}
-	json.Unmarshal([]byte(byteResult), &cfg)
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return nil, err
+	}
 
 	if cfg.NoticeFile == "" {
 		cfg.NoticeFile = "notice.html"
