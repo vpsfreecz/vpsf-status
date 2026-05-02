@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/vpsfreecz/vpsf-status/config"
 )
@@ -30,20 +29,8 @@ func main() {
 
 	go systemStatus.initialize(cfg)
 
-	http.HandleFunc("/", app.handleIndex)
-	http.HandleFunc("/json", app.handleJson)
-	http.Handle("/metrics", systemStatus.Exporter.httpHandler())
-	http.HandleFunc("/about", app.handleAbout)
-	http.Handle(
-		"/static/",
-		http.StripPrefix(
-			"/static/",
-			http.FileServer(http.Dir(filepath.Join(cfg.DataDir, "public"))),
-		),
-	)
-
 	fmt.Printf("Starting server...\n")
-	if err := http.ListenAndServe(cfg.ListenAddress, nil); err != nil {
+	if err := http.ListenAndServe(cfg.ListenAddress, app.routes()); err != nil {
 		log.Fatal(err)
 	}
 }

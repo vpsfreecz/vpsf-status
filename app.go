@@ -16,6 +16,7 @@ type application struct {
 	config    *config.Config
 	status    *Status
 	templates htmlTemplate
+	now       func() time.Time
 }
 
 type htmlTemplate struct {
@@ -70,7 +71,7 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 }
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
-	now := time.Now()
+	now := app.currentTime()
 	view := createStatusView(app.status)
 
 	notice, err := readNoticeFile(app.config.NoticeFile)
@@ -108,7 +109,7 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
-	now := time.Now()
+	now := app.currentTime()
 
 	notice, err := readNoticeFile(app.config.NoticeFile)
 	if err != nil {
@@ -136,4 +137,28 @@ func (app *application) handleAbout(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
 	w.Header().Set("Cache-Control", fmt.Sprintf("max-age=%d", seconds))
+}
+
+func (app *application) routes() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", app.handleIndex)
+	mux.HandleFunc("/json", app.handleJson)
+	mux.Handle("/metrics", app.status.Exporter.httpHandler())
+	mux.HandleFunc("/about", app.handleAbout)
+	mux.Handle(
+		"/static/",
+		http.StripPrefix(
+			"/static/",
+			http.FileServer(http.Dir(filepath.Join(app.config.DataDir, "public"))),
+		),
+	)
+	return mux
+}
+
+func (app *application) currentTime() time.Time {
+	if app.now != nil {
+		return app.now()
+	}
+
+	return time.Now()
 }
