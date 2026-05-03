@@ -147,7 +147,7 @@
 <div class="row">
 	<div class="col">
 		<h2>
-			<a class="text-body text-decoration-none" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ template "status_counts" .Status.VpsAdmin.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ template "status_counts" .Status.VpsAdmin.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.VpsAdmin.History }}
@@ -232,7 +232,7 @@
 <div class="row mt-4 mb-4">
 	<div class="column">
 		<h2>
-			<a class="text-body text-decoration-none" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ template "status_counts" $loc.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ template "status_counts" $loc.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" $loc.History }}
@@ -371,7 +371,7 @@
 <div class="row">
 	<div class="col">
 		<h2>
-			<a class="text-body text-decoration-none" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ template "status_counts" .Status.Services.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ template "status_counts" .Status.Services.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.Services.History }}
