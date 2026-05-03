@@ -53,8 +53,8 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 	if cfg.NoticeFile != "notice.html" {
 		t.Fatalf("NoticeFile = %q, want notice.html", cfg.NoticeFile)
 	}
-	if cfg.HistoryDir != "/var/lib/vpsf-status" {
-		t.Fatalf("HistoryDir = %q, want /var/lib/vpsf-status", cfg.HistoryDir)
+	if cfg.StateDir != "/var/lib/vpsf-status" {
+		t.Fatalf("StateDir = %q, want /var/lib/vpsf-status", cfg.StateDir)
 	}
 	if cfg.HistoryDays != DefaultHistoryDays {
 		t.Fatalf("HistoryDays = %d, want %d", cfg.HistoryDays, DefaultHistoryDays)
@@ -79,7 +79,7 @@ func TestParseConfigSample(t *testing.T) {
 		t.Fatalf("ParseConfig sample: %v", err)
 	}
 
-	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" || cfg.HistoryDir != "/tmp/vpsf-status-history" || cfg.HistoryDays != 90 {
+	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" || cfg.StateDir != "/tmp/vpsf-status" || cfg.HistoryDays != 90 {
 		t.Fatalf("sample paths/listen values = %+v", cfg)
 	}
 	if cfg.VpsAdmin.ApiUrl == "" || cfg.VpsAdmin.WebuiUrl == "" || cfg.VpsAdmin.ConsoleUrl == "" {
@@ -104,6 +104,17 @@ func TestParseConfigReturnsInvalidJSONError(t *testing.T) {
 
 	if _, err := ParseConfig(path); err == nil {
 		t.Fatal("ParseConfig returned nil error for invalid JSON")
+	}
+}
+
+func TestParseConfigRejectsHistoryDir(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"history_dir": "/tmp/vpsf-status-history"}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	if _, err := ParseConfig(path); err == nil {
+		t.Fatal("ParseConfig returned nil error for history_dir")
 	}
 }
 

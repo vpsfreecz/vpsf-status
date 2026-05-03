@@ -11,7 +11,7 @@ const DefaultHistoryDays = 90
 type Config struct {
 	ListenAddress string       `json:"listen_address"`
 	DataDir       string       `json:"data_dir"`
-	HistoryDir    string       `json:"history_dir"`
+	StateDir      string       `json:"state_dir"`
 	HistoryDays   int          `json:"history_days"`
 	NoticeFile    string       `json:"notice_file"`
 	CheckInterval int          `json:"check_interval"`
@@ -64,6 +64,14 @@ func ParseConfig(path string) (*Config, error) {
 		return nil, err
 	}
 
+	var keys map[string]json.RawMessage
+	if err := json.Unmarshal(data, &keys); err != nil {
+		return nil, err
+	}
+	if _, ok := keys["history_dir"]; ok {
+		return nil, fmt.Errorf("history_dir was renamed to state_dir")
+	}
+
 	var cfg = Config{}
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, err
@@ -73,8 +81,8 @@ func ParseConfig(path string) (*Config, error) {
 		cfg.NoticeFile = "notice.html"
 	}
 
-	if cfg.HistoryDir == "" {
-		cfg.HistoryDir = "/var/lib/vpsf-status"
+	if cfg.StateDir == "" {
+		cfg.StateDir = "/var/lib/vpsf-status"
 	}
 
 	if cfg.HistoryDays < 0 {

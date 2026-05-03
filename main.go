@@ -21,7 +21,7 @@ func main() {
 	}
 
 	systemStatus := openConfig(cfg)
-	history, err := openHistoryStore(cfg.HistoryDir)
+	history, err := openHistoryStore(cfg.StateDir)
 	if err != nil {
 		log.Fatalf("Unable to initialize history storage: %+v", err)
 	}

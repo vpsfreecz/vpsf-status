@@ -1,7 +1,7 @@
 {
 	"listen_address": ":8080",
 	"data_dir": ".",
-	"history_dir": "/tmp/vpsf-status-history",
+	"state_dir": "/tmp/vpsf-status",
 	"history_days": 90,
 	"notice_file": "notice.html",
 	"vpsadmin": {
