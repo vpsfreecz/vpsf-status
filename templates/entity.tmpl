@@ -9,15 +9,12 @@
 			</a>
 			<h1 class="navbar-text float-start">Status</h1>
 		</div>
-		<span class="navbar-text">
-			Rendered at: {{ .RenderedAt }}
-		</span>
+		<a class="navbar-link" href="/">Back to Status</a>
 	</div>
 </nav>
 
 <div class="row">
 	<div class="col">
-		<p><a href="/">Status</a></p>
 		<h2 class="text-{{ .Entity.StatusClass }}">{{ .Entity.Label }}</h2>
 		<p>
 			<span class="badge text-bg-secondary">{{ .Entity.Group }}</span>

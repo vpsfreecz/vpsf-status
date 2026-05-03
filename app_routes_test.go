@@ -98,6 +98,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"node1.prg",
+		`<a class="navbar-link" href="/">Back to Status</a>`,
 		"Availability",
 		"30 days",
 		"90 days",
@@ -116,6 +117,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 	)
 
 	body := rr.Body.String()
+	requireNotContains(t, body, "Rendered at:", `<p><a href="/">Status</a></p>`)
 	if strings.Index(body, "Availability") > strings.Index(body, "Probe log") {
 		t.Fatalf("availability should be rendered above probe log")
 	}
