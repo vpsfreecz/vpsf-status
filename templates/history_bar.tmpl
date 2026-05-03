@@ -18,9 +18,15 @@
 				{{ range .Incidents }}
 				<li>
 					{{ if .URL }}
-					<a href="{{ .URL }}" target="_blank" rel="noopener">{{ .Text }}</a>
+					<a class="history-popover-incident-title" href="{{ .URL }}" target="_blank" rel="noopener">{{ .Text }}</a>
 					{{ else }}
-					{{ .Text }}
+					<span class="history-popover-incident-title">{{ .Text }}</span>
+					{{ end }}
+					{{ if .HasMetadata }}
+					<span class="history-popover-meta">
+						{{ if .StartLabel }}<span>{{ .StartLabel }}</span>{{ end }}
+						{{ if .DurationLabel }}<span>{{ .DurationLabel }}</span>{{ end }}
+					</span>
 					{{ end }}
 				</li>
 				{{ end }}

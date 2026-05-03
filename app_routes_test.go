@@ -340,11 +340,12 @@ func TestRoutesServeVpsAdminGroupDetail(t *testing.T) {
 func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
+	beginsAt := fixedNow.Add(-24 * time.Hour)
 
 	if err := st.History.ReplaceOutages([]*OutageReport{
 		{
 			Id:        2001,
-			BeginsAt:  fixedNow.Add(-24 * time.Hour),
+			BeginsAt:  beginsAt,
 			Duration:  30 * time.Minute,
 			Type:      "outage",
 			State:     "resolved",
@@ -365,6 +366,8 @@ func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 		rr.Body.String(),
 		"history-popover",
 		"Outage: Power failure",
+		"Started: "+beginsAt.Local().Format(historyIncidentTimeFormat),
+		"Expected duration: 30 min",
 		`href="https://vpsadmin.vpsfree.cz/?page=outage&amp;action=show&amp;id=2001"`,
 		`target="_blank"`,
 	)

@@ -444,6 +444,16 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 	if len(node1.Lanes) != 0 {
 		t.Fatalf("per-entity node history lanes = %+v, want none", node1.Lanes)
 	}
+	if incident, ok := historyDayIncident(node1, fixedNow.Add(-24*time.Hour), "Outage: Power failure"); !ok {
+		t.Fatalf("node1 outage incidents = %+v, want outage incident", historyDayIncidents(node1, fixedNow.Add(-24*time.Hour)))
+	} else if incident.StartLabel != "Started: "+nodeOutage.BeginsAt.Local().Format(historyIncidentTimeFormat) || incident.DurationLabel != "Expected duration: 30 min" {
+		t.Fatalf("node1 outage incident = %+v, want start and expected duration", incident)
+	}
+	if incident, ok := historyDayIncident(node2, fixedNow, "Probe: node2.prg Ping not responding"); !ok {
+		t.Fatalf("node2 probe incidents = %+v, want probe incident", historyDayIncidents(node2, fixedNow))
+	} else if incident.StartLabel != "Started: "+fixedNow.Add(-10*time.Minute).Local().Format(historyIncidentTimeFormat) || incident.DurationLabel != "Observed duration: 10 min so far" {
+		t.Fatalf("node2 probe incident = %+v, want start and observed duration", incident)
+	}
 
 	if got := historyDayState(praha, fixedNow.Add(-24*time.Hour)); got != historySeverityOutage {
 		t.Fatalf("Praha outage day = %q, want outage", got)
@@ -838,12 +848,17 @@ func historyDayLaneState(bar HistoryBarView, day time.Time, key string) string {
 }
 
 func historyDayHasIncident(bar HistoryBarView, day time.Time, text string) bool {
+	_, ok := historyDayIncident(bar, day, text)
+	return ok
+}
+
+func historyDayIncident(bar HistoryBarView, day time.Time, text string) (HistoryIncidentView, bool) {
 	for _, incident := range historyDayIncidents(bar, day) {
 		if incident.Text == text {
-			return true
+			return incident, true
 		}
 	}
-	return false
+	return HistoryIncidentView{}, false
 }
 
 func historyDayIncidents(bar HistoryBarView, day time.Time) []HistoryIncidentView {

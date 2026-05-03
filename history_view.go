@@ -24,8 +24,10 @@ type HistoryDayView struct {
 }
 
 type HistoryIncidentView struct {
-	Text string
-	URL  string
+	Text          string
+	URL           string
+	StartLabel    string
+	DurationLabel string
 }
 
 type HistoryLaneView struct {
@@ -81,6 +83,8 @@ const (
 	historyGroupVpsAdmin = "vpsadmin"
 	historyGroupLocation = "location"
 	historyGroupServices = "services"
+
+	historyIncidentTimeFormat = "2006-01-02 15:04 MST"
 )
 
 func (sv *StatusView) HistoryFor(kind string, id string) HistoryBarView {
@@ -124,6 +128,21 @@ func (b HistoryBarView) DayCount() int {
 	return len(b.Days)
 }
 
+func (i HistoryIncidentView) HasMetadata() bool {
+	return i.StartLabel != "" || i.DurationLabel != ""
+}
+
+func (i HistoryIncidentView) Summary() string {
+	parts := []string{i.Text}
+	if i.StartLabel != "" {
+		parts = append(parts, i.StartLabel)
+	}
+	if i.DurationLabel != "" {
+		parts = append(parts, i.DurationLabel)
+	}
+	return strings.Join(parts, ", ")
+}
+
 func historyStateClass(state string) string {
 	switch state {
 	case historySeverityOutage:
@@ -146,7 +165,7 @@ func (d HistoryDayView) SummaryLabel() string {
 
 	summaries := make([]string, len(d.Incidents))
 	for i, incident := range d.Incidents {
-		summaries[i] = incident.Text
+		summaries[i] = incident.Summary()
 	}
 
 	return d.Label + ": " + strings.Join(summaries, "; ")
@@ -198,7 +217,7 @@ func createHistoryViews(st *Status, now time.Time) (historyGroupViews, map[strin
 				endsAt = *incident.EndsAt
 			}
 
-			viewIncident := probeHistoryIncident(incident)
+			viewIncident := probeHistoryIncident(incident, now)
 
 			key := historyKey(incident.EntityKind, incident.EntityID)
 			bar, ok := bars[key]
@@ -1033,6 +1052,10 @@ func outageSummary(report *OutageReport) string {
 
 func outageHistoryIncident(st *Status, report *OutageReport) HistoryIncidentView {
 	ret := HistoryIncidentView{Text: outageSummary(report)}
+	if report != nil {
+		ret.StartLabel = historyIncidentStartLabel(report.BeginsAt)
+		ret.DurationLabel = historyIncidentDurationLabel("Expected duration", report.Duration, false)
+	}
 	if st == nil || report == nil || report.Id == 0 || st.VpsAdmin.Webui == nil || st.VpsAdmin.Webui.Url == "" {
 		return ret
 	}
@@ -1045,7 +1068,7 @@ func outageHistoryIncident(st *Status, report *OutageReport) HistoryIncidentView
 	return ret
 }
 
-func probeHistoryIncident(incident ProbeIncident) HistoryIncidentView {
+func probeHistoryIncident(incident ProbeIncident, now time.Time) HistoryIncidentView {
 	label := incident.EntityLabel
 	if label == "" {
 		label = incident.EntityID
@@ -1061,9 +1084,40 @@ func probeHistoryIncident(incident ProbeIncident) HistoryIncidentView {
 		message = status
 	}
 
-	return HistoryIncidentView{
-		Text: fmt.Sprintf("Probe: %s %s %s", label, incident.Method, message),
+	endsAt := now
+	open := incident.EndsAt == nil
+	if incident.EndsAt != nil {
+		endsAt = *incident.EndsAt
 	}
+	if endsAt.Before(incident.StartsAt) {
+		endsAt = incident.StartsAt
+	}
+
+	return HistoryIncidentView{
+		Text:          fmt.Sprintf("Probe: %s %s %s", label, incident.Method, message),
+		StartLabel:    historyIncidentStartLabel(incident.StartsAt),
+		DurationLabel: historyIncidentDurationLabel("Observed duration", endsAt.Sub(incident.StartsAt), open),
+	}
+}
+
+func historyIncidentStartLabel(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	return "Started: " + t.Local().Format(historyIncidentTimeFormat)
+}
+
+func historyIncidentDurationLabel(label string, duration time.Duration, soFar bool) string {
+	if duration < 0 {
+		duration = 0
+	}
+
+	ret := fmt.Sprintf("%s: %d min", label, int(duration/time.Minute))
+	if soFar {
+		ret += " so far"
+	}
+	return ret
 }
 
 func localDay(t time.Time) time.Time {
@@ -1095,7 +1149,7 @@ func hostText(rawurl string) string {
 
 func containsHistoryIncident(values []HistoryIncidentView, needle HistoryIncidentView) bool {
 	for _, value := range values {
-		if value.Text == needle.Text && value.URL == needle.URL {
+		if value == needle {
 			return true
 		}
 	}
