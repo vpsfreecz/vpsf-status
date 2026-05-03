@@ -19,9 +19,11 @@ type EntityDetailView struct {
 }
 
 type AvailabilityView struct {
-	Label     string
-	Percent   string
-	Available bool
+	Label             string
+	Reported          string
+	ReportedAvailable bool
+	Probe             string
+	ProbeAvailable    bool
 }
 
 type ProbeEventView struct {
@@ -101,12 +103,17 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 
 	for _, stat := range entityAvailability(st, kind, id, now) {
 		view := AvailabilityView{
-			Label:     stat.Label,
-			Available: stat.Available,
-			Percent:   "n/a",
+			Label:    stat.Label,
+			Reported: "n/a",
+			Probe:    "n/a",
 		}
-		if stat.Available {
-			view.Percent = formatAvailabilityPercent(stat.Percent)
+		if stat.Reported.Available {
+			view.ReportedAvailable = true
+			view.Reported = formatAvailabilityPercent(stat.Reported.Percent)
+		}
+		if stat.Probe.Available {
+			view.ProbeAvailable = true
+			view.Probe = formatAvailabilityPercent(stat.Probe.Percent)
 		}
 		ret.Availability = append(ret.Availability, view)
 	}

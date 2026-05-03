@@ -16,7 +16,12 @@ type availabilityWindow struct {
 }
 
 type availabilityResult struct {
-	Label     string
+	Label    string
+	Reported availabilityMetric
+	Probe    availabilityMetric
+}
+
+type availabilityMetric struct {
 	Available bool
 	Percent   float64
 }
@@ -58,7 +63,7 @@ func entityAvailability(st *Status, kind string, id string, now time.Time) []ava
 
 	reports := historyOutageReports(st)
 	mapping := newHistoryEntityMapping(st)
-	fallbackAvailable := availabilityOutageFallbackAvailable(st, reports)
+	reportsAvailable := availabilityOutageReportsAvailable(st, reports)
 	windows := availabilityWindows(now)
 	ret := make([]availabilityResult, 0, len(windows))
 
@@ -68,7 +73,7 @@ func entityAvailability(st *Status, kind string, id string, now time.Time) []ava
 			events = st.History.ProbeEventsForAvailability(kind, id, method, window.Start, window.End)
 		}
 
-		result := calculateAvailability(kind, id, window, events, reports, mapping, fallbackAvailable)
+		result := calculateAvailability(kind, id, window, events, reports, mapping, reportsAvailable)
 		ret = append(ret, result)
 	}
 
@@ -82,16 +87,49 @@ func calculateAvailability(
 	events []ProbeEvent,
 	reports []*OutageReport,
 	mapping *historyEntityMapping,
-	fallbackAvailable bool,
+	reportsAvailable bool,
 ) availabilityResult {
+	return availabilityResult{
+		Label:    window.Label,
+		Reported: calculateReportedAvailability(kind, id, window, reports, mapping, reportsAvailable),
+		Probe:    calculateProbeAvailability(window, events),
+	}
+}
+
+func calculateReportedAvailability(
+	kind string,
+	id string,
+	window availabilityWindow,
+	reports []*OutageReport,
+	mapping *historyEntityMapping,
+	reportsAvailable bool,
+) availabilityMetric {
+	total := window.End.Sub(window.Start)
+	if total <= 0 || !reportsAvailable {
+		return availabilityMetric{}
+	}
+
+	unavailable := outageUnavailableDuration(
+		kind,
+		id,
+		reports,
+		mapping,
+		[]availabilityInterval{{Start: window.Start, End: window.End}},
+		window.End,
+	)
+
+	return availabilityMetricFromUnavailable(total, unavailable)
+}
+
+func calculateProbeAvailability(window availabilityWindow, events []ProbeEvent) availabilityMetric {
 	total := window.End.Sub(window.Start)
 	if total <= 0 {
-		return availabilityResult{Label: window.Label}
+		return availabilityMetric{}
 	}
 
 	segments, missing := probeAvailabilitySegments(events, window.Start, window.End)
-	if len(missing) > 0 && !fallbackAvailable {
-		return availabilityResult{Label: window.Label}
+	if len(missing) > 0 {
+		return availabilityMetric{}
 	}
 
 	unavailable := time.Duration(0)
@@ -101,10 +139,10 @@ func calculateAvailability(
 		}
 	}
 
-	if len(missing) > 0 {
-		unavailable += outageUnavailableDuration(kind, id, reports, mapping, missing, window.End)
-	}
+	return availabilityMetricFromUnavailable(total, unavailable)
+}
 
+func availabilityMetricFromUnavailable(total time.Duration, unavailable time.Duration) availabilityMetric {
 	available := total - unavailable
 	if available < 0 {
 		available = 0
@@ -113,8 +151,7 @@ func calculateAvailability(
 		available = total
 	}
 
-	return availabilityResult{
-		Label:     window.Label,
+	return availabilityMetric{
 		Available: true,
 		Percent:   roundAvailabilityPercent(float64(available) / float64(total) * 100),
 	}
@@ -281,7 +318,7 @@ func availabilityProbeMethod(kind string) (string, bool) {
 	}
 }
 
-func availabilityOutageFallbackAvailable(st *Status, reports []*OutageReport) bool {
+func availabilityOutageReportsAvailable(st *Status, reports []*OutageReport) bool {
 	if st == nil {
 		return false
 	}

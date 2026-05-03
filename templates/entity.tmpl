@@ -35,14 +35,16 @@
 			<thead>
 				<tr>
 					<th>Period</th>
-					<th class="text-end">Availability</th>
+					<th class="text-end">Reported</th>
+					<th class="text-end">Probe</th>
 				</tr>
 			</thead>
 			<tbody>
 				{{ range $stat := .Entity.Availability }}
 				<tr>
 					<td>{{ $stat.Label }}</td>
-					<td class="text-end{{ if not $stat.Available }} text-muted{{ end }}">{{ $stat.Percent }}</td>
+					<td class="text-end{{ if not $stat.ReportedAvailable }} text-muted{{ end }}">{{ $stat.Reported }}</td>
+					<td class="text-end{{ if not $stat.ProbeAvailable }} text-muted{{ end }}">{{ $stat.Probe }}</td>
 				</tr>
 				{{ end }}
 			</tbody>

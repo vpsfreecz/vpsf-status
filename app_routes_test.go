@@ -103,7 +103,10 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		"90 days",
 		"180 days",
 		"1 year",
-		"99.981%",
+		"Reported",
+		"Probe",
+		"100.000%",
+		"n/a",
 		"Probe log",
 		"Ping",
 		"Down",
@@ -118,7 +121,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 	}
 }
 
-func TestRoutesServeEntityDetailAvailabilityFromOutageFallbackWithoutProbeLogRows(t *testing.T) {
+func TestRoutesServeEntityDetailReportedAvailabilityWithoutProbeLogRows(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
 
@@ -138,7 +141,10 @@ func TestRoutesServeEntityDetailAvailabilityFromOutageFallbackWithoutProbeLogRow
 		t,
 		rr.Body.String(),
 		"Availability",
+		"Reported",
+		"Probe",
 		"96.667%",
+		"n/a",
 		"Probe log",
 		"No probe changes recorded.",
 	)

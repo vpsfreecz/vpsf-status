@@ -34,7 +34,8 @@ func TestAvailabilityUsesProbeTransitionsAndCountsDegradedUp(t *testing.T) {
 		}
 	}
 
-	requireAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 93.333)
+	requireReportedAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 100)
+	requireProbeAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 93.333)
 }
 
 func TestAvailabilityUsesOnlySelectedProbeMethod(t *testing.T) {
@@ -57,10 +58,10 @@ func TestAvailabilityUsesOnlySelectedProbeMethod(t *testing.T) {
 		}
 	}
 
-	requireAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 100)
+	requireProbeAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 100)
 }
 
-func TestAvailabilityFallsBackToOutageReportsWhenProbeHistoryIsMissing(t *testing.T) {
+func TestAvailabilityReportsOutagesWhenProbeHistoryIsMissing(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
 
@@ -74,10 +75,11 @@ func TestAvailabilityFallsBackToOutageReportsWhenProbeHistoryIsMissing(t *testin
 		t.Fatalf("replace outages: %v", err)
 	}
 
-	requireAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 96.667)
+	requireReportedAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 96.667)
+	requireProbeAvailabilityUnavailable(t, st, historyEntityNode, "node1.prg", "30 days")
 }
 
-func TestAvailabilityUsesOutageFallbackOnlyBeforeFirstProbeEvent(t *testing.T) {
+func TestAvailabilityKeepsReportedAndProbeDowntimeIndependent(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
 
@@ -104,7 +106,7 @@ func TestAvailabilityUsesOutageFallbackOnlyBeforeFirstProbeEvent(t *testing.T) {
 		status string
 		at     time.Time
 	}{
-		{historyProbeStateOperational, windowStart.Add(10 * 24 * time.Hour)},
+		{historyProbeStateOperational, windowStart.Add(-time.Hour)},
 		{historyProbeStateDown, windowStart.Add(20 * 24 * time.Hour)},
 		{historyProbeStateOperational, windowStart.Add(21 * 24 * time.Hour)},
 	}
@@ -114,7 +116,36 @@ func TestAvailabilityUsesOutageFallbackOnlyBeforeFirstProbeEvent(t *testing.T) {
 		}
 	}
 
-	requireAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 93.333)
+	requireReportedAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 93.333)
+	requireProbeAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 96.667)
+}
+
+func TestAvailabilityDoesNotFillProbeGapsFromOutageReports(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	windowStart := fixedNow.AddDate(0, 0, -30)
+	reports := []*OutageReport{
+		availabilityTestOutage(5001, windowStart.Add(24*time.Hour), 24*time.Hour, []OutageEntity{
+			{Name: "Node", Id: 101, Label: "Node node1.prg"},
+		}),
+	}
+	if err := st.History.ReplaceOutages(reports, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	target := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateOperational, "responding", windowStart.Add(10*24*time.Hour)); err != nil {
+		t.Fatalf("record probe status: %v", err)
+	}
+
+	requireReportedAvailabilityPercent(t, st, historyEntityNode, "node1.prg", "30 days", 96.667)
+	requireProbeAvailabilityUnavailable(t, st, historyEntityNode, "node1.prg", "30 days")
 }
 
 func TestAvailabilityIsUnavailableWithoutProbeHistoryOrOutageFallback(t *testing.T) {
@@ -124,8 +155,8 @@ func TestAvailabilityIsUnavailableWithoutProbeHistoryOrOutageFallback(t *testing
 	if len(stats) == 0 {
 		t.Fatal("availability stats are empty")
 	}
-	if stats[0].Available {
-		t.Fatalf("availability = %+v, want unavailable", stats[0])
+	if stats[0].Reported.Available || stats[0].Probe.Available {
+		t.Fatalf("availability = %+v, want both sources unavailable", stats[0])
 	}
 }
 
@@ -209,29 +240,58 @@ func TestAvailabilityFallbackMapsOutageEntities(t *testing.T) {
 				t.Fatalf("replace outages: %v", err)
 			}
 
-			requireAvailabilityPercent(t, st, tt.kind, tt.id, "30 days", 96.667)
+			requireReportedAvailabilityPercent(t, st, tt.kind, tt.id, "30 days", 96.667)
+			requireProbeAvailabilityUnavailable(t, st, tt.kind, tt.id, "30 days")
 		})
 	}
 }
 
-func requireAvailabilityPercent(t *testing.T, st *Status, kind string, id string, label string, want float64) {
+func requireReportedAvailabilityPercent(t *testing.T, st *Status, kind string, id string, label string, want float64) {
+	t.Helper()
+
+	stat := availabilityStat(t, st, kind, id, label)
+	requireAvailabilityMetricPercent(t, stat.Reported, label+" reported", want)
+}
+
+func requireProbeAvailabilityPercent(t *testing.T, st *Status, kind string, id string, label string, want float64) {
+	t.Helper()
+
+	stat := availabilityStat(t, st, kind, id, label)
+	requireAvailabilityMetricPercent(t, stat.Probe, label+" probe", want)
+}
+
+func requireProbeAvailabilityUnavailable(t *testing.T, st *Status, kind string, id string, label string) {
+	t.Helper()
+
+	stat := availabilityStat(t, st, kind, id, label)
+	if stat.Probe.Available {
+		t.Fatalf("%s probe availability = %.3f, want unavailable", label, stat.Probe.Percent)
+	}
+}
+
+func requireAvailabilityMetricPercent(t *testing.T, metric availabilityMetric, name string, want float64) {
+	t.Helper()
+
+	if !metric.Available {
+		t.Fatalf("%s availability is unavailable, want %.3f", name, want)
+	}
+	if math.Abs(metric.Percent-want) > 0.0005 {
+		t.Fatalf("%s availability = %.3f, want %.3f", name, metric.Percent, want)
+	}
+}
+
+func availabilityStat(t *testing.T, st *Status, kind string, id string, label string) availabilityResult {
 	t.Helper()
 
 	stats := entityAvailability(st, kind, id, fixedNow)
 	for _, stat := range stats {
-		if stat.Label != label {
-			continue
+		if stat.Label == label {
+			return stat
 		}
-		if !stat.Available {
-			t.Fatalf("%s availability is unavailable, want %.3f", label, want)
-		}
-		if math.Abs(stat.Percent-want) > 0.0005 {
-			t.Fatalf("%s availability = %.3f, want %.3f", label, stat.Percent, want)
-		}
-		return
 	}
 
 	t.Fatalf("availability label %q not found in %+v", label, stats)
+	return availabilityResult{}
 }
 
 func availabilityTestOutage(id int64, beginsAt time.Time, duration time.Duration, entities []OutageEntity) *OutageReport {
