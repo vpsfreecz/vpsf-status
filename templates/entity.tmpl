@@ -62,6 +62,9 @@
 			<thead>
 				<tr>
 					<th>Time</th>
+					{{ if .Entity.ShowEventEntity }}
+					<th>Entity</th>
+					{{ end }}
 					<th>Method</th>
 					<th>Status</th>
 					<th>Message</th>
@@ -71,6 +74,9 @@
 				{{ range $event := .Entity.Events }}
 				<tr class="table-{{ $event.StatusClass }}">
 					<td>{{ $event.ChangedAt }}</td>
+					{{ if $.Entity.ShowEventEntity }}
+					<td>{{ $event.Entity }}</td>
+					{{ end }}
 					<td>{{ $event.Method }}</td>
 					<td>{{ $event.Status }}</td>
 					<td>{{ $event.Message }}</td>

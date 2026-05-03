@@ -95,6 +95,15 @@ func (sv *StatusView) DetailURL(kind string, id string) string {
 	return "/entity?kind=" + url.QueryEscape(kind) + "&id=" + url.QueryEscape(id)
 }
 
+func (sv *StatusView) GroupDetailURL(kind string, id any) string {
+	ret := "/group?kind=" + url.QueryEscape(kind)
+	idString := fmt.Sprint(id)
+	if idString != "" {
+		ret += "&id=" + url.QueryEscape(idString)
+	}
+	return ret
+}
+
 func (d HistoryDayView) Class() string {
 	return historyStateClass(d.State)
 }

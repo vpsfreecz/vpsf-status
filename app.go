@@ -142,6 +142,26 @@ func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
+	now := app.currentTime()
+	group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+	if !ok {
+		http.NotFound(w, r)
+		return
+	}
+
+	app.setCacheControl(w, 1)
+
+	err := app.templates.entity.Execute(w, EntityData{
+		Config:     app.config,
+		Entity:     group,
+		RenderedAt: now.Format(time.UnixDate),
+	})
+	if err != nil {
+		log.Printf("Template error: %+v", err)
+	}
+}
+
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 	now := app.currentTime()
 
@@ -177,6 +197,7 @@ func (app *application) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleIndex)
 	mux.HandleFunc("/entity", app.handleEntity)
+	mux.HandleFunc("/group", app.handleGroup)
 	mux.HandleFunc("/json", app.handleJson)
 	mux.Handle("/metrics", app.status.Exporter.httpHandler())
 	mux.HandleFunc("/about", app.handleAbout)

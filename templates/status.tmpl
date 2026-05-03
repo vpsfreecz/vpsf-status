@@ -145,7 +145,7 @@
 <div class="row">
 	<div class="col">
 		<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
-			vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+			<a class="text-reset text-decoration-none" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.VpsAdmin.History }}
@@ -230,7 +230,7 @@
 <div class="row mt-4 mb-4">
 	<div class="column">
 		<h2 class="text-{{ if $loc.IsOperational }}success{{ else if $loc.IsDegraded }}warning{{ else }}danger{{ end }}">
-			{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}
+			<a class="text-reset text-decoration-none" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" $loc.History }}
@@ -369,7 +369,7 @@
 <div class="row">
 	<div class="col">
 		<h2 class="text-{{ if .Status.Services.IsOperational }}success{{ else if .Status.Services.IsDegraded }}warning{{ else }}danger{{ end }}">
-			Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}
+			<a class="text-reset text-decoration-none" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.Services.History }}

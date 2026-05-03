@@ -17,6 +17,7 @@ type EntityDetailView struct {
 	Availability             []AvailabilityView
 	Events                   []ProbeEventView
 	ShowReportedAvailability bool
+	ShowEventEntity          bool
 }
 
 type AvailabilityView struct {
@@ -29,6 +30,7 @@ type AvailabilityView struct {
 
 type ProbeEventView struct {
 	ChangedAt   string
+	Entity      string
 	Method      string
 	Status      string
 	StatusClass string
@@ -103,7 +105,18 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 		return EntityDetailView{}, false
 	}
 
-	for _, stat := range entityAvailability(st, kind, id, now) {
+	ret.Availability = availabilityDetailViews(entityAvailability(st, kind, id, now))
+
+	if st.History != nil {
+		ret.Events = probeEventDetailViews(st.History.ProbeEventsFor(kind, id, now, historyDaysForStatus(st)))
+	}
+
+	return ret, true
+}
+
+func availabilityDetailViews(stats []availabilityResult) []AvailabilityView {
+	ret := make([]AvailabilityView, 0, len(stats))
+	for _, stat := range stats {
 		view := AvailabilityView{
 			Label:    stat.Label,
 			Reported: "n/a",
@@ -117,22 +130,31 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 			view.ProbeAvailable = true
 			view.Probe = formatAvailabilityPercent(stat.Probe.Percent)
 		}
-		ret.Availability = append(ret.Availability, view)
+		ret = append(ret, view)
 	}
+	return ret
+}
 
-	if st.History != nil {
-		for _, event := range st.History.ProbeEventsFor(kind, id, now, historyDaysForStatus(st)) {
-			ret.Events = append(ret.Events, ProbeEventView{
-				ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
-				Method:      event.Method,
-				Status:      statusTitle(event.Status),
-				StatusClass: probeStatusClass(event.Status),
-				Message:     event.Message,
-			})
-		}
+func probeEventDetailViews(events []ProbeEvent) []ProbeEventView {
+	ret := make([]ProbeEventView, 0, len(events))
+	for _, event := range events {
+		ret = append(ret, ProbeEventView{
+			ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
+			Entity:      probeEventEntityLabel(event),
+			Method:      event.Method,
+			Status:      statusTitle(event.Status),
+			StatusClass: probeStatusClass(event.Status),
+			Message:     event.Message,
+		})
 	}
+	return ret
+}
 
-	return ret, true
+func probeEventEntityLabel(event ProbeEvent) string {
+	if event.EntityLabel != "" {
+		return event.EntityLabel
+	}
+	return event.EntityID
 }
 
 func vpsAdminServiceByID(st *Status, id string) *WebService {

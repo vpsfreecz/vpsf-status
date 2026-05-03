@@ -55,6 +55,10 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		"Brno 1/1",
 		"Services 3/3",
 		"Name Servers 1/1",
+		`href="/group?kind=vpsadmin"`,
+		`href="/group?kind=location&amp;id=3"`,
+		`href="/group?kind=location&amp;id=4"`,
+		`href="/group?kind=services"`,
 		"node1.prg",
 		`href="/entity?kind=node&amp;id=node1.prg"`,
 		"node2.prg",
@@ -180,6 +184,158 @@ func TestRoutesServeEntityDetailHidesUnsupportedReportedAvailability(t *testing.
 	requireNotContains(t, body, "Reported")
 }
 
+func TestRoutesServeGroupDetails(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	windowStart := fixedNow.AddDate(0, 0, -30)
+	if err := st.History.ReplaceOutages([]*OutageReport{
+		availabilityTestOutage(7101, windowStart.Add(24*time.Hour), 48*time.Hour, []OutageEntity{
+			{Name: "Node", Id: 101, Label: "Node node1.prg"},
+		}),
+	}, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	records := []struct {
+		target ProbeTarget
+		status string
+		at     time.Time
+	}{
+		{
+			target: ProbeTarget{EntityKind: historyEntityNode, EntityID: "node1.prg", EntityLabel: "node1.prg", Method: "Ping"},
+			status: historyProbeStateOperational,
+			at:     windowStart.Add(-time.Hour),
+		},
+		{
+			target: ProbeTarget{EntityKind: historyEntityNode, EntityID: "node2.prg", EntityLabel: "node2.prg", Method: "Ping"},
+			status: historyProbeStateOperational,
+			at:     windowStart.Add(-time.Hour),
+		},
+		{
+			target: ProbeTarget{EntityKind: historyEntityNode, EntityID: "node2.prg", EntityLabel: "node2.prg", Method: "Ping"},
+			status: historyProbeStateDown,
+			at:     windowStart.Add(24 * time.Hour),
+		},
+		{
+			target: ProbeTarget{EntityKind: historyEntityNode, EntityID: "node2.prg", EntityLabel: "node2.prg", Method: "Ping"},
+			status: historyProbeStateOperational,
+			at:     windowStart.Add(72 * time.Hour),
+		},
+		{
+			target: ProbeTarget{EntityKind: historyEntityDnsResolver, EntityID: "resolver-prg", EntityLabel: "resolver-prg", Method: "Lookup"},
+			status: historyProbeStateOperational,
+			at:     windowStart.Add(-time.Hour),
+		},
+	}
+	for _, record := range records {
+		if err := st.History.RecordProbeStatus(record.target, record.status, record.status, record.at); err != nil {
+			t.Fatalf("record probe status: %v", err)
+		}
+	}
+
+	rr := getThroughRoutes(t, app, "/group?kind=location&id=3")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(
+		t,
+		body,
+		"Praha",
+		"Location",
+		`aria-label="Praha history"`,
+		"Availability",
+		"Reported",
+		"Probe",
+		"96.667%",
+		"97.778%",
+		"Probe log",
+		"Entity",
+		"node2.prg",
+		"resolver-prg",
+	)
+}
+
+func TestRoutesServeGroupDetailCombinedProbeLog(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	records := []struct {
+		target ProbeTarget
+		status string
+		at     time.Time
+	}{
+		{
+			target: ProbeTarget{EntityKind: historyEntityNode, EntityID: "node1.prg", EntityLabel: "node1.prg", Method: "Ping"},
+			status: historyProbeStateDown,
+			at:     fixedNow.Add(-10 * time.Minute),
+		},
+		{
+			target: ProbeTarget{EntityKind: historyEntityDnsResolver, EntityID: "resolver-prg", EntityLabel: "resolver-prg", Method: "Lookup"},
+			status: historyProbeStateDown,
+			at:     fixedNow.Add(-5 * time.Minute),
+		},
+	}
+	for _, record := range records {
+		if err := st.History.RecordProbeStatus(record.target, record.status, record.status, record.at); err != nil {
+			t.Fatalf("record probe status: %v", err)
+		}
+	}
+
+	rr := getThroughRoutes(t, app, "/group?kind=location&id=3")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	resolverIndex := strings.Index(body, "<td>resolver-prg</td>")
+	nodeIndex := strings.Index(body, "<td>node1.prg</td>")
+	if resolverIndex == -1 || nodeIndex == -1 {
+		t.Fatalf("expected resolver and node probe rows in body:\n%s", body)
+	}
+	if resolverIndex > nodeIndex {
+		t.Fatalf("probe log should be sorted newest first")
+	}
+}
+
+func TestRoutesServeServiceGroupDetailHidesReportedAvailability(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	if err := st.History.RecordProbeStatus(ProbeTarget{
+		EntityKind:  historyEntityWebService,
+		EntityID:    "vpsfree.cz",
+		EntityLabel: "vpsfree.cz",
+		Method:      "HTTP",
+	}, historyProbeStateOperational, "HTTP 200", fixedNow.AddDate(-1, 0, 0).Add(-time.Hour)); err != nil {
+		t.Fatalf("record probe status: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/group?kind=services")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(t, body, "Services", "Availability", "Probe", "100.000%")
+	requireNotContains(t, body, "Reported")
+}
+
+func TestRoutesServeVpsAdminGroupDetail(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	rr := getThroughRoutes(t, app, "/group?kind=vpsadmin")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"vpsAdmin",
+		"Group",
+		"Availability",
+		"Reported",
+		"Probe",
+		"100.000%",
+	)
+}
+
 func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
@@ -218,6 +374,12 @@ func TestRoutesServeEntityDetailNotFound(t *testing.T) {
 	setOperationalFixture(st)
 
 	rr := getThroughRoutes(t, app, "/entity?kind=node&id=missing")
+	requireStatus(t, rr, http.StatusNotFound)
+
+	rr = getThroughRoutes(t, app, "/group?kind=location&id=999")
+	requireStatus(t, rr, http.StatusNotFound)
+
+	rr = getThroughRoutes(t, app, "/group?kind=unknown")
 	requireStatus(t, rr, http.StatusNotFound)
 }
 
