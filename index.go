@@ -115,6 +115,7 @@ func (app *application) renderIndexResponseLocked(now time.Time) (cachedResponse
 
 	entry := newCachedResponse(payload, now)
 	app.indexResponse.set(entry)
+	app.status.Exporter.indexLastRender.Set(float64(now.Unix()))
 	return entry, nil
 }
 

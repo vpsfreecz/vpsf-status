@@ -11,6 +11,7 @@ type Exporter struct {
 	registry            *prometheus.Registry
 	up                  prometheus.Gauge
 	notice              prometheus.Gauge
+	indexLastRender     prometheus.Gauge
 	vpsAdminStatus      *prometheus.GaugeVec
 	nodeVpsAdminStatus  *prometheus.GaugeVec
 	nodePing            *prometheus.GaugeVec
@@ -38,6 +39,12 @@ func newExporter() *Exporter {
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_notice",
 				Help: "0 = no issue reported, 1 = there is a notice",
+			},
+		),
+		indexLastRender: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "vpsfstatus_index_last_render_timestamp_seconds",
+				Help: "Unix timestamp of the last successful index page render.",
 			},
 		),
 		vpsAdminStatus: prometheus.NewGaugeVec(
@@ -129,6 +136,7 @@ func newExporter() *Exporter {
 	exporter.registry.MustRegister(
 		exporter.up,
 		exporter.notice,
+		exporter.indexLastRender,
 		exporter.vpsAdminStatus,
 		exporter.nodeVpsAdminStatus,
 		exporter.nodePing,

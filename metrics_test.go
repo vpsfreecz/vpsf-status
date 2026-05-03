@@ -31,6 +31,7 @@ func TestRoutesServePrometheusMetricsContract(t *testing.T) {
 		"vpsfstatus_dns_resolver_ping_status",
 		"vpsfstatus_nameserver_lookup",
 		"vpsfstatus_nameserver_ping_status",
+		"vpsfstatus_index_last_render_timestamp_seconds",
 		"vpsfstatus_node_ping_status",
 		"vpsfstatus_node_pool_scan",
 		"vpsfstatus_node_pool_scan_percent",
@@ -49,6 +50,9 @@ func TestRoutesServePrometheusMetricsContract(t *testing.T) {
 	notice := requireGaugeFamily(t, families, "vpsfstatus_notice", "0 = no issue reported, 1 = there is a notice")
 	requireMetricCount(t, notice, 1)
 	requireUnlabeledMetricValue(t, notice, 1)
+	indexLastRender := requireGaugeFamily(t, families, "vpsfstatus_index_last_render_timestamp_seconds", "Unix timestamp of the last successful index page render.")
+	requireMetricCount(t, indexLastRender, 1)
+	requireUnlabeledMetricValue(t, indexLastRender, 0)
 
 	vpsAdmin := requireGaugeFamily(t, families, "vpsfstatus_vpsadmin_status", "0 = operational, 1 = under maintenance, 2 = down")
 	requireMetricCount(t, vpsAdmin, 3)
@@ -135,6 +139,8 @@ func TestRoutesServePrometheusInitialGaugeDefaults(t *testing.T) {
 	requireUnlabeledMetricValue(t, up, 0)
 	notice := requireGaugeFamily(t, families, "vpsfstatus_notice", "0 = no issue reported, 1 = there is a notice")
 	requireUnlabeledMetricValue(t, notice, 0)
+	indexLastRender := requireGaugeFamily(t, families, "vpsfstatus_index_last_render_timestamp_seconds", "Unix timestamp of the last successful index page render.")
+	requireUnlabeledMetricValue(t, indexLastRender, 0)
 }
 
 func TestRoutesServePrometheusNodeMetricValuesForDownNode(t *testing.T) {

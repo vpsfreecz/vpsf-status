@@ -720,6 +720,7 @@ func TestRoutesServePreRenderedIndexUntilRefreshed(t *testing.T) {
 	if _, err := app.refreshIndexResponse(now); err != nil {
 		t.Fatalf("pre-render index: %v", err)
 	}
+	requireUnlabeledMetricValue(t, scrapeMetrics(t, app)["vpsfstatus_index_last_render_timestamp_seconds"], float64(now.Unix()))
 
 	first := getThroughRoutes(t, app, "/")
 	requireStatus(t, first, http.StatusOK)
@@ -736,6 +737,7 @@ func TestRoutesServePreRenderedIndexUntilRefreshed(t *testing.T) {
 	if _, err := app.refreshIndexResponse(now); err != nil {
 		t.Fatalf("refresh index: %v", err)
 	}
+	requireUnlabeledMetricValue(t, scrapeMetrics(t, app)["vpsfstatus_index_last_render_timestamp_seconds"], float64(now.Unix()))
 
 	fresh := getThroughRoutes(t, app, "/")
 	requireStatus(t, fresh, http.StatusOK)
