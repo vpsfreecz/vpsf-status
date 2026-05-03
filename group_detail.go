@@ -11,7 +11,6 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time) (E
 		return EntityDetailView{}, false
 	}
 
-	groups, _ := createHistoryViews(st, now)
 	ret := EntityDetailView{
 		Kind:            kind,
 		ID:              id,
@@ -19,6 +18,7 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time) (E
 		ShowEventEntity: true,
 	}
 
+	var groupTarget historyGroupTarget
 	var probeTargets []historyEntityInfo
 	var reportedTargets []historyEntityInfo
 
@@ -27,8 +27,8 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time) (E
 		view := createVpsAdminView(st.VpsAdmin)
 		ret.Label = "vpsAdmin"
 		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
-		ret.History = groups.VpsAdmin
 		ret.ShowReportedAvailability = true
+		groupTarget = historyGroupTarget{Kind: historyGroupVpsAdmin}
 		probeTargets = vpsAdminGroupTargets()
 		reportedTargets = probeTargets
 	case historyGroupLocation:
@@ -45,21 +45,23 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time) (E
 		ret.Label = loc.Label
 		ret.Group = "Location"
 		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
-		ret.History = groups.Locations[loc.Id]
 		ret.ShowReportedAvailability = true
+		groupTarget = historyGroupTarget{Kind: historyGroupLocation, LocationID: loc.Id}
 		probeTargets = locationGroupTargets(loc)
 		reportedTargets = locationReportedTargets(loc)
 	case historyGroupServices:
 		view := createServicesView(st.Services)
 		ret.Label = "Services"
 		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
-		ret.History = groups.Services
+		groupTarget = historyGroupTarget{Kind: historyGroupServices}
 		probeTargets = servicesGroupTargets(st.Services)
 	default:
 		return EntityDetailView{}, false
 	}
 
-	ret.Availability = availabilityDetailViews(groupAvailability(st, probeTargets, reportedTargets, now))
+	data := newHistoryData(st, now)
+	ret.History = createGroupHistoryView(st, now, groupTarget, ret.Label, data)
+	ret.Availability = availabilityDetailViews(groupAvailabilityWithData(st, probeTargets, reportedTargets, now, data))
 	ret.Events = probeEventDetailViews(groupProbeEvents(st, probeTargets, now))
 	return ret, true
 }
@@ -151,12 +153,18 @@ func servicesGroupTargets(services *Services) []historyEntityInfo {
 }
 
 func groupAvailability(st *Status, probeTargets []historyEntityInfo, reportedTargets []historyEntityInfo, now time.Time) []availabilityResult {
+	return groupAvailabilityWithData(st, probeTargets, reportedTargets, now, newHistoryData(st, now))
+}
+
+func groupAvailabilityWithData(st *Status, probeTargets []historyEntityInfo, reportedTargets []historyEntityInfo, now time.Time, data *historyData) []availabilityResult {
+	data = ensureHistoryData(st, now, data)
 	windows := availabilityWindows(now)
 	ret := make([]availabilityResult, 0, len(windows))
 
-	reports := historyOutageReports(st)
-	mapping := newHistoryEntityMapping(st)
+	reports := data.reports
+	mapping := data.mapping
 	reportsAvailable := availabilityOutageReportsAvailable(st, reports)
+	eventsByTarget := availabilityProbeEventsByTarget(st, probeTargets, windows)
 
 	for _, window := range windows {
 		result := availabilityResult{Label: window.Label}
@@ -176,15 +184,11 @@ func groupAvailability(st *Status, probeTargets []historyEntityInfo, reportedTar
 
 		probeMetrics := make([]availabilityMetric, 0, len(probeTargets))
 		for _, target := range probeTargets {
-			method, ok := availabilityProbeMethod(target.Kind)
-			if !ok {
+			if _, ok := availabilityProbeMethod(target.Kind); !ok {
 				continue
 			}
 
-			var events []ProbeEvent
-			if st != nil && st.History != nil {
-				events = st.History.ProbeEventsForAvailability(target.Kind, target.ID, method, window.Start, window.End)
-			}
+			events := eventsByTarget[historyKey(target.Kind, target.ID)]
 			probeMetrics = append(probeMetrics, calculateProbeAvailability(window, events))
 		}
 		result.Probe = averageAvailabilityMetrics(probeMetrics)
@@ -221,11 +225,10 @@ func groupProbeEvents(st *Status, targets []historyEntityInfo, now time.Time) []
 	}
 
 	labels := make(map[string]string, len(targets))
-	ret := make([]ProbeEvent, 0)
 	for _, target := range targets {
 		labels[historyKey(target.Kind, target.ID)] = target.Label
-		ret = append(ret, st.History.ProbeEventsFor(target.Kind, target.ID, now, historyDaysForStatus(st))...)
 	}
+	ret := st.History.ProbeEventsForTargets(targets, now, historyDaysForStatus(st))
 
 	for i := range ret {
 		if ret[i].EntityLabel == "" {

@@ -50,13 +50,9 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 		return EntityDetailView{}, false
 	}
 
-	_, bars := createHistoryViews(st, now)
-	history := bars[historyKey(kind, id)]
-
 	ret := EntityDetailView{
 		Kind:                     kind,
 		ID:                       id,
-		History:                  history,
 		ShowReportedAvailability: availabilityReportedOutageSupported(kind),
 	}
 
@@ -105,7 +101,9 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 		return EntityDetailView{}, false
 	}
 
-	ret.Availability = availabilityDetailViews(entityAvailability(st, kind, id, now))
+	data := newHistoryData(st, now)
+	ret.History = createEntityHistoryView(st, now, kind, id, ret.Label, data)
+	ret.Availability = availabilityDetailViews(entityAvailabilityWithData(st, kind, id, now, data))
 
 	if st.History != nil {
 		ret.Events = probeEventDetailViews(st.History.ProbeEventsFor(kind, id, now, historyDaysForStatus(st)))

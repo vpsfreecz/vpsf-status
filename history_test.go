@@ -245,6 +245,65 @@ func TestHistoryStoreKeepsProbeHistoryAndQueriesWindow(t *testing.T) {
 	}
 }
 
+func TestHistoryStoreBatchesProbeEventQueries(t *testing.T) {
+	hs, err := openHistoryStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("open history store: %v", err)
+	}
+
+	windowStart := fixedNow.AddDate(0, 0, -30)
+	node1 := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	node2 := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node2.prg",
+		EntityLabel: "node2.prg",
+		Method:      "Ping",
+	}
+	records := []struct {
+		target  ProbeTarget
+		status  string
+		message string
+		at      time.Time
+	}{
+		{node1, historyProbeStateOperational, "responding", windowStart.Add(-time.Hour)},
+		{node1, historyProbeStateDown, "not responding", windowStart.Add(time.Hour)},
+		{node1, historyProbeStateOperational, "responding", windowStart.Add(2 * time.Hour)},
+		{node2, historyProbeStateOperational, "responding", windowStart.Add(-2 * time.Hour)},
+	}
+	for _, record := range records {
+		if err := hs.RecordProbeStatus(record.target, record.status, record.message, record.at); err != nil {
+			t.Fatalf("record probe status: %v", err)
+		}
+	}
+
+	targets := []historyEntityInfo{
+		{Kind: historyEntityNode, ID: "node1.prg", Label: "node1.prg"},
+		{Kind: historyEntityNode, ID: "node2.prg", Label: "node2.prg"},
+	}
+	availabilityEvents := hs.ProbeEventsForAvailabilityTargets(targets, windowStart, fixedNow)
+	node1Events := availabilityEvents[historyKey(historyEntityNode, "node1.prg")]
+	if len(node1Events) != 3 ||
+		node1Events[0].Status != historyProbeStateOperational ||
+		node1Events[1].Status != historyProbeStateDown ||
+		node1Events[2].Status != historyProbeStateOperational {
+		t.Fatalf("node1 availability events = %+v", node1Events)
+	}
+	node2Events := availabilityEvents[historyKey(historyEntityNode, "node2.prg")]
+	if len(node2Events) != 1 || node2Events[0].Status != historyProbeStateOperational {
+		t.Fatalf("node2 availability events = %+v", node2Events)
+	}
+
+	recentEvents := hs.ProbeEventsForTargets(targets, fixedNow, historyDefaultDays)
+	if len(recentEvents) != 4 || !recentEvents[0].ChangedAt.Equal(windowStart.Add(2*time.Hour)) {
+		t.Fatalf("batched recent events = %+v", recentEvents)
+	}
+}
+
 func TestHistoryStorePersistsOutages(t *testing.T) {
 	dir := t.TempDir()
 	hs, err := openHistoryStore(dir)

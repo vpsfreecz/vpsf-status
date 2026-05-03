@@ -53,6 +53,14 @@ type historyGroupTarget struct {
 	LocationID int
 }
 
+type historyData struct {
+	days           int
+	reports        []*OutageReport
+	probeIncidents []ProbeIncident
+	snapshots      []HistoryEntitySnapshot
+	mapping        *historyEntityMapping
+}
+
 type historyArchivedNode struct {
 	Key                string
 	ID                 string
@@ -172,7 +180,12 @@ func (d HistoryDayView) SummaryLabel() string {
 }
 
 func createHistoryViews(st *Status, now time.Time) (historyGroupViews, map[string]HistoryBarView) {
-	days := historyDaysForStatus(st)
+	return createHistoryViewsWithData(st, now, newHistoryData(st, now))
+}
+
+func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (historyGroupViews, map[string]HistoryBarView) {
+	data = ensureHistoryData(st, now, data)
+	days := data.days
 	entities := configuredHistoryEntities(st)
 	bars := make(map[string]HistoryBarView, len(entities))
 
@@ -180,12 +193,9 @@ func createHistoryViews(st *Status, now time.Time) (historyGroupViews, map[strin
 		bars[historyKey(entity.Kind, entity.ID)] = newHistoryBar(now, entity.Label, days)
 	}
 
-	mapping := newHistoryEntityMapping(st)
-	reports := historyOutageReports(st)
-	var probeIncidents []ProbeIncident
-	if st != nil && st.History != nil {
-		probeIncidents = st.History.ProbeIncidents(now, days)
-	}
+	mapping := data.mapping
+	reports := data.reports
+	probeIncidents := data.probeIncidents
 	archivedNodes := mapping.archivedNodesForHistoryWindow(reports, probeIncidents, now, days)
 
 	groups := newHistoryGroupViews(st, now, days, archivedNodesByGroup(archivedNodes))
@@ -231,6 +241,104 @@ func createHistoryViews(st *Status, now time.Time) (historyGroupViews, map[strin
 	}
 
 	return groups, bars
+}
+
+func createEntityHistoryView(st *Status, now time.Time, kind string, id string, label string, data *historyData) HistoryBarView {
+	data = ensureHistoryData(st, now, data)
+	bar := newHistoryBar(now, label, data.days)
+	key := historyKey(kind, id)
+
+	for _, report := range data.reports {
+		if _, ok := data.mapping.outageHistoryKeys(report)[key]; !ok {
+			continue
+		}
+
+		severity := historySeverityOutage
+		if report.IsMaintenance() {
+			severity = historySeverityMaintenance
+		}
+		applyHistoryIncident(&bar, report.BeginsAt, outageEndsAt(report), severity, outageHistoryIncident(st, report))
+	}
+
+	for _, incident := range data.probeIncidents {
+		if historyKey(incident.EntityKind, incident.EntityID) != key {
+			continue
+		}
+
+		endsAt := now
+		if incident.EndsAt != nil {
+			endsAt = *incident.EndsAt
+		}
+		applyHistoryIncident(&bar, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncident(incident, now))
+	}
+
+	return bar
+}
+
+func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget, label string, data *historyData) HistoryBarView {
+	data = ensureHistoryData(st, now, data)
+
+	archivedNodes := data.mapping.archivedNodesForHistoryWindow(data.reports, data.probeIncidents, now, data.days)
+	entityGroups := configuredHistoryEntityGroups(st, archivedNodes)
+
+	var lanes []HistoryLaneView
+	switch target.Kind {
+	case historyGroupVpsAdmin:
+		lanes = vpsAdminHistoryLanes()
+	case historyGroupLocation:
+		if loc := findLocationByID(st, target.LocationID); loc != nil {
+			lanes = locationHistoryLanes(loc, archivedNodesByGroup(archivedNodes)[target.LocationID])
+		}
+	case historyGroupServices:
+		if st != nil {
+			lanes = servicesHistoryLanes(st.Services)
+		}
+	}
+
+	bar := newHistoryBarWithLanes(now, label, lanes, data.days)
+
+	for _, report := range data.reports {
+		severity := historySeverityOutage
+		if report.IsMaintenance() {
+			severity = historySeverityMaintenance
+		}
+		incident := outageHistoryIncident(st, report)
+
+		for key := range data.mapping.outageHistoryKeys(report) {
+			if !historyTargetsInclude(entityGroups[key], target) {
+				continue
+			}
+			applyHistoryIncidentToLane(&bar, key, report.BeginsAt, outageEndsAt(report), severity, incident)
+		}
+	}
+
+	for _, incident := range data.probeIncidents {
+		key := historyKey(incident.EntityKind, incident.EntityID)
+		if !historyTargetsInclude(entityGroups[key], target) {
+			continue
+		}
+
+		endsAt := now
+		if incident.EndsAt != nil {
+			endsAt = *incident.EndsAt
+		}
+		applyHistoryIncidentToLane(&bar, key, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncident(incident, now))
+	}
+
+	return bar
+}
+
+func historyTargetsInclude(targets []historyGroupTarget, want historyGroupTarget) bool {
+	for _, target := range targets {
+		if target.Kind != want.Kind {
+			continue
+		}
+		if target.Kind == historyGroupLocation && target.LocationID != want.LocationID {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func configuredHistoryEntities(st *Status) []historyEntityInfo {
@@ -577,11 +685,45 @@ func historyOutageReports(st *Status) []*OutageReport {
 	return ret
 }
 
+func newHistoryData(st *Status, now time.Time) *historyData {
+	data := &historyData{
+		days: historyDaysForStatus(st),
+	}
+
+	if st != nil && st.History != nil {
+		data.reports = st.History.OutageReports()
+		data.probeIncidents = st.History.ProbeIncidents(now, data.days)
+		data.snapshots = st.History.EntitySnapshots()
+	}
+	if len(data.reports) == 0 && st != nil && st.OutageReports != nil {
+		data.reports = append(data.reports, st.OutageReports.ActiveList...)
+		data.reports = append(data.reports, st.OutageReports.RecentList...)
+	}
+
+	data.mapping = newHistoryEntityMappingWithSnapshots(st, data.snapshots)
+	return data
+}
+
+func ensureHistoryData(st *Status, now time.Time, data *historyData) *historyData {
+	if data != nil {
+		return data
+	}
+	return newHistoryData(st, now)
+}
+
 func outageHistoryKeys(st *Status, report *OutageReport) map[string]struct{} {
 	return newHistoryEntityMapping(st).outageHistoryKeys(report)
 }
 
 func newHistoryEntityMapping(st *Status) *historyEntityMapping {
+	var snapshots []HistoryEntitySnapshot
+	if st != nil && st.History != nil {
+		snapshots = st.History.EntitySnapshots()
+	}
+	return newHistoryEntityMappingWithSnapshots(st, snapshots)
+}
+
+func newHistoryEntityMappingWithSnapshots(st *Status, snapshots []HistoryEntitySnapshot) *historyEntityMapping {
 	ret := &historyEntityMapping{
 		status:                  st,
 		currentNodeKeys:         make(map[string]struct{}),
@@ -629,28 +771,26 @@ func newHistoryEntityMapping(st *Status) *historyEntityMapping {
 		ret.addTextHistoryMapping(ret.nameServerTextKeys, key, ns.Name, ns.IpAddress)
 	}
 
-	if st.History != nil {
-		for _, snapshot := range st.History.EntitySnapshots() {
-			if snapshot.EntityKind != historyEntityNode || snapshot.EntityID == "" {
-				continue
-			}
+	for _, snapshot := range snapshots {
+		if snapshot.EntityKind != historyEntityNode || snapshot.EntityID == "" {
+			continue
+		}
 
-			key := historyKey(historyEntityNode, snapshot.EntityID)
-			if _, ok := ret.currentNodeKeys[key]; ok {
-				continue
-			}
+		key := historyKey(historyEntityNode, snapshot.EntityID)
+		if _, ok := ret.currentNodeKeys[key]; ok {
+			continue
+		}
 
-			node, ok := ret.archivedNodeFromSnapshot(snapshot)
-			if !ok {
-				continue
-			}
+		node, ok := ret.archivedNodeFromSnapshot(snapshot)
+		if !ok {
+			continue
+		}
 
-			ret.archivedNodes[key] = node
-			ret.addNodeMapping(key, snapshot.NodeID, snapshot.EntityID, snapshot.VpsAdminLocationID)
-			ret.addNodeMapping(key, 0, snapshot.EntityLabel, snapshot.VpsAdminLocationID)
-			if snapshot.GroupLabel != "" {
-				ret.locationTextNodeKeys[normalizeEntityText(snapshot.GroupLabel)] = addUniqueHistoryKey(ret.locationTextNodeKeys[normalizeEntityText(snapshot.GroupLabel)], key)
-			}
+		ret.archivedNodes[key] = node
+		ret.addNodeMapping(key, snapshot.NodeID, snapshot.EntityID, snapshot.VpsAdminLocationID)
+		ret.addNodeMapping(key, 0, snapshot.EntityLabel, snapshot.VpsAdminLocationID)
+		if snapshot.GroupLabel != "" {
+			ret.locationTextNodeKeys[normalizeEntityText(snapshot.GroupLabel)] = addUniqueHistoryKey(ret.locationTextNodeKeys[normalizeEntityText(snapshot.GroupLabel)], key)
 		}
 	}
 

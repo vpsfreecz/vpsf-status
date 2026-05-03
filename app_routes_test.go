@@ -2,8 +2,11 @@ package main
 
 import (
 	"bytes"
+	"compress/gzip"
 	stdjson "encoding/json"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -379,9 +382,15 @@ func TestRoutesServeEntityDetailNotFound(t *testing.T) {
 
 	rr := getThroughRoutes(t, app, "/entity?kind=node&id=missing")
 	requireStatus(t, rr, http.StatusNotFound)
+	if got := rr.Header().Get("Cache-Control"); got != "" {
+		t.Fatalf("missing entity Cache-Control = %q, want empty", got)
+	}
 
 	rr = getThroughRoutes(t, app, "/group?kind=location&id=999")
 	requireStatus(t, rr, http.StatusNotFound)
+	if got := rr.Header().Get("Cache-Control"); got != "" {
+		t.Fatalf("missing group Cache-Control = %q, want empty", got)
+	}
 
 	rr = getThroughRoutes(t, app, "/group?kind=unknown")
 	requireStatus(t, rr, http.StatusNotFound)
@@ -692,8 +701,101 @@ func TestRoutesServeAboutAndStaticAssets(t *testing.T) {
 
 	static := getThroughRoutes(t, app, "/static/favicon.png")
 	requireStatus(t, static, http.StatusOK)
+	if got := static.Header().Get("Cache-Control"); got != "public, max-age=86400" {
+		t.Fatalf("static Cache-Control = %q, want public, max-age=86400", got)
+	}
 	if static.Body.Len() == 0 {
 		t.Fatal("static favicon response body is empty")
+	}
+}
+
+func TestRoutesCacheDynamicResponsesForOneSecond(t *testing.T) {
+	now := fixedNow
+	app, st, _ := newTestApplication(t)
+	app.now = func() time.Time {
+		return now
+	}
+	setOperationalFixture(st)
+
+	first := getThroughRoutes(t, app, "/")
+	requireStatus(t, first, http.StatusOK)
+	requireContains(t, first.Body.String(), "Rendered at: Sat May  2 10:30:00 UTC 2026")
+
+	now = now.Add(500 * time.Millisecond)
+	second := getThroughRoutes(t, app, "/")
+	requireStatus(t, second, http.StatusOK)
+	requireContains(t, second.Body.String(), "Rendered at: Sat May  2 10:30:00 UTC 2026")
+
+	now = now.Add(2 * time.Second)
+	third := getThroughRoutes(t, app, "/")
+	requireStatus(t, third, http.StatusOK)
+	requireContains(t, third.Body.String(), "Rendered at: Sat May  2 10:30:02 UTC 2026")
+}
+
+func TestRoutesRefreshNoticeCacheAfterTTL(t *testing.T) {
+	now := fixedNow
+	app, st, cfg := newTestApplication(t)
+	app.now = func() time.Time {
+		return now
+	}
+	setOperationalFixture(st)
+
+	writeNotice(t, cfg, "<p>First notice</p>")
+	first := getThroughRoutes(t, app, "/json")
+	requireStatus(t, first, http.StatusOK)
+	requireContains(t, first.Body.String(), "First notice")
+
+	writeNotice(t, cfg, "<p>Second notice with different size</p>")
+	now = now.Add(500 * time.Millisecond)
+	second := getThroughRoutes(t, app, "/json")
+	requireStatus(t, second, http.StatusOK)
+	requireContains(t, second.Body.String(), "First notice")
+
+	now = now.Add(2 * time.Second)
+	third := getThroughRoutes(t, app, "/json")
+	requireStatus(t, third, http.StatusOK)
+	requireContains(t, third.Body.String(), "Second notice with different size")
+}
+
+func TestRoutesServeGzipForDynamicResponses(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+	addOutageFixture(st)
+
+	rr := getThroughRoutesWithHeaders(t, app, "/json", map[string]string{
+		"Accept-Encoding": "gzip",
+	})
+	requireStatus(t, rr, http.StatusOK)
+
+	if got := rr.Header().Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("Content-Encoding = %q, want gzip", got)
+	}
+	if got := rr.Header().Values("Vary"); !headerValuesContain(got, "Accept-Encoding") {
+		t.Fatalf("Vary = %v, want Accept-Encoding", got)
+	}
+	if got := rr.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", got)
+	}
+
+	body := gunzipBody(t, rr.Body.Bytes())
+	var raw map[string]any
+	if err := stdjson.Unmarshal(body, &raw); err != nil {
+		t.Fatalf("decode gzipped JSON: %v\n%s", err, string(body))
+	}
+	requireJSONContractKeys(t, raw)
+}
+
+func TestRoutesDoNotCacheMetrics(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	rr := getThroughRoutes(t, app, "/metrics")
+	requireStatus(t, rr, http.StatusOK)
+	if got := rr.Header().Get("Cache-Control"); got != "" {
+		t.Fatalf("metrics Cache-Control = %q, want empty", got)
+	}
+	if got := rr.Header().Values("Vary"); headerValuesContain(got, "Accept-Encoding") {
+		t.Fatalf("metrics Vary = %v, should not be set by route cache", got)
 	}
 }
 
@@ -856,6 +958,45 @@ func TestRoutesServeJSONEmptyNoticeAndOutageShape(t *testing.T) {
 	requireJSONBool(t, outages, "status", true)
 	requireSliceLength(t, requireSliceValue(t, outages, "announced"), 0)
 	requireSliceLength(t, requireSliceValue(t, outages, "recent"), 0)
+}
+
+func getThroughRoutesWithHeaders(t *testing.T, app *application, target string, headers map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
+
+	req := httptest.NewRequest(http.MethodGet, target, nil)
+	for name, value := range headers {
+		req.Header.Set(name, value)
+	}
+	rr := httptest.NewRecorder()
+	app.routes().ServeHTTP(rr, req)
+	return rr
+}
+
+func gunzipBody(t *testing.T, body []byte) []byte {
+	t.Helper()
+
+	zr, err := gzip.NewReader(bytes.NewReader(body))
+	if err != nil {
+		t.Fatalf("open gzip body: %v", err)
+	}
+	defer zr.Close()
+
+	ret, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatalf("read gzip body: %v", err)
+	}
+	return ret
+}
+
+func headerValuesContain(values []string, want string) bool {
+	for _, value := range values {
+		for _, part := range strings.Split(value, ",") {
+			if strings.EqualFold(strings.TrimSpace(part), want) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func requireJSONContractKeys(t *testing.T, raw map[string]any) {

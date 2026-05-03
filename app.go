@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -17,6 +18,10 @@ type application struct {
 	status    *Status
 	templates htmlTemplate
 	now       func() time.Time
+
+	responseCache *responseCache
+	noticeCache   *noticeCache
+	aboutResponse cachedResponse
 }
 
 type htmlTemplate struct {
@@ -68,7 +73,7 @@ func (app *application) parseTemplates() error {
 		return err
 	}
 
-	return nil
+	return app.renderAbout()
 }
 
 func (app *application) parseTemplateWithLayout(name string) (*template.Template, error) {
@@ -85,18 +90,39 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 }
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
-	now := app.currentTime()
-	view := createStatusView(app.status, now)
+	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
+		view := createStatusView(app.status, now)
 
-	notice, err := readNoticeFile(app.config.NoticeFile)
-	if err != nil {
-		log.Printf("Unable to read notice file: %+v", err)
-	}
+		notice, err := app.readNotice(now)
+		if err != nil {
+			log.Printf("Unable to read notice file: %+v", err)
+		}
 
-	app.setCacheControl(w, 1)
+		var buf bytes.Buffer
 
-	if !app.status.Initialized {
-		err = app.templates.loading.Execute(w, StatusData{
+		if !app.status.Initialized {
+			err = app.templates.loading.Execute(&buf, StatusData{
+				Config:     app.config,
+				Status:     &view,
+				RenderedAt: now.Format(time.UnixDate),
+				Notice:     notice,
+			})
+
+			if err != nil {
+				log.Printf("Template error: %+v", err)
+				return responsePayload{}, err
+			}
+
+			return responsePayload{
+				statusCode:   http.StatusOK,
+				contentType:  "text/html; charset=utf-8",
+				cacheControl: "max-age=1",
+				body:         buf.Bytes(),
+				cacheFor:     dynamicCacheTTL,
+			}, nil
+		}
+
+		err = app.templates.status.Execute(&buf, StatusData{
 			Config:     app.config,
 			Status:     &view,
 			RenderedAt: now.Format(time.UnixDate),
@@ -105,88 +131,101 @@ func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
 
 		if err != nil {
 			log.Printf("Template error: %+v", err)
+			return responsePayload{}, err
 		}
 
-		return
-	}
-
-	err = app.templates.status.Execute(w, StatusData{
-		Config:     app.config,
-		Status:     &view,
-		RenderedAt: now.Format(time.UnixDate),
-		Notice:     notice,
+		return responsePayload{
+			statusCode:   http.StatusOK,
+			contentType:  "text/html; charset=utf-8",
+			cacheControl: "max-age=1",
+			body:         buf.Bytes(),
+			cacheFor:     dynamicCacheTTL,
+		}, nil
 	})
-
-	if err != nil {
-		log.Printf("Template error: %+v", err)
-	}
 }
 
 func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
-	now := app.currentTime()
-	entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
+	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
+		entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+		if !ok {
+			return notFoundPayload(), nil
+		}
 
-	app.setCacheControl(w, 1)
+		var buf bytes.Buffer
+		err := app.templates.entity.Execute(&buf, EntityData{
+			Config:     app.config,
+			Entity:     entity,
+			RenderedAt: now.Format(time.UnixDate),
+		})
+		if err != nil {
+			log.Printf("Template error: %+v", err)
+			return responsePayload{}, err
+		}
 
-	err := app.templates.entity.Execute(w, EntityData{
-		Config:     app.config,
-		Entity:     entity,
-		RenderedAt: now.Format(time.UnixDate),
+		return responsePayload{
+			statusCode:   http.StatusOK,
+			contentType:  "text/html; charset=utf-8",
+			cacheControl: "max-age=1",
+			body:         buf.Bytes(),
+			cacheFor:     dynamicCacheTTL,
+		}, nil
 	})
-	if err != nil {
-		log.Printf("Template error: %+v", err)
-	}
 }
 
 func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
-	now := app.currentTime()
-	group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
-	if !ok {
-		http.NotFound(w, r)
-		return
-	}
+	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
+		group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+		if !ok {
+			return notFoundPayload(), nil
+		}
 
-	app.setCacheControl(w, 1)
+		var buf bytes.Buffer
+		err := app.templates.entity.Execute(&buf, EntityData{
+			Config:     app.config,
+			Entity:     group,
+			RenderedAt: now.Format(time.UnixDate),
+		})
+		if err != nil {
+			log.Printf("Template error: %+v", err)
+			return responsePayload{}, err
+		}
 
-	err := app.templates.entity.Execute(w, EntityData{
-		Config:     app.config,
-		Entity:     group,
-		RenderedAt: now.Format(time.UnixDate),
+		return responsePayload{
+			statusCode:   http.StatusOK,
+			contentType:  "text/html; charset=utf-8",
+			cacheControl: "max-age=1",
+			body:         buf.Bytes(),
+			cacheFor:     dynamicCacheTTL,
+		}, nil
 	})
-	if err != nil {
-		log.Printf("Template error: %+v", err)
-	}
 }
 
 func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
-	now := app.currentTime()
+	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
+		notice, err := app.readNotice(now)
+		if err != nil {
+			log.Printf("Unable to read notice file: %+v", err)
+		}
 
-	notice, err := readNoticeFile(app.config.NoticeFile)
-	if err != nil {
-		log.Printf("Unable to read notice file: %+v", err)
-	}
+		var buf bytes.Buffer
+		if err := json.ExportTo(&buf, app.status.ToJson(now, notice)); err != nil {
+			log.Printf("Error while exporting to JSON: %+v", err)
+			return responsePayload{}, err
+		}
 
-	app.setCacheControl(w, 1)
-	w.Header().Set("Content-Type", "application/json")
-
-	if err := json.ExportTo(w, app.status.ToJson(now, notice)); err != nil {
-		log.Printf("Error while exporting to JSON: %+v", err)
-	}
+		return responsePayload{
+			statusCode:   http.StatusOK,
+			contentType:  "application/json",
+			cacheControl: "max-age=1",
+			body:         buf.Bytes(),
+			cacheFor:     dynamicCacheTTL,
+		}, nil
+	})
 }
 
 func (app *application) handleAbout(w http.ResponseWriter, r *http.Request) {
 	app.setCacheControl(w, 24*60*60)
-
-	err := app.templates.about.Execute(w, AboutData{
-		Config: app.config,
-	})
-	if err != nil {
-		log.Printf("Template error: %+v", err)
-	}
+	writeResponse(w, r, &app.aboutResponse)
 }
 
 func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
@@ -194,6 +233,8 @@ func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
 }
 
 func (app *application) routes() http.Handler {
+	app.ensureCaches()
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.handleIndex)
 	mux.HandleFunc("/entity", app.handleEntity)
@@ -203,9 +244,11 @@ func (app *application) routes() http.Handler {
 	mux.HandleFunc("/about", app.handleAbout)
 	mux.Handle(
 		"/static/",
-		http.StripPrefix(
-			"/static/",
-			http.FileServer(http.Dir(filepath.Join(app.config.DataDir, "public"))),
+		staticCacheControl(
+			http.StripPrefix(
+				"/static/",
+				http.FileServer(http.Dir(filepath.Join(app.config.DataDir, "public"))),
+			),
 		),
 	)
 	return mux
@@ -217,4 +260,48 @@ func (app *application) currentTime() time.Time {
 	}
 
 	return time.Now()
+}
+
+func (app *application) ensureCaches() {
+	if app.responseCache == nil {
+		app.responseCache = newResponseCache()
+	}
+	if app.noticeCache == nil {
+		app.noticeCache = newNoticeCache()
+	}
+}
+
+func (app *application) readNotice(now time.Time) (Notice, error) {
+	app.ensureCaches()
+	return app.noticeCache.read(app.config.NoticeFile, now)
+}
+
+func (app *application) renderAbout() error {
+	var buf bytes.Buffer
+	if err := app.templates.about.Execute(&buf, AboutData{Config: app.config}); err != nil {
+		return err
+	}
+
+	app.aboutResponse = cachedResponse{
+		statusCode:  http.StatusOK,
+		contentType: "text/html; charset=utf-8",
+		body:        append([]byte(nil), buf.Bytes()...),
+	}
+	app.aboutResponse.gzipBody = gzipBytes(app.aboutResponse.body)
+	return nil
+}
+
+func staticCacheControl(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		next.ServeHTTP(w, r)
+	})
+}
+
+func notFoundPayload() responsePayload {
+	return responsePayload{
+		statusCode:  http.StatusNotFound,
+		contentType: "text/plain; charset=utf-8",
+		body:        []byte("404 page not found\n"),
+	}
 }

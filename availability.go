@@ -56,33 +56,63 @@ func availabilityFetchStart(now time.Time, historyDays int) time.Time {
 }
 
 func entityAvailability(st *Status, kind string, id string, now time.Time) []availabilityResult {
-	method, ok := availabilityProbeMethod(kind)
-	if !ok {
+	return entityAvailabilityWithData(st, kind, id, now, newHistoryData(st, now))
+}
+
+func entityAvailabilityWithData(st *Status, kind string, id string, now time.Time, data *historyData) []availabilityResult {
+	if _, ok := availabilityProbeMethod(kind); !ok {
 		return nil
 	}
 
 	var reports []*OutageReport
 	var mapping *historyEntityMapping
 	reportsAvailable := false
+	data = ensureHistoryData(st, now, data)
 	if availabilityReportedOutageSupported(kind) {
-		reports = historyOutageReports(st)
-		mapping = newHistoryEntityMapping(st)
+		reports = data.reports
+		mapping = data.mapping
 		reportsAvailable = availabilityOutageReportsAvailable(st, reports)
 	}
 	windows := availabilityWindows(now)
 	ret := make([]availabilityResult, 0, len(windows))
+	eventsByTarget := availabilityProbeEventsByTarget(st, []historyEntityInfo{{Kind: kind, ID: id}}, windows)
 
 	for _, window := range windows {
-		var events []ProbeEvent
-		if st != nil && st.History != nil {
-			events = st.History.ProbeEventsForAvailability(kind, id, method, window.Start, window.End)
-		}
+		events := eventsByTarget[historyKey(kind, id)]
 
 		result := calculateAvailability(kind, id, window, events, reports, mapping, reportsAvailable)
 		ret = append(ret, result)
 	}
 
 	return ret
+}
+
+func availabilityProbeEventsByTarget(st *Status, targets []historyEntityInfo, windows []availabilityWindow) map[string][]ProbeEvent {
+	ret := make(map[string][]ProbeEvent)
+	if st == nil || st.History == nil || len(targets) == 0 || len(windows) == 0 {
+		return ret
+	}
+
+	start, end := availabilityWindowBounds(windows)
+	return st.History.ProbeEventsForAvailabilityTargets(targets, start, end)
+}
+
+func availabilityWindowBounds(windows []availabilityWindow) (time.Time, time.Time) {
+	if len(windows) == 0 {
+		return time.Time{}, time.Time{}
+	}
+
+	start := windows[0].Start
+	end := windows[0].End
+	for _, window := range windows[1:] {
+		if window.Start.Before(start) {
+			start = window.Start
+		}
+		if window.End.After(end) {
+			end = window.End
+		}
+	}
+	return start, end
 }
 
 func calculateAvailability(

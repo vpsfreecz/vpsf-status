@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -278,6 +279,8 @@ func historySchemaStatements() []string {
 		)`,
 		`CREATE INDEX IF NOT EXISTS probe_events_entity_changed_idx
 			ON probe_events (entity_kind, entity_id, changed_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS probe_events_entity_method_changed_idx
+			ON probe_events (entity_kind, entity_id, method, changed_at DESC)`,
 		`CREATE TABLE IF NOT EXISTS probe_incidents (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			entity_kind TEXT NOT NULL,
@@ -458,34 +461,54 @@ func (hs *HistoryStore) OutageReports() []*OutageReport {
 		return nil
 	}
 
+	ids := make([]int64, 0, len(outages))
+	for _, row := range outages {
+		ids = append(ids, row.report.Id)
+	}
+	entities := hs.outageEntitiesForReportsLocked(ids)
+
 	ret := make([]*OutageReport, 0, len(outages))
 	for _, row := range outages {
-		row.report.AffectedEntities = hs.outageEntitiesLocked(row.report.Id)
+		row.report.AffectedEntities = entities[row.report.Id]
+		if row.report.AffectedEntities == nil {
+			row.report.AffectedEntities = make([]OutageEntity, 0)
+		}
 		ret = append(ret, row.report)
 	}
 
 	return ret
 }
 
-func (hs *HistoryStore) outageEntitiesLocked(outageID int64) []OutageEntity {
+func (hs *HistoryStore) outageEntitiesForReportsLocked(outageIDs []int64) map[int64][]OutageEntity {
+	ret := make(map[int64][]OutageEntity, len(outageIDs))
+	if len(outageIDs) == 0 {
+		return ret
+	}
+
+	args := make([]any, len(outageIDs))
+	for i, outageID := range outageIDs {
+		args[i] = outageID
+		ret[outageID] = make([]OutageEntity, 0)
+	}
+
 	rows, err := hs.db.Query(`
-		SELECT name, entity_id, label
+		SELECT outage_id, name, entity_id, label
 		FROM outage_entities
-		WHERE outage_id = ?
-		ORDER BY position ASC
-	`, outageID)
+		WHERE outage_id IN (`+sqlPlaceholders(len(outageIDs))+`)
+		ORDER BY outage_id ASC, position ASC
+	`, args...)
 	if err != nil {
-		return nil
+		return ret
 	}
 	defer rows.Close()
 
-	ret := make([]OutageEntity, 0)
 	for rows.Next() {
+		var outageID int64
 		var entity OutageEntity
-		if err := rows.Scan(&entity.Name, &entity.Id, &entity.Label); err != nil {
-			return nil
+		if err := rows.Scan(&outageID, &entity.Name, &entity.Id, &entity.Label); err != nil {
+			return ret
 		}
-		ret = append(ret, entity)
+		ret[outageID] = append(ret[outageID], entity)
 	}
 
 	return ret
@@ -957,6 +980,48 @@ func (hs *HistoryStore) ProbeEventsFor(kind string, id string, now time.Time, da
 	return ret
 }
 
+func (hs *HistoryStore) ProbeEventsForTargets(targets []historyEntityInfo, now time.Time, days int) []ProbeEvent {
+	if hs == nil || len(targets) == 0 {
+		return nil
+	}
+
+	queryTargets := probeEventQueryTargets(targets, false)
+	if len(queryTargets) == 0 {
+		return nil
+	}
+	targetWhere, targetArgs := probeEventTargetWhere(queryTargets)
+
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+
+	args := append([]any{formatHistoryTime(historyStartDay(now, days))}, targetArgs...)
+	rows, err := hs.db.Query(`
+		SELECT entity_kind, entity_id, entity_label, method, status, message, changed_at
+		FROM probe_events
+		WHERE changed_at >= ? AND (`+targetWhere+`)
+		ORDER BY changed_at DESC, id DESC
+	`, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	ret := make([]ProbeEvent, 0)
+	for rows.Next() {
+		event, err := scanProbeEvent(rows)
+		if err != nil {
+			return nil
+		}
+		ret = append(ret, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+
+	return ret
+}
+
 func (hs *HistoryStore) ProbeEventsForAvailability(kind string, id string, method string, start time.Time, end time.Time) []ProbeEvent {
 	if hs == nil || kind == "" || id == "" || method == "" || !start.Before(end) {
 		return nil
@@ -1003,6 +1068,115 @@ func (hs *HistoryStore) ProbeEventsForAvailability(kind string, id string, metho
 	}
 
 	return ret
+}
+
+func (hs *HistoryStore) ProbeEventsForAvailabilityTargets(targets []historyEntityInfo, start time.Time, end time.Time) map[string][]ProbeEvent {
+	ret := make(map[string][]ProbeEvent, len(targets))
+	if hs == nil || len(targets) == 0 || !start.Before(end) {
+		return ret
+	}
+
+	queryTargets := probeEventQueryTargets(targets, true)
+	if len(queryTargets) == 0 {
+		return ret
+	}
+	targetWhere, targetArgs := probeEventTargetWhere(queryTargets)
+
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+
+	args := append([]any{formatHistoryTime(end)}, targetArgs...)
+	rows, err := hs.db.Query(`
+		SELECT entity_kind, entity_id, entity_label, method, status, message, changed_at
+		FROM probe_events
+		WHERE changed_at <= ? AND (`+targetWhere+`)
+		ORDER BY entity_kind ASC, entity_id ASC, method ASC, changed_at ASC, id ASC
+	`, args...)
+	if err != nil {
+		return ret
+	}
+	defer rows.Close()
+
+	previous := make(map[string]ProbeEvent, len(queryTargets))
+	for rows.Next() {
+		event, err := scanProbeEvent(rows)
+		if err != nil {
+			return ret
+		}
+
+		key := historyKey(event.EntityKind, event.EntityID)
+		if event.ChangedAt.Before(start) {
+			previous[key] = event
+			continue
+		}
+
+		ret[key] = append(ret[key], event)
+	}
+	if err := rows.Err(); err != nil {
+		return ret
+	}
+
+	for key, event := range previous {
+		ret[key] = append([]ProbeEvent{event}, ret[key]...)
+	}
+
+	return ret
+}
+
+type probeEventQueryTarget struct {
+	kind   string
+	id     string
+	method string
+}
+
+func probeEventQueryTargets(targets []historyEntityInfo, includeMethod bool) []probeEventQueryTarget {
+	ret := make([]probeEventQueryTarget, 0, len(targets))
+	seen := make(map[string]struct{}, len(targets))
+
+	for _, target := range targets {
+		if target.Kind == "" || target.ID == "" {
+			continue
+		}
+
+		method := ""
+		if includeMethod {
+			var ok bool
+			method, ok = availabilityProbeMethod(target.Kind)
+			if !ok {
+				continue
+			}
+		}
+
+		key := target.Kind + "\t" + target.ID + "\t" + method
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		ret = append(ret, probeEventQueryTarget{
+			kind:   target.Kind,
+			id:     target.ID,
+			method: method,
+		})
+	}
+
+	return ret
+}
+
+func probeEventTargetWhere(targets []probeEventQueryTarget) (string, []any) {
+	parts := make([]string, 0, len(targets))
+	args := make([]any, 0, len(targets)*3)
+
+	for _, target := range targets {
+		if target.method == "" {
+			parts = append(parts, `(entity_kind = ? AND entity_id = ?)`)
+			args = append(args, target.kind, target.id)
+		} else {
+			parts = append(parts, `(entity_kind = ? AND entity_id = ? AND method = ?)`)
+			args = append(args, target.kind, target.id, target.method)
+		}
+	}
+
+	return strings.Join(parts, " OR "), args
 }
 
 type scanner interface {
@@ -1112,6 +1286,13 @@ func nullableHistoryTimePtr(t *time.Time) any {
 		return nil
 	}
 	return formatHistoryTime(*t)
+}
+
+func sqlPlaceholders(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return strings.TrimRight(strings.Repeat("?,", n), ",")
 }
 
 func formatHistoryTime(t time.Time) string {

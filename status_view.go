@@ -63,6 +63,10 @@ type ServicesView struct {
 }
 
 func createStatusView(st *Status, now time.Time) StatusView {
+	return createStatusViewWithData(st, now, newHistoryData(st, now))
+}
+
+func createStatusViewWithData(st *Status, now time.Time, data *historyData) StatusView {
 	ret := StatusView{
 		VpsAdmin:      createVpsAdminView(st.VpsAdmin),
 		Locations:     createLocationView(st.LocationList),
@@ -70,7 +74,7 @@ func createStatusView(st *Status, now time.Time) StatusView {
 		OutageReports: st.OutageReports,
 	}
 
-	groups, history := createHistoryViews(st, now)
+	groups, history := createHistoryViewsWithData(st, now, data)
 	ret.History = history
 	ret.VpsAdmin.History = groups.VpsAdmin
 	for i := range ret.Locations {

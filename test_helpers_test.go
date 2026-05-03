@@ -24,7 +24,7 @@ var (
 	fixedNoticeTime = time.Date(2026, 5, 2, 9, 15, 0, 0, time.UTC)
 )
 
-func newTestApplication(t *testing.T) (*application, *Status, *config.Config) {
+func newTestApplication(t testing.TB) (*application, *Status, *config.Config) {
 	t.Helper()
 
 	cfg := &config.Config{
