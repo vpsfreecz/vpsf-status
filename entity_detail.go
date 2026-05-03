@@ -7,15 +7,16 @@ import (
 )
 
 type EntityDetailView struct {
-	Kind         string
-	ID           string
-	Label        string
-	Group        string
-	StatusText   string
-	StatusClass  string
-	History      HistoryBarView
-	Availability []AvailabilityView
-	Events       []ProbeEventView
+	Kind                     string
+	ID                       string
+	Label                    string
+	Group                    string
+	StatusText               string
+	StatusClass              string
+	History                  HistoryBarView
+	Availability             []AvailabilityView
+	Events                   []ProbeEventView
+	ShowReportedAvailability bool
 }
 
 type AvailabilityView struct {
@@ -51,9 +52,10 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 	history := bars[historyKey(kind, id)]
 
 	ret := EntityDetailView{
-		Kind:    kind,
-		ID:      id,
-		History: history,
+		Kind:                     kind,
+		ID:                       id,
+		History:                  history,
+		ShowReportedAvailability: availabilityReportedOutageSupported(kind),
 	}
 
 	switch kind {

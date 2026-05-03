@@ -160,7 +160,7 @@ func TestAvailabilityIsUnavailableWithoutProbeHistoryOrOutageFallback(t *testing
 	}
 }
 
-func TestAvailabilityFallbackMapsOutageEntities(t *testing.T) {
+func TestAvailabilityReportsOutagesForSupportedEntities(t *testing.T) {
 	tests := []struct {
 		name     string
 		kind     string
@@ -189,30 +189,6 @@ func TestAvailabilityFallbackMapsOutageEntities(t *testing.T) {
 			id:   "node1.brq",
 			entities: []OutageEntity{
 				{Name: "Environment", Id: 1, Label: "Production"},
-			},
-		},
-		{
-			name: "dns resolver",
-			kind: historyEntityDnsResolver,
-			id:   "resolver-prg",
-			entities: []OutageEntity{
-				{Name: "DNS Resolver", Label: "resolver-prg"},
-			},
-		},
-		{
-			name: "name server",
-			kind: historyEntityNameServer,
-			id:   "ns1.vpsfree.cz",
-			entities: []OutageEntity{
-				{Name: "Name Server", Label: "ns1.vpsfree.cz"},
-			},
-		},
-		{
-			name: "web service",
-			kind: historyEntityWebService,
-			id:   "vpsfree.cz",
-			entities: []OutageEntity{
-				{Name: "Web Service", Label: "vpsfree.cz"},
 			},
 		},
 		{
@@ -246,11 +222,83 @@ func TestAvailabilityFallbackMapsOutageEntities(t *testing.T) {
 	}
 }
 
+func TestAvailabilityDoesNotReportOutagesForUnsupportedEntities(t *testing.T) {
+	tests := []struct {
+		name     string
+		kind     string
+		id       string
+		entities []OutageEntity
+	}{
+		{
+			name: "dns resolver",
+			kind: historyEntityDnsResolver,
+			id:   "resolver-prg",
+			entities: []OutageEntity{
+				{Name: "DNS Resolver", Label: "resolver-prg"},
+			},
+		},
+		{
+			name: "name server",
+			kind: historyEntityNameServer,
+			id:   "ns1.vpsfree.cz",
+			entities: []OutageEntity{
+				{Name: "Name Server", Label: "ns1.vpsfree.cz"},
+			},
+		},
+		{
+			name: "web service",
+			kind: historyEntityWebService,
+			id:   "vpsfree.cz",
+			entities: []OutageEntity{
+				{Name: "Web Service", Label: "vpsfree.cz"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, st, _ := newTestApplication(t)
+			setOperationalFixture(st)
+
+			windowStart := fixedNow.AddDate(0, 0, -30)
+			report := availabilityTestOutage(6001, windowStart.Add(24*time.Hour), 24*time.Hour, tt.entities)
+			if err := st.History.ReplaceOutages([]*OutageReport{report}, fixedNow); err != nil {
+				t.Fatalf("replace outages: %v", err)
+			}
+
+			method, ok := availabilityProbeMethod(tt.kind)
+			if !ok {
+				t.Fatalf("no probe method for %s", tt.kind)
+			}
+			if err := st.History.RecordProbeStatus(ProbeTarget{
+				EntityKind:  tt.kind,
+				EntityID:    tt.id,
+				EntityLabel: tt.id,
+				Method:      method,
+			}, historyProbeStateOperational, "ok", fixedNow.AddDate(-1, 0, 0).Add(-time.Hour)); err != nil {
+				t.Fatalf("record probe status: %v", err)
+			}
+
+			requireReportedAvailabilityUnavailable(t, st, tt.kind, tt.id, "30 days")
+			requireProbeAvailabilityPercent(t, st, tt.kind, tt.id, "30 days", 100)
+		})
+	}
+}
+
 func requireReportedAvailabilityPercent(t *testing.T, st *Status, kind string, id string, label string, want float64) {
 	t.Helper()
 
 	stat := availabilityStat(t, st, kind, id, label)
 	requireAvailabilityMetricPercent(t, stat.Reported, label+" reported", want)
+}
+
+func requireReportedAvailabilityUnavailable(t *testing.T, st *Status, kind string, id string, label string) {
+	t.Helper()
+
+	stat := availabilityStat(t, st, kind, id, label)
+	if stat.Reported.Available {
+		t.Fatalf("%s reported availability = %.3f, want unavailable", label, stat.Reported.Percent)
+	}
 }
 
 func requireProbeAvailabilityPercent(t *testing.T, st *Status, kind string, id string, label string, want float64) {

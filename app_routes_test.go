@@ -150,6 +150,34 @@ func TestRoutesServeEntityDetailReportedAvailabilityWithoutProbeLogRows(t *testi
 	)
 }
 
+func TestRoutesServeEntityDetailHidesUnsupportedReportedAvailability(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	if err := st.History.RecordProbeStatus(ProbeTarget{
+		EntityKind:  historyEntityWebService,
+		EntityID:    "vpsfree.cz",
+		EntityLabel: "vpsfree.cz",
+		Method:      "HTTP",
+	}, historyProbeStateOperational, "HTTP 200", fixedNow.AddDate(-1, 0, 0).Add(-time.Hour)); err != nil {
+		t.Fatalf("record probe status: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/entity?kind=web_service&id=vpsfree.cz")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(
+		t,
+		body,
+		"Availability",
+		"Probe",
+		"30 days",
+		"100.000%",
+	)
+	requireNotContains(t, body, "Reported")
+}
+
 func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)

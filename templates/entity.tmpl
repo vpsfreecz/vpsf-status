@@ -35,7 +35,9 @@
 			<thead>
 				<tr>
 					<th>Period</th>
+					{{ if .Entity.ShowReportedAvailability }}
 					<th class="text-end">Reported</th>
+					{{ end }}
 					<th class="text-end">Probe</th>
 				</tr>
 			</thead>
@@ -43,7 +45,9 @@
 				{{ range $stat := .Entity.Availability }}
 				<tr>
 					<td>{{ $stat.Label }}</td>
+					{{ if $.Entity.ShowReportedAvailability }}
 					<td class="text-end{{ if not $stat.ReportedAvailable }} text-muted{{ end }}">{{ $stat.Reported }}</td>
+					{{ end }}
 					<td class="text-end{{ if not $stat.ProbeAvailable }} text-muted{{ end }}">{{ $stat.Probe }}</td>
 				</tr>
 				{{ end }}

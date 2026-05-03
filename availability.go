@@ -61,9 +61,14 @@ func entityAvailability(st *Status, kind string, id string, now time.Time) []ava
 		return nil
 	}
 
-	reports := historyOutageReports(st)
-	mapping := newHistoryEntityMapping(st)
-	reportsAvailable := availabilityOutageReportsAvailable(st, reports)
+	var reports []*OutageReport
+	var mapping *historyEntityMapping
+	reportsAvailable := false
+	if availabilityReportedOutageSupported(kind) {
+		reports = historyOutageReports(st)
+		mapping = newHistoryEntityMapping(st)
+		reportsAvailable = availabilityOutageReportsAvailable(st, reports)
+	}
 	windows := availabilityWindows(now)
 	ret := make([]availabilityResult, 0, len(windows))
 
@@ -105,7 +110,7 @@ func calculateReportedAvailability(
 	reportsAvailable bool,
 ) availabilityMetric {
 	total := window.End.Sub(window.Start)
-	if total <= 0 || !reportsAvailable {
+	if total <= 0 || !reportsAvailable || !availabilityReportedOutageSupported(kind) {
 		return availabilityMetric{}
 	}
 
@@ -316,6 +321,10 @@ func availabilityProbeMethod(kind string) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+func availabilityReportedOutageSupported(kind string) bool {
+	return kind == historyEntityNode || kind == historyEntityVpsAdmin
 }
 
 func availabilityOutageReportsAvailable(st *Status, reports []*OutageReport) bool {
