@@ -1,0 +1,85 @@
+name: Update dependencies
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-dependencies
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update dependencies
+        run: |
+          set -euo pipefail
+
+          nix flake update
+          nix develop --command go get -u -t ./...
+          nix develop --command go mod tidy
+
+      - name: Refresh Nix vendor hash
+        run: |
+          set -euo pipefail
+
+          perl -0pi -e 's/vendorHash = (?:lib\.fakeHash|"[^"]+");/vendorHash = lib.fakeHash;/' nix/package.nix
+
+          build_log="$(mktemp)"
+          if nix build .#vpsf-status --no-link 2>"$build_log"; then
+            echo "Nix build unexpectedly succeeded with lib.fakeHash." >&2
+            rm -f "$build_log"
+            exit 1
+          fi
+
+          vendor_hash="$(
+            sed -n 's/^[[:space:]]*got:[[:space:]]*\(sha256-[^[:space:]]*\).*/\1/p' "$build_log" | tail -n1
+          )"
+
+          if [ -z "$vendor_hash" ]; then
+            cat "$build_log" >&2
+            rm -f "$build_log"
+            exit 1
+          fi
+
+          perl -0pi -e "s/vendorHash = lib\\.fakeHash;/vendorHash = \"$vendor_hash\";/" nix/package.nix
+          rm -f "$build_log"
+
+      - name: Run tests
+        run: nix develop --command go test ./...
+
+      - name: Build Nix package
+        run: nix build .#vpsf-status --no-link
+
+      - name: Commit changes
+        run: |
+          set -euo pipefail
+
+          git add go.mod go.sum flake.lock nix/package.nix
+
+          if git diff --cached --quiet; then
+            echo "No dependency updates to commit."
+            exit 0
+          fi
+
+          git commit -m "Update dependencies"
+          git push origin "HEAD:${{ github.event.repository.default_branch }}"
