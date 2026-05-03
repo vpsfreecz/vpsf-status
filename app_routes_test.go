@@ -289,6 +289,71 @@ func TestRoutesServeIndexWebMaintenanceAndStorageBranches(t *testing.T) {
 	)
 }
 
+func TestRoutesServeIndexTreatsOnlineScrubAsOperational(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	node := st.GlobalNodeMap["node2.prg"]
+	setNodeState(st, st.LocationMap["Praha"], node, true, false, "vpsadminos", true, "online", "scrub", 15, 0)
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(
+		t,
+		body,
+		"Praha 3/3",
+		"Nodes 2/2",
+		"Storage is being scrubbed to check data integrity, 15.0 % done",
+	)
+
+	prahaIndex := strings.Index(body, "Praha 3/3")
+	if prahaIndex == -1 {
+		t.Fatalf("Praha heading not found in body")
+	}
+	prahaHeadingStart := strings.LastIndex(body[:prahaIndex], "<h2")
+	prahaHeadingEnd := strings.Index(body[prahaIndex:], "</h2>")
+	if prahaHeadingStart == -1 || prahaHeadingEnd == -1 {
+		t.Fatalf("Praha heading boundaries not found in body")
+	}
+	prahaHeading := body[prahaHeadingStart : prahaIndex+prahaHeadingEnd]
+	if !strings.Contains(prahaHeading, `class="text-success"`) {
+		t.Fatalf("Praha heading = %q, want success", prahaHeading)
+	}
+
+	nodesIndex := strings.Index(body, "Nodes 2/2")
+	if nodesIndex == -1 {
+		t.Fatalf("Nodes heading not found in body")
+	}
+	nodesButtonStart := strings.LastIndex(body[:nodesIndex], "<button")
+	nodesButtonEnd := strings.Index(body[nodesIndex:], "</button>")
+	if nodesButtonStart == -1 || nodesButtonEnd == -1 {
+		t.Fatalf("Nodes button boundaries not found in body")
+	}
+	nodesButton := body[nodesButtonStart : nodesIndex+nodesButtonEnd]
+	if !strings.Contains(nodesButton, `text-success`) {
+		t.Fatalf("Nodes button = %q, want success", nodesButton)
+	}
+
+	nodeIndex := strings.Index(body, `href="/entity?kind=node&amp;id=node2.prg">node2.prg</a>`)
+	if nodeIndex == -1 {
+		t.Fatalf("node2.prg row not found in body")
+	}
+	nodeRowStart := strings.LastIndex(body[:nodeIndex], "<tr")
+	nodeRowEnd := strings.Index(body[nodeIndex:], "</tr>")
+	if nodeRowStart == -1 || nodeRowEnd == -1 {
+		t.Fatalf("node2.prg row boundaries not found in body")
+	}
+	nodeRow := body[nodeRowStart : nodeIndex+nodeRowEnd]
+	if !strings.Contains(nodeRow, `class="table-success"`) {
+		t.Fatalf("node2.prg row = %q, want success", nodeRow)
+	}
+	if strings.Contains(nodeRow, `text-warning`) {
+		t.Fatalf("node2.prg row = %q, should not contain a warning style", nodeRow)
+	}
+}
+
 func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)

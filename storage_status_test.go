@@ -125,7 +125,18 @@ func TestNodeStoragePredicates(t *testing.T) {
 	}
 
 	supported.PoolScan = "scrub"
+	if !supported.IsStorageOperational() || supported.IsStorageDegraded() || !supported.IsStorageScrubIssue() {
+		t.Fatalf("online storage scrub should be operational with scrub issue: %+v", supported)
+	}
+
+	supported.PoolScan = "resilver"
+	if supported.IsStorageOperational() || !supported.IsStorageDegraded() || !supported.IsStorageResilverIssue() {
+		t.Fatalf("online storage resilver should be degraded with resilver issue: %+v", supported)
+	}
+
+	supported.PoolState = "degraded"
+	supported.PoolScan = "scrub"
 	if supported.IsStorageOperational() || !supported.IsStorageDegraded() || !supported.IsStorageScrubIssue() {
-		t.Fatalf("scrub storage should be degraded with scrub issue: %+v", supported)
+		t.Fatalf("degraded storage scrub should stay degraded with scrub issue: %+v", supported)
 	}
 }
