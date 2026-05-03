@@ -355,6 +355,44 @@ func requireOccurrences(t *testing.T, body string, substring string, count int) 
 	}
 }
 
+func requireStatusCountsAfter(t *testing.T, body string, marker string, counts StatusCounts) {
+	t.Helper()
+
+	idx := strings.Index(body, marker)
+	if idx == -1 {
+		t.Fatalf("expected body to contain marker %q\nbody:\n%s", marker, body)
+	}
+
+	end := idx + 1200
+	if end > len(body) {
+		end = len(body)
+	}
+	segment := body[idx:end]
+	expected := statusCountsMarkup(counts)
+	if !strings.Contains(segment, expected) {
+		t.Fatalf("expected status counts after %q to contain %q\nsegment:\n%s", marker, expected, segment)
+	}
+}
+
+func statusCountsMarkup(counts StatusCounts) string {
+	ret := fmt.Sprintf(
+		`<span class="status-counts ms-1" aria-label="%d operational, %d degraded or under maintenance, %d down, %d total"><span class="text-success" title="Operational">%d</span>`,
+		counts.Operational,
+		counts.Degraded,
+		counts.Down,
+		counts.Total,
+		counts.Operational,
+	)
+	if counts.Degraded > 0 {
+		ret += fmt.Sprintf(`/<span class="text-warning" title="Degraded or under maintenance">%d</span>`, counts.Degraded)
+	}
+	if counts.Down > 0 {
+		ret += fmt.Sprintf(`/<span class="text-danger" title="Down">%d</span>`, counts.Down)
+	}
+	ret += fmt.Sprintf(`/<span class="text-body" title="Total">%d</span></span>`, counts.Total)
+	return ret
+}
+
 func requireMapKeys(t *testing.T, m map[string]any, keys ...string) {
 	t.Helper()
 

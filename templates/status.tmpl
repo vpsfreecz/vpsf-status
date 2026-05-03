@@ -1,5 +1,7 @@
 {{ define "title" }}vpsFree.cz Status{{ end }}
 
+{{ define "status_counts" }}<span class="status-counts ms-1" aria-label="{{ .Operational }} operational, {{ .Degraded }} degraded or under maintenance, {{ .Down }} down, {{ .Total }} total"><span class="text-success" title="Operational">{{ .Operational }}</span>{{ if gt .Degraded 0 }}/<span class="text-warning" title="Degraded or under maintenance">{{ .Degraded }}</span>{{ end }}{{ if gt .Down 0 }}/<span class="text-danger" title="Down">{{ .Down }}</span>{{ end }}/<span class="text-body" title="Total">{{ .Total }}</span></span>{{ end }}
+
 {{ define "content" }}
 <nav class="navbar bg-light">
 	<div class="container-fluid">
@@ -144,8 +146,8 @@
 
 <div class="row">
 	<div class="col">
-		<h2 class="text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else }}danger{{ end }}">
-			<a class="text-reset text-decoration-none" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}</a>
+		<h2>
+			<a class="text-body text-decoration-none" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ template "status_counts" .Status.VpsAdmin.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.VpsAdmin.History }}
@@ -154,8 +156,8 @@
 		<div class="accordion" id="accordion-vpsadmin">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-vpsadmin">
-					<button class="accordion-button collapsed text-{{ if .Status.VpsAdmin.IsOperational }}success{{ else if .Status.VpsAdmin.IsDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
-						Web Services {{ .Status.VpsAdmin.TotalUp }}/{{ .Status.VpsAdmin.TotalCount }}
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
+						Web Services {{ template "status_counts" .Status.VpsAdmin.Counts }}
 					</button>
 				</h3>
 				<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
@@ -229,8 +231,8 @@
 {{ range $loc := .Status.Locations }}
 <div class="row mt-4 mb-4">
 	<div class="column">
-		<h2 class="text-{{ if $loc.IsOperational }}success{{ else if $loc.IsDegraded }}warning{{ else }}danger{{ end }}">
-			<a class="text-reset text-decoration-none" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ $loc.TotalUp }}/{{ $loc.TotalCount }}</a>
+		<h2>
+			<a class="text-body text-decoration-none" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ template "status_counts" $loc.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" $loc.History }}
@@ -239,8 +241,8 @@
 		<div class="accordion" id="accordion-location-{{ $loc.Id }}">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
-					<button class="accordion-button collapsed text-{{ if $loc.AreNodesOperational }}success{{ else if $loc.AreNodesDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
-						Nodes {{ $loc.NodesUp }}/{{ $loc.NodesCount }}
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
+						Nodes {{ template "status_counts" $loc.NodeCounts }}
 					</button>
 				</h3>
 				<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
@@ -315,8 +317,8 @@
 			{{ if $loc.HasDnsResolvers }}
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
-					<button class="accordion-button collapsed text-{{ if $loc.AreDnsResolversOperational }}success{{ else if $loc.AreDnsResolversDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
-						DNS Resolvers {{ $loc.DnsResolversUp }}/{{ $loc.DnsResolversCount }}
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
+						DNS Resolvers {{ template "status_counts" $loc.DnsResolverCounts }}
 					</button>
 				</h3>
 				<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
@@ -368,8 +370,8 @@
 
 <div class="row">
 	<div class="col">
-		<h2 class="text-{{ if .Status.Services.IsOperational }}success{{ else if .Status.Services.IsDegraded }}warning{{ else }}danger{{ end }}">
-			<a class="text-reset text-decoration-none" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ .Status.Services.Up }}/{{ .Status.Services.Count }}</a>
+		<h2>
+			<a class="text-body text-decoration-none" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ template "status_counts" .Status.Services.Counts }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.Services.History }}
@@ -378,8 +380,8 @@
 		<div class="accordion" id="accordion-services">
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-webservices">
-					<button class="accordion-button collapsed text-{{ if .Status.Services.IsWebOperational }}success{{ else if .Status.Services.IsWebDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
-						Web Services {{ .Status.Services.WebUp }}/{{ .Status.Services.WebCount }}
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
+						Web Services {{ template "status_counts" .Status.Services.WebCounts }}
 					</button>
 				</h3>
 				<div id="collapse-webservices" class="accordion-collapse collapse" aria-labelledby="heading-webservices">
@@ -419,8 +421,8 @@
 
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nameservers">
-					<button class="accordion-button collapsed text-{{ if .Status.Services.IsNameServerOperational }}success{{ else if .Status.Services.IsNameServerDegraded }}warning{{ else }}danger{{ end }}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
-						Name Servers {{ .Status.Services.NameServerUp }}/{{ .Status.Services.NameServerCount }}
+					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
+						Name Servers {{ template "status_counts" .Status.Services.NameServerCounts }}
 					</button>
 				</h3>
 				<div id="collapse-nameservers" class="accordion-collapse collapse" aria-labelledby="heading-nameservers">

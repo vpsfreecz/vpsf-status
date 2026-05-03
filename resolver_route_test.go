@@ -18,10 +18,11 @@ func TestRoutesServeIndexResolverDegradedState(t *testing.T) {
 	requireContains(
 		t,
 		rr.Body.String(),
-		"Praha 3/3",
-		"DNS Resolvers 1/1",
-		"Services 3/3",
-		"Name Servers 1/1",
 		`aria-label="Degraded"`,
 	)
+	body := rr.Body.String()
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-dns-3"`, StatusCounts{Degraded: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Degraded: 1, Total: 1})
 }

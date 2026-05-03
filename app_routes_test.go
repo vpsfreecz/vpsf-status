@@ -47,14 +47,6 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		body,
 		"No issues reported.",
 		"https://vpsadmin.vpsfree.cz/?page=outage&action=list",
-		"vpsAdmin 3/3",
-		"Web Services 3/3",
-		"Praha 3/3",
-		"Nodes 2/2",
-		"DNS Resolvers 1/1",
-		"Brno 1/1",
-		"Services 3/3",
-		"Name Servers 1/1",
 		`href="/group?kind=vpsadmin"`,
 		`href="/group?kind=location&amp;id=3"`,
 		`href="/group?kind=location&amp;id=4"`,
@@ -75,6 +67,15 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		`aria-label="Operational"`,
 		`aria-label="Responding"`,
 	)
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-vpsadmin"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 2, Total: 2})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-dns-3"`, StatusCounts{Operational: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=4"`, StatusCounts{Operational: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 2, Total: 2})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Operational: 1, Total: 1})
 	requireNotContains(t, body, "Reported Maintenances", "Unable to fetch outage reports", "Last 90 days", "Overall status history")
 }
 
@@ -397,13 +398,14 @@ func TestRoutesServeIndexPartialDownState(t *testing.T) {
 	requireContains(
 		t,
 		rr.Body.String(),
-		"Praha 2/3",
-		"Nodes 1/2",
-		"Services 2/3",
-		"Web Services 1/2",
 		"kb.vpsfree.cz",
 		`aria-label="Down"`,
 	)
+	body := rr.Body.String()
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
 }
 
 func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
@@ -432,13 +434,14 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 		"Power failure",
 		"node1.prg",
 		"https://vpsadmin.vpsfree.cz/?page=outage&action=show&id=1001",
-		"vpsAdmin 3/3",
-		"Praha 3/3",
-		"Nodes 2/2",
 		`aria-label="Under maintenance"`,
 		`aria-label="Degraded"`,
 		`Storage is being resilvered to replace disks, 42.5 % done`,
 	)
+	body := rr.Body.String()
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
 
 func TestRoutesServeIndexNoticeSuppressesNoIssues(t *testing.T) {
@@ -470,15 +473,16 @@ func TestRoutesServeIndexWebMaintenanceAndStorageBranches(t *testing.T) {
 	requireContains(
 		t,
 		rr.Body.String(),
-		"Praha 3/3",
-		"Nodes 2/2",
-		"Services 3/3",
-		"Web Services 2/2",
 		`aria-label="Under maintenance"`,
 		`aria-label="Not supported"`,
 		"Storage not operational",
 		"Storage is being scrubbed to check data integrity, 15.0 % done",
 	)
+	body := rr.Body.String()
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
 
 func TestRoutesServeIndexTreatsOnlineScrubAsOperational(t *testing.T) {
@@ -495,37 +499,43 @@ func TestRoutesServeIndexTreatsOnlineScrubAsOperational(t *testing.T) {
 	requireContains(
 		t,
 		body,
-		"Praha 3/3",
-		"Nodes 2/2",
 		"Storage is being scrubbed to check data integrity, 15.0 % done",
 	)
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 2, Total: 2})
 
-	prahaIndex := strings.Index(body, "Praha 3/3")
+	prahaIndex := strings.Index(body, `href="/group?kind=location&amp;id=3"`)
 	if prahaIndex == -1 {
 		t.Fatalf("Praha heading not found in body")
 	}
 	prahaHeadingStart := strings.LastIndex(body[:prahaIndex], "<h2")
-	prahaHeadingEnd := strings.Index(body[prahaIndex:], "</h2>")
-	if prahaHeadingStart == -1 || prahaHeadingEnd == -1 {
-		t.Fatalf("Praha heading boundaries not found in body")
+	if prahaHeadingStart == -1 {
+		t.Fatalf("Praha heading tag start not found in body")
 	}
-	prahaHeading := body[prahaHeadingStart : prahaIndex+prahaHeadingEnd]
-	if !strings.Contains(prahaHeading, `class="text-success"`) {
-		t.Fatalf("Praha heading = %q, want success", prahaHeading)
+	prahaHeadingTagEnd := strings.Index(body[prahaHeadingStart:], ">")
+	if prahaHeadingTagEnd == -1 {
+		t.Fatalf("Praha heading tag boundaries not found in body")
+	}
+	prahaHeadingTag := body[prahaHeadingStart : prahaHeadingStart+prahaHeadingTagEnd]
+	if strings.Contains(prahaHeadingTag, `text-success`) || strings.Contains(prahaHeadingTag, `text-warning`) || strings.Contains(prahaHeadingTag, `text-danger`) {
+		t.Fatalf("Praha heading tag = %q, should not have state color", prahaHeadingTag)
 	}
 
-	nodesIndex := strings.Index(body, "Nodes 2/2")
+	nodesIndex := strings.Index(body, `data-bs-target="#collapse-nodes-3"`)
 	if nodesIndex == -1 {
 		t.Fatalf("Nodes heading not found in body")
 	}
 	nodesButtonStart := strings.LastIndex(body[:nodesIndex], "<button")
-	nodesButtonEnd := strings.Index(body[nodesIndex:], "</button>")
-	if nodesButtonStart == -1 || nodesButtonEnd == -1 {
-		t.Fatalf("Nodes button boundaries not found in body")
+	if nodesButtonStart == -1 {
+		t.Fatalf("Nodes button tag start not found in body")
 	}
-	nodesButton := body[nodesButtonStart : nodesIndex+nodesButtonEnd]
-	if !strings.Contains(nodesButton, `text-success`) {
-		t.Fatalf("Nodes button = %q, want success", nodesButton)
+	nodesButtonTagEnd := strings.Index(body[nodesButtonStart:], ">")
+	if nodesButtonTagEnd == -1 {
+		t.Fatalf("Nodes button tag boundaries not found in body")
+	}
+	nodesButtonTag := body[nodesButtonStart : nodesButtonStart+nodesButtonTagEnd]
+	if strings.Contains(nodesButtonTag, `text-success`) || strings.Contains(nodesButtonTag, `text-warning`) || strings.Contains(nodesButtonTag, `text-danger`) {
+		t.Fatalf("Nodes button tag = %q, should not have state color", nodesButtonTag)
 	}
 
 	nodeIndex := strings.Index(body, `href="/entity?kind=node&amp;id=node2.prg">node2.prg</a>`)
@@ -650,13 +660,14 @@ func TestRoutesServeIndexAllDownState(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"Unable to fetch outage reports from vpsAdmin.",
-		"vpsAdmin 0/3",
-		"Praha 0/3",
-		"Brno 0/1",
-		"Services 0/3",
 		`aria-label="Down"`,
 		`aria-label="Error"`,
 	)
+	body := rr.Body.String()
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Down: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Down: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=4"`, StatusCounts{Down: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Down: 3, Total: 3})
 }
 
 func TestRoutesServeAboutAndStaticAssets(t *testing.T) {
