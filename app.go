@@ -21,6 +21,7 @@ type application struct {
 
 	responseCache *responseCache
 	noticeCache   *noticeCache
+	indexResponse *preRenderedIndex
 	aboutResponse cachedResponse
 }
 
@@ -87,61 +88,6 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 	}
 
 	return tpl, nil
-}
-
-func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
-	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
-		view := createStatusView(app.status, now)
-
-		notice, err := app.readNotice(now)
-		if err != nil {
-			log.Printf("Unable to read notice file: %+v", err)
-		}
-
-		var buf bytes.Buffer
-
-		if !app.status.Initialized {
-			err = app.templates.loading.Execute(&buf, StatusData{
-				Config:     app.config,
-				Status:     &view,
-				RenderedAt: now.Format(time.UnixDate),
-				Notice:     notice,
-			})
-
-			if err != nil {
-				log.Printf("Template error: %+v", err)
-				return responsePayload{}, err
-			}
-
-			return responsePayload{
-				statusCode:   http.StatusOK,
-				contentType:  "text/html; charset=utf-8",
-				cacheControl: "max-age=1",
-				body:         buf.Bytes(),
-				cacheFor:     dynamicCacheTTL,
-			}, nil
-		}
-
-		err = app.templates.status.Execute(&buf, StatusData{
-			Config:     app.config,
-			Status:     &view,
-			RenderedAt: now.Format(time.UnixDate),
-			Notice:     notice,
-		})
-
-		if err != nil {
-			log.Printf("Template error: %+v", err)
-			return responsePayload{}, err
-		}
-
-		return responsePayload{
-			statusCode:   http.StatusOK,
-			contentType:  "text/html; charset=utf-8",
-			cacheControl: "max-age=1",
-			body:         buf.Bytes(),
-			cacheFor:     dynamicCacheTTL,
-		}, nil
-	})
 }
 
 func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
@@ -268,6 +214,9 @@ func (app *application) ensureCaches() {
 	}
 	if app.noticeCache == nil {
 		app.noticeCache = newNoticeCache()
+	}
+	if app.indexResponse == nil {
+		app.indexResponse = newPreRenderedIndex()
 	}
 }
 

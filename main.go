@@ -37,6 +37,7 @@ func main() {
 	}
 
 	go systemStatus.initialize(cfg)
+	app.startIndexRenderer()
 
 	fmt.Printf("Starting server...\n")
 	if err := http.ListenAndServe(cfg.ListenAddress, app.routes()); err != nil {

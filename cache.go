@@ -66,6 +66,21 @@ func (c *responseCache) get(key string, now time.Time) (cachedResponse, bool) {
 }
 
 func (c *responseCache) set(key string, payload responsePayload, now time.Time) cachedResponse {
+	entry := newCachedResponse(payload, now)
+
+	if c == nil || payload.cacheFor <= 0 || payload.statusCode != http.StatusOK {
+		return entry
+	}
+
+	c.mu.Lock()
+	c.pruneExpiredLocked(now)
+	c.entries[key] = entry
+	c.mu.Unlock()
+
+	return entry
+}
+
+func newCachedResponse(payload responsePayload, now time.Time) cachedResponse {
 	entry := cachedResponse{
 		statusCode:   payload.statusCode,
 		contentType:  payload.contentType,
@@ -76,15 +91,6 @@ func (c *responseCache) set(key string, payload responsePayload, now time.Time) 
 	if len(entry.body) > 0 {
 		entry.gzipBody = gzipBytes(entry.body)
 	}
-
-	if c == nil || payload.cacheFor <= 0 || payload.statusCode != http.StatusOK {
-		return entry
-	}
-
-	c.mu.Lock()
-	c.pruneExpiredLocked(now)
-	c.entries[key] = entry
-	c.mu.Unlock()
 
 	return entry
 }

@@ -709,7 +709,7 @@ func TestRoutesServeAboutAndStaticAssets(t *testing.T) {
 	}
 }
 
-func TestRoutesCacheDynamicResponsesForOneSecond(t *testing.T) {
+func TestRoutesServePreRenderedIndexUntilRefreshed(t *testing.T) {
 	now := fixedNow
 	app, st, _ := newTestApplication(t)
 	app.now = func() time.Time {
@@ -717,19 +717,52 @@ func TestRoutesCacheDynamicResponsesForOneSecond(t *testing.T) {
 	}
 	setOperationalFixture(st)
 
+	if _, err := app.refreshIndexResponse(now); err != nil {
+		t.Fatalf("pre-render index: %v", err)
+	}
+
 	first := getThroughRoutes(t, app, "/")
 	requireStatus(t, first, http.StatusOK)
 	requireContains(t, first.Body.String(), "Rendered at: Sat May  2 10:30:00 UTC 2026")
 
-	now = now.Add(500 * time.Millisecond)
-	second := getThroughRoutes(t, app, "/")
-	requireStatus(t, second, http.StatusOK)
-	requireContains(t, second.Body.String(), "Rendered at: Sat May  2 10:30:00 UTC 2026")
+	setWebServiceState(st, st.Services.Web[1], false, false, http.StatusInternalServerError)
+	now = fixedNow.Add(2 * time.Second)
 
-	now = now.Add(2 * time.Second)
-	third := getThroughRoutes(t, app, "/")
+	stale := getThroughRoutes(t, app, "/")
+	requireStatus(t, stale, http.StatusOK)
+	requireContains(t, stale.Body.String(), "No issues reported.", "Rendered at: Sat May  2 10:30:00 UTC 2026")
+	requireNotContains(t, stale.Body.String(), `aria-label="Down"`)
+
+	if _, err := app.refreshIndexResponse(now); err != nil {
+		t.Fatalf("refresh index: %v", err)
+	}
+
+	fresh := getThroughRoutes(t, app, "/")
+	requireStatus(t, fresh, http.StatusOK)
+	requireContains(t, fresh.Body.String(), `aria-label="Down"`, "Rendered at: Sat May  2 10:30:02 UTC 2026")
+}
+
+func TestRoutesCacheDynamicJSONResponsesForOneSecond(t *testing.T) {
+	now := fixedNow
+	app, st, _ := newTestApplication(t)
+	app.now = func() time.Time {
+		return now
+	}
+	setOperationalFixture(st)
+
+	first := getThroughRoutes(t, app, "/json")
+	requireStatus(t, first, http.StatusOK)
+	requireGeneratedAt(t, first, fixedNow)
+
+	now = fixedNow.Add(500 * time.Millisecond)
+	second := getThroughRoutes(t, app, "/json")
+	requireStatus(t, second, http.StatusOK)
+	requireGeneratedAt(t, second, fixedNow)
+
+	now = fixedNow.Add(2 * time.Second)
+	third := getThroughRoutes(t, app, "/json")
 	requireStatus(t, third, http.StatusOK)
-	requireContains(t, third.Body.String(), "Rendered at: Sat May  2 10:30:02 UTC 2026")
+	requireGeneratedAt(t, third, fixedNow.Add(2*time.Second))
 }
 
 func TestRoutesRefreshNoticeCacheAfterTTL(t *testing.T) {
@@ -783,6 +816,33 @@ func TestRoutesServeGzipForDynamicResponses(t *testing.T) {
 		t.Fatalf("decode gzipped JSON: %v\n%s", err, string(body))
 	}
 	requireJSONContractKeys(t, raw)
+}
+
+func TestRoutesServeGzipForPreRenderedIndex(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	if _, err := app.refreshIndexResponse(app.currentTime()); err != nil {
+		t.Fatalf("pre-render index: %v", err)
+	}
+
+	rr := getThroughRoutesWithHeaders(t, app, "/", map[string]string{
+		"Accept-Encoding": "gzip",
+	})
+	requireStatus(t, rr, http.StatusOK)
+
+	if got := rr.Header().Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("Content-Encoding = %q, want gzip", got)
+	}
+	if got := rr.Header().Values("Vary"); !headerValuesContain(got, "Accept-Encoding") {
+		t.Fatalf("Vary = %v, want Accept-Encoding", got)
+	}
+	if got := rr.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
+		t.Fatalf("Content-Type = %q, want text/html; charset=utf-8", got)
+	}
+
+	body := string(gunzipBody(t, rr.Body.Bytes()))
+	requireContains(t, body, "No issues reported.", "Rendered at: Sat May  2 10:30:00 UTC 2026")
 }
 
 func TestRoutesDoNotCacheMetrics(t *testing.T) {
@@ -986,6 +1046,18 @@ func gunzipBody(t *testing.T, body []byte) []byte {
 		t.Fatalf("read gzip body: %v", err)
 	}
 	return ret
+}
+
+func requireGeneratedAt(t *testing.T, rr *httptest.ResponseRecorder, want time.Time) {
+	t.Helper()
+
+	var body statusjson.Status
+	if err := stdjson.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode JSON: %v\n%s", err, rr.Body.String())
+	}
+	if !body.GeneratedAt.Equal(want) {
+		t.Fatalf("generated_at = %s, want %s", body.GeneratedAt, want)
+	}
 }
 
 func headerValuesContain(values []string, want string) bool {

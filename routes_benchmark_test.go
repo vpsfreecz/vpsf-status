@@ -7,11 +7,11 @@ import (
 	"time"
 )
 
-func BenchmarkRouteIndexCold(b *testing.B) {
+func BenchmarkRouteIndexFallback(b *testing.B) {
 	benchmarkRoute(b, "/", false)
 }
 
-func BenchmarkRouteIndexWarm(b *testing.B) {
+func BenchmarkRouteIndexPreRendered(b *testing.B) {
 	benchmarkRoute(b, "/", true)
 }
 
@@ -76,6 +76,7 @@ func benchmarkRoute(b *testing.B, target string, warm bool) {
 	for i := 0; i < b.N; i++ {
 		if !warm {
 			app.responseCache = newResponseCache()
+			app.indexResponse = newPreRenderedIndex()
 			now = now.Add(2 * time.Second)
 		}
 
