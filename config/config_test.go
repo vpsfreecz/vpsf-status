@@ -62,6 +62,9 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 	if cfg.CheckInterval != 30 {
 		t.Fatalf("CheckInterval = %d, want 30", cfg.CheckInterval)
 	}
+	if cfg.CheckTimeout != DefaultCheckTimeout {
+		t.Fatalf("CheckTimeout = %d, want %d", cfg.CheckTimeout, DefaultCheckTimeout)
+	}
 	if cfg.VpsAdmin.ApiUrl != "https://api.vpsfree.cz" || cfg.Locations[0].Nodes[0].Name != "node1.prg" {
 		t.Fatalf("parsed config = %+v", cfg)
 	}
@@ -79,7 +82,7 @@ func TestParseConfigSample(t *testing.T) {
 		t.Fatalf("ParseConfig sample: %v", err)
 	}
 
-	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" || cfg.StateDir != "/tmp/vpsf-status" || cfg.HistoryDays != 90 {
+	if cfg.ListenAddress != ":8080" || cfg.DataDir != "." || cfg.NoticeFile != "notice.html" || cfg.StateDir != "/tmp/vpsf-status" || cfg.HistoryDays != 90 || cfg.CheckTimeout != 60 {
 		t.Fatalf("sample paths/listen values = %+v", cfg)
 	}
 	if cfg.VpsAdmin.ApiUrl == "" || cfg.VpsAdmin.WebuiUrl == "" || cfg.VpsAdmin.ConsoleUrl == "" {
@@ -131,6 +134,33 @@ func TestParseConfigPreservesHistoryDays(t *testing.T) {
 
 	if cfg.HistoryDays != 180 {
 		t.Fatalf("HistoryDays = %d, want 180", cfg.HistoryDays)
+	}
+}
+
+func TestParseConfigPreservesCheckTimeout(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"check_timeout": 45}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	cfg, err := ParseConfig(path)
+	if err != nil {
+		t.Fatalf("ParseConfig: %v", err)
+	}
+
+	if cfg.CheckTimeout != 45 {
+		t.Fatalf("CheckTimeout = %d, want 45", cfg.CheckTimeout)
+	}
+}
+
+func TestParseConfigRejectsNegativeCheckTimeout(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.json")
+	if err := os.WriteFile(path, []byte(`{"check_timeout": -1}`), 0o644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	if _, err := ParseConfig(path); err == nil {
+		t.Fatal("ParseConfig returned nil error for negative check_timeout")
 	}
 }
 

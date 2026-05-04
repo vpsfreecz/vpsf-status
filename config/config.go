@@ -6,7 +6,10 @@ import (
 	"os"
 )
 
-const DefaultHistoryDays = 90
+const (
+	DefaultHistoryDays  = 90
+	DefaultCheckTimeout = 60
+)
 
 type Config struct {
 	ListenAddress string       `json:"listen_address"`
@@ -15,6 +18,7 @@ type Config struct {
 	HistoryDays   int          `json:"history_days"`
 	NoticeFile    string       `json:"notice_file"`
 	CheckInterval int          `json:"check_interval"`
+	CheckTimeout  int          `json:"check_timeout"`
 	VpsAdmin      VpsAdmin     `json:"vpsadmin"`
 	Locations     []Location   `json:"locations"`
 	WebServices   []WebService `json:"web_services"`
@@ -94,6 +98,12 @@ func ParseConfig(path string) (*Config, error) {
 
 	if cfg.CheckInterval == 0 {
 		cfg.CheckInterval = 30
+	}
+	if cfg.CheckTimeout < 0 {
+		return nil, fmt.Errorf("check_timeout must not be negative")
+	}
+	if cfg.CheckTimeout == 0 {
+		cfg.CheckTimeout = DefaultCheckTimeout
 	}
 
 	return &cfg, nil

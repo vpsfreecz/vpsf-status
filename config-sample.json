@@ -3,6 +3,7 @@
 	"data_dir": ".",
 	"state_dir": "/tmp/vpsf-status",
 	"history_days": 90,
+	"check_timeout": 60,
 	"notice_file": "notice.html",
 	"vpsadmin": {
 		"api_url": "https://api.vpsfree.cz",
