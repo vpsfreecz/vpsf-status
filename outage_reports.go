@@ -40,8 +40,10 @@ func (c liveOutageReportsClient) ListLocations() (*client.ActionLocationIndexRes
 	return c.api.Location.Index.Prepare().Call()
 }
 
-func checkOutageReports(st *Status, checkInterval time.Duration) {
-	api := liveOutageReportsClient{api: client.New(st.VpsAdmin.Api.Url)}
+func checkOutageReports(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
+	apiClient := client.New(st.VpsAdmin.Api.Url)
+	apiClient.SetTimeout(checkTimeout)
+	api := liveOutageReportsClient{api: apiClient}
 
 	for {
 		refreshOutageReportsOnce(st, api, time.Now())

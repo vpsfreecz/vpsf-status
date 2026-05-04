@@ -13,13 +13,14 @@ type httpRequestDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
+func checkVpsAdminWebServices(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
 	go spawnHttpCheck(
 		st,
 		st.VpsAdmin.Webui,
 		ProbeTarget{EntityKind: historyEntityVpsAdmin, EntityID: "webui", EntityLabel: vpsAdminServiceLabel("webui"), Method: "HTTP"},
 		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "webui"}),
 		checkInterval,
+		checkTimeout,
 	)
 
 	go spawnHttpCheck(
@@ -28,10 +29,11 @@ func checkVpsAdminWebServices(st *Status, checkInterval time.Duration) {
 		ProbeTarget{EntityKind: historyEntityVpsAdmin, EntityID: "console", EntityLabel: vpsAdminServiceLabel("console"), Method: "HTTP"},
 		st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "console"}),
 		checkInterval,
+		checkTimeout,
 	)
 }
 
-func checkWebServices(st *Status, checkInterval time.Duration) {
+func checkWebServices(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
 	for _, ws := range st.Services.Web {
 		go spawnHttpCheck(
 			st,
@@ -39,18 +41,28 @@ func checkWebServices(st *Status, checkInterval time.Duration) {
 			ProbeTarget{EntityKind: historyEntityWebService, EntityID: ws.Label, EntityLabel: ws.Label, Method: "HTTP"},
 			st.Exporter.webServiceStatus.With(prometheus.Labels{"service": ws.Label}),
 			checkInterval,
+			checkTimeout,
 		)
 	}
 }
 
-func spawnHttpCheck(st *Status, ws *WebService, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration) {
+func spawnHttpCheck(st *Status, ws *WebService, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration, checkTimeout time.Duration) {
+	client := newHTTPCheckClient(checkTimeout)
 	for {
 		now := time.Now()
-		checkHTTPOnce(ws, gauge, http.DefaultClient, now)
+		checkHTTPOnce(ws, gauge, client, now)
 		status, message := webServiceProbeStatus(ws)
 		recordProbeStatus(st, target, status, message, now)
 		time.Sleep(checkInterval)
 	}
+}
+
+func newHTTPCheckClient(checkTimeout time.Duration) httpRequestDoer {
+	if checkTimeout <= 0 {
+		return http.DefaultClient
+	}
+
+	return &http.Client{Timeout: checkTimeout}
 }
 
 func checkHTTPOnce(ws *WebService, gauge prometheus.Gauge, client httpRequestDoer, now time.Time) {

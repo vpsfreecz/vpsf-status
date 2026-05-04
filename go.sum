@@ -33,8 +33,8 @@ github.com/prometheus/procfs v0.15.1 h1:YagwOFzUgYfKKHX6Dr+sHT7km/hxC76UB0leargg
 github.com/prometheus/procfs v0.15.1/go.mod h1:fB45yRUv8NstnjriLhBQLuOUt+WW4BsoGhij/e3PBqk=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94icq4NjY3clb7Lk8O1qJ8BdBEF8z0ibU0rE=
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
-github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20241106165256-96c839aa5ea5 h1:JlRWWDxCdsDZg5dlHR/O8Oqlp5D6zMTSmB/lmEuazqc=
-github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20241106165256-96c839aa5ea5/go.mod h1:n7aZvL8Z1XGeKF6lDkdmsfGdBOh8SiKxl07FXjpGygw=
+github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260504123508-85fe59a48c74 h1:PzhzzZjYYux0+1mxynjQZrCg5A/N9xELzWlrISObsE4=
+github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260504123508-85fe59a48c74/go.mod h1:n7aZvL8Z1XGeKF6lDkdmsfGdBOh8SiKxl07FXjpGygw=
 golang.org/x/mod v0.16.0 h1:QX4fJ0Rr5cPQCF7O9lh9Se4pmwfwskqZfq5moyldzic=
 golang.org/x/mod v0.16.0/go.mod h1:hTbmBsO62+eylJbnUtE2MGJUyE7QWk4xUqPFrRgJ+7c=
 golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4/go.mod h1:RBQZq4jEuRlivfhVLdyRGr576XBO4/greRjx4P4O3yc=

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -30,13 +31,16 @@ func TestCheckDNSResolverOnce(t *testing.T) {
 				if ctx == nil {
 					t.Fatal("lookup context is nil")
 				}
+				if _, ok := ctx.Deadline(); !ok {
+					t.Fatal("lookup context has no deadline")
+				}
 				if tt.err != nil {
 					return nil, tt.err
 				}
 				return []string{"192.0.2.1"}, nil
 			}
 
-			checkDNSResolverOnce(resolver, gauge, lookup, fixedNow)
+			checkDNSResolverOnce(resolver, gauge, lookup, fixedNow, time.Minute)
 
 			if resolver.ResolveStatus != tt.wantStatus {
 				t.Fatalf("ResolveStatus = %v, want %v", resolver.ResolveStatus, tt.wantStatus)

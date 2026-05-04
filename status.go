@@ -279,18 +279,19 @@ func recordConfiguredEntitySnapshots(st *Status, now time.Time) error {
 
 func (st *Status) initialize(cfg *config.Config) {
 	checkInterval := time.Duration(cfg.CheckInterval) * time.Second
+	checkTimeout := time.Duration(cfg.CheckTimeout) * time.Second
 
 	time.Sleep(5 * time.Second)
 
 	go checkNoticeFile(st, cfg.NoticeFile, checkInterval)
 
-	go checkApi(st, checkInterval)
+	go checkApi(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
-	go checkOutageReports(st, checkInterval)
+	go checkOutageReports(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
-	checkVpsAdminWebServices(st, checkInterval)
+	checkVpsAdminWebServices(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
 	pingNodes(st, checkInterval)
@@ -299,16 +300,16 @@ func (st *Status) initialize(cfg *config.Config) {
 	pingDnsResolvers(st, checkInterval)
 	time.Sleep(1 * time.Second)
 
-	checkDnsResolvers(st, checkInterval)
+	checkDnsResolvers(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
-	checkWebServices(st, checkInterval)
+	checkWebServices(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
 	pingNameServers(st, checkInterval)
 	time.Sleep(1 * time.Second)
 
-	checkNameServers(st, checkInterval)
+	checkNameServers(st, checkInterval, checkTimeout)
 
 	time.Sleep(5 * time.Second)
 	st.Initialized = true

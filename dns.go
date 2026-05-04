@@ -12,7 +12,7 @@ import (
 
 type dnsLookupFunc func(context.Context, *DnsResolver) ([]string, error)
 
-func checkDnsResolvers(st *Status, checkInterval time.Duration) {
+func checkDnsResolvers(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
 	for _, loc := range st.LocationList {
 		for _, r := range loc.DnsResolverList {
 			go spawnDnsResolverCheck(
@@ -21,12 +21,13 @@ func checkDnsResolvers(st *Status, checkInterval time.Duration) {
 				ProbeTarget{EntityKind: historyEntityDnsResolver, EntityID: r.Name, EntityLabel: r.Name, Method: "Lookup"},
 				st.Exporter.dnsResolverLookup.With(prometheus.Labels{"name": r.Name}),
 				checkInterval,
+				checkTimeout,
 			)
 		}
 	}
 }
 
-func checkNameServers(st *Status, checkInterval time.Duration) {
+func checkNameServers(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
 	for _, ns := range st.Services.NameServer {
 		go spawnDnsResolverCheck(
 			st,
@@ -34,14 +35,15 @@ func checkNameServers(st *Status, checkInterval time.Duration) {
 			ProbeTarget{EntityKind: historyEntityNameServer, EntityID: ns.Name, EntityLabel: ns.Name, Method: "Lookup"},
 			st.Exporter.nameServerLookup.With(prometheus.Labels{"name": ns.Name}),
 			checkInterval,
+			checkTimeout,
 		)
 	}
 }
 
-func spawnDnsResolverCheck(st *Status, r *DnsResolver, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration) {
+func spawnDnsResolverCheck(st *Status, r *DnsResolver, target ProbeTarget, gauge prometheus.Gauge, checkInterval time.Duration, checkTimeout time.Duration) {
 	for {
 		now := time.Now()
-		checkDNSResolverOnce(r, gauge, lookupThroughDNSResolver, now)
+		checkDNSResolverOnce(r, gauge, lookupThroughDNSResolver, now, checkTimeout)
 		status := historyProbeStateError
 		message := "lookup failed"
 		if r.ResolveStatus {
@@ -53,10 +55,17 @@ func spawnDnsResolverCheck(st *Status, r *DnsResolver, target ProbeTarget, gauge
 	}
 }
 
-func checkDNSResolverOnce(r *DnsResolver, gauge prometheus.Gauge, lookup dnsLookupFunc, now time.Time) {
+func checkDNSResolverOnce(r *DnsResolver, gauge prometheus.Gauge, lookup dnsLookupFunc, now time.Time, checkTimeout time.Duration) {
 	r.LastResolveCheck = now
 
-	_, err := lookup(context.Background(), r)
+	ctx := context.Background()
+	if checkTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, checkTimeout)
+		defer cancel()
+	}
+
+	_, err := lookup(ctx, r)
 	if err != nil {
 		log.Printf("DNS lookup failed on %s", r.Name)
 		r.ResolveStatus = false
