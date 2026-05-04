@@ -21,7 +21,7 @@
 		.history-day-ok { background: #198754; }
 		.history-day-maintenance { background: #ffc107; }
 		.history-day-outage { background: #dc3545; }
-		.history-popover { display: none; position: absolute; left: 50%; bottom: 100%; z-index: 1080; width: max-content; min-width: 14rem; max-width: 22rem; padding: .65rem .75rem; color: #212529; background: #fff; border: 1px solid rgba(0,0,0,.2); border-radius: .3rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transform: translateX(-50%); font-size: .875rem; line-height: 1.25; white-space: normal; }
+		.history-popover { display: none; position: fixed; left: 0; top: 0; z-index: 1080; width: max-content; min-width: min(14rem, calc(100vw - 1rem)); max-width: min(22rem, calc(100vw - 1rem)); max-height: calc(100vh - 1rem); overflow-y: auto; padding: .65rem .75rem; color: #212529; background: #fff; border: 1px solid rgba(0,0,0,.2); border-radius: .3rem; box-shadow: 0 .5rem 1rem rgba(0,0,0,.15); transform: none; font-size: .875rem; line-height: 1.25; white-space: normal; }
 		.history-day-wrap:hover .history-popover, .history-day-wrap:focus-within .history-popover { display: block; }
 		.history-day-wrap:focus-visible .history-day { box-shadow: 0 0 0 .2rem rgba(13,110,253,.25); }
 		.history-popover-date { display: block; margin-bottom: .35rem; font-weight: 600; }
@@ -52,5 +52,97 @@
 		</div>
 
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.0-beta1/dist/js/bootstrap.bundle.min.js" integrity="sha384-pprn3073KE6tl6bjs2QrFaJGz5/SUsLqktiwsUTF55Jfv3qYSDhgCecCxMW52nD2" crossorigin="anonymous"></script>
+		<script>
+		(() => {
+			const margin = 8;
+			const gap = 8;
+			let activeWrap = null;
+			let frame = 0;
+
+			function popoverFor(wrap) {
+				return wrap ? wrap.querySelector(".history-popover") : null;
+			}
+
+			function isActive(wrap) {
+				return wrap && (wrap.matches(":hover") || wrap.matches(":focus-within"));
+			}
+
+			function clamp(value, size, viewportSize) {
+				const max = Math.max(margin, viewportSize - size - margin);
+				return Math.min(Math.max(value, margin), max);
+			}
+
+			function positionPopover(wrap) {
+				const popover = popoverFor(wrap);
+				if (!popover || !isActive(wrap)) {
+					return;
+				}
+
+				popover.style.visibility = "hidden";
+				popover.style.left = "0px";
+				popover.style.top = "0px";
+
+				const triggerRect = wrap.getBoundingClientRect();
+				const popoverRect = popover.getBoundingClientRect();
+				const width = popoverRect.width;
+				const height = popoverRect.height;
+
+				const centeredLeft = triggerRect.left + triggerRect.width / 2 - width / 2;
+				const left = clamp(centeredLeft, width, window.innerWidth);
+				const aboveTop = triggerRect.top - height - gap;
+				const belowTop = triggerRect.bottom + gap;
+				let top = aboveTop;
+				if (aboveTop < margin && belowTop + height <= window.innerHeight - margin) {
+					top = belowTop;
+				}
+
+				popover.style.left = `${left}px`;
+				popover.style.top = `${clamp(top, height, window.innerHeight)}px`;
+				popover.style.visibility = "visible";
+			}
+
+			function schedulePosition(wrap) {
+				activeWrap = wrap;
+				if (frame) {
+					cancelAnimationFrame(frame);
+				}
+				frame = requestAnimationFrame(() => {
+					frame = 0;
+					positionPopover(wrap);
+				});
+			}
+
+			function repositionActive() {
+				if (isActive(activeWrap)) {
+					schedulePosition(activeWrap);
+				}
+			}
+
+			document.addEventListener("pointerenter", (event) => {
+				const wrap = event.target.closest(".history-day-wrap");
+				if (wrap) {
+					schedulePosition(wrap);
+				}
+			}, true);
+
+			document.addEventListener("focusin", (event) => {
+				const wrap = event.target.closest(".history-day-wrap");
+				if (wrap) {
+					schedulePosition(wrap);
+				}
+			});
+
+			document.addEventListener("focusout", () => {
+				requestAnimationFrame(() => {
+					if (!isActive(activeWrap)) {
+						activeWrap = null;
+					}
+				});
+			});
+
+			window.addEventListener("resize", repositionActive);
+			window.addEventListener("scroll", repositionActive, true);
+		})();
+		</script>
 	</body>
 </html>
