@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -497,10 +499,20 @@ func scrapeMetrics(t *testing.T, app *application) map[string]*dto.MetricFamily 
 	rr := getThroughRoutes(t, app, "/metrics")
 	requireStatus(t, rr, http.StatusOK)
 
-	var parser expfmt.TextParser
-	families, err := parser.TextToMetricFamilies(bytes.NewReader(rr.Body.Bytes()))
-	if err != nil {
-		t.Fatalf("parse metrics: %v\n%s", err, rr.Body.String())
+	decoder := expfmt.NewDecoder(bytes.NewReader(rr.Body.Bytes()), expfmt.NewFormat(expfmt.TypeTextPlain))
+	families := make(map[string]*dto.MetricFamily)
+
+	for {
+		family := &dto.MetricFamily{}
+		err := decoder.Decode(family)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			t.Fatalf("parse metrics: %v\n%s", err, rr.Body.String())
+		}
+
+		families[family.GetName()] = family
 	}
 
 	return families
