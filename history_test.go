@@ -572,6 +572,94 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 	}
 }
 
+func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	nodeOutage := testHistoryOutage(4001, fixedNow.Add(-20*time.Minute), "Node outage", []OutageEntity{
+		{Name: "Node", Id: 101, Label: "Node node1.prg"},
+	})
+	serviceMaintenance := testHistoryOutage(4002, fixedNow.Add(-70*time.Minute), "Service maintenance", []OutageEntity{
+		{Name: "Web service", Label: "vpsfree.cz"},
+	})
+	serviceMaintenance.Type = "maintenance"
+	nameserverOutage := testHistoryOutage(4003, fixedNow.Add(-80*time.Minute), "Nameserver outage", []OutageEntity{
+		{Name: "Name server", Label: "ns1.vpsfree.cz"},
+	})
+	if err := st.History.ReplaceOutages([]*OutageReport{nodeOutage, serviceMaintenance, nameserverOutage}, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	recordPromotedProbeIncident(t, st, ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}, "not responding", fixedNow.Add(-10*time.Minute))
+	recordPromotedProbeIncident(t, st, ProbeTarget{
+		EntityKind:  historyEntityWebService,
+		EntityID:    "vpsfree.cz",
+		EntityLabel: "vpsfree.cz",
+		Method:      "HTTP",
+	}, "HTTP 500", fixedNow.Add(-10*time.Minute))
+	recordPromotedProbeIncident(t, st, ProbeTarget{
+		EntityKind:  historyEntityNameServer,
+		EntityID:    "ns1.vpsfree.cz",
+		EntityLabel: "ns1.vpsfree.cz",
+		Method:      "DNS",
+	}, "lookup failed", fixedNow.Add(-10*time.Minute))
+	recordPromotedProbeIncident(t, st, ProbeTarget{
+		EntityKind:  historyEntityWebService,
+		EntityID:    "kb.vpsfree.cz",
+		EntityLabel: "kb.vpsfree.cz",
+		Method:      "HTTP",
+	}, "HTTP 500", fixedNow.Add(-10*time.Minute))
+
+	view := createStatusView(st, fixedNow)
+	nodeHistory := view.HistoryFor(historyEntityNode, "node1.prg")
+	serviceHistory := view.HistoryFor(historyEntityWebService, "vpsfree.cz")
+	nameserverHistory := view.HistoryFor(historyEntityNameServer, "ns1.vpsfree.cz")
+	kbHistory := view.HistoryFor(historyEntityWebService, "kb.vpsfree.cz")
+
+	if historyDayHasIncident(nodeHistory, fixedNow, "Probe: node1.prg Ping not responding") {
+		t.Fatalf("covered node probe incidents = %+v, want probe hidden", historyDayIncidents(nodeHistory, fixedNow))
+	}
+	if !historyDayHasIncident(nodeHistory, fixedNow, "Outage: Node outage") {
+		t.Fatalf("node incidents = %+v, want outage retained", historyDayIncidents(nodeHistory, fixedNow))
+	}
+	if historyDayHasIncident(serviceHistory, fixedNow, "Probe: vpsfree.cz HTTP HTTP 500") {
+		t.Fatalf("grace-covered service probe incidents = %+v, want probe hidden", historyDayIncidents(serviceHistory, fixedNow))
+	}
+	if !historyDayHasIncident(serviceHistory, fixedNow, "Maintenance: Service maintenance") {
+		t.Fatalf("service incidents = %+v, want maintenance retained", historyDayIncidents(serviceHistory, fixedNow))
+	}
+	if !historyDayHasIncident(nameserverHistory, fixedNow, "Probe: ns1.vpsfree.cz DNS lookup failed") {
+		t.Fatalf("outside-grace nameserver incidents = %+v, want probe retained", historyDayIncidents(nameserverHistory, fixedNow))
+	}
+	if !historyDayHasIncident(kbHistory, fixedNow, "Probe: kb.vpsfree.cz HTTP HTTP 500") {
+		t.Fatalf("uncovered kb incidents = %+v, want probe retained", historyDayIncidents(kbHistory, fixedNow))
+	}
+
+	praha := view.Locations[0].History
+	if historyDayHasIncident(praha, fixedNow, "Probe: node1.prg Ping not responding") {
+		t.Fatalf("Praha incidents = %+v, want covered node probe hidden", historyDayIncidents(praha, fixedNow))
+	}
+	if !historyDayHasIncident(praha, fixedNow, "node1.prg: Outage: Node outage") {
+		t.Fatalf("Praha incidents = %+v, want node outage retained", historyDayIncidents(praha, fixedNow))
+	}
+
+	services := view.Services.History
+	if historyDayHasIncident(services, fixedNow, "Probe: vpsfree.cz HTTP HTTP 500") {
+		t.Fatalf("Services incidents = %+v, want grace-covered service probe hidden", historyDayIncidents(services, fixedNow))
+	}
+	if !historyDayHasIncident(services, fixedNow, "Probe: ns1.vpsfree.cz DNS lookup failed") {
+		t.Fatalf("Services incidents = %+v, want outside-grace nameserver probe retained", historyDayIncidents(services, fixedNow))
+	}
+	if !historyDayHasIncident(services, fixedNow, "Probe: kb.vpsfree.cz HTTP HTTP 500") {
+		t.Fatalf("Services incidents = %+v, want unrelated service probe retained", historyDayIncidents(services, fixedNow))
+	}
+}
+
 func TestHistoryViewsUseConfiguredHistoryDays(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
@@ -781,6 +869,17 @@ func TestHistoryViewsIgnoreRemovedNodeLaneOutsideHistoryWindow(t *testing.T) {
 	praha := view.Locations[0].History
 	if historyBarHasLane(praha, historyKey(historyEntityNode, "oldnode.prg")) {
 		t.Fatalf("Praha lanes = %+v, want old removed node omitted", historyLaneLabels(praha))
+	}
+}
+
+func recordPromotedProbeIncident(t *testing.T, st *Status, target ProbeTarget, message string, startsAt time.Time) {
+	t.Helper()
+
+	if err := st.History.RecordProbeStatus(target, historyProbeStateDown, message, startsAt); err != nil {
+		t.Fatalf("record initial probe failure: %v", err)
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateDown, message, startsAt.Add(probeIncidentThreshold)); err != nil {
+		t.Fatalf("record promoted probe failure: %v", err)
 	}
 }
 

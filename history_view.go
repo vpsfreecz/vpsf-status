@@ -92,7 +92,8 @@ const (
 	historyGroupLocation = "location"
 	historyGroupServices = "services"
 
-	historyIncidentTimeFormat = "2006-01-02 15:04 MST"
+	historyIncidentTimeFormat    = "2006-01-02 15:04 MST"
+	historyReportedIncidentGrace = 30 * time.Minute
 )
 
 func (sv *StatusView) HistoryFor(kind string, id string) HistoryBarView {
@@ -195,7 +196,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 
 	mapping := data.mapping
 	reports := data.reports
-	probeIncidents := data.probeIncidents
+	probeIncidents := visibleHistoryProbeIncidents(data, now)
 	archivedNodes := mapping.archivedNodesForHistoryWindow(reports, probeIncidents, now, days)
 
 	groups := newHistoryGroupViews(st, now, days, archivedNodesByGroup(archivedNodes))
@@ -247,6 +248,7 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 	data = ensureHistoryData(st, now, data)
 	bar := newHistoryBar(now, label, data.days)
 	key := historyKey(kind, id)
+	probeIncidents := visibleHistoryProbeIncidents(data, now)
 
 	for _, report := range data.reports {
 		if _, ok := data.mapping.outageHistoryKeys(report)[key]; !ok {
@@ -260,7 +262,7 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 		applyHistoryIncident(&bar, report.BeginsAt, outageEndsAt(report), severity, outageHistoryIncident(st, report))
 	}
 
-	for _, incident := range data.probeIncidents {
+	for _, incident := range probeIncidents {
 		if historyKey(incident.EntityKind, incident.EntityID) != key {
 			continue
 		}
@@ -278,7 +280,8 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget, label string, data *historyData) HistoryBarView {
 	data = ensureHistoryData(st, now, data)
 
-	archivedNodes := data.mapping.archivedNodesForHistoryWindow(data.reports, data.probeIncidents, now, data.days)
+	probeIncidents := visibleHistoryProbeIncidents(data, now)
+	archivedNodes := data.mapping.archivedNodesForHistoryWindow(data.reports, probeIncidents, now, data.days)
 	entityGroups := configuredHistoryEntityGroups(st, archivedNodes)
 
 	var lanes []HistoryLaneView
@@ -312,7 +315,7 @@ func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget
 		}
 	}
 
-	for _, incident := range data.probeIncidents {
+	for _, incident := range probeIncidents {
 		key := historyKey(incident.EntityKind, incident.EntityID)
 		if !historyTargetsInclude(entityGroups[key], target) {
 			continue
@@ -709,6 +712,78 @@ func ensureHistoryData(st *Status, now time.Time, data *historyData) *historyDat
 		return data
 	}
 	return newHistoryData(st, now)
+}
+
+func visibleHistoryProbeIncidents(data *historyData, now time.Time) []ProbeIncident {
+	if data == nil {
+		return nil
+	}
+	return filterCoveredHistoryProbeIncidents(data.probeIncidents, data.reports, data.mapping, now)
+}
+
+func filterCoveredHistoryProbeIncidents(incidents []ProbeIncident, reports []*OutageReport, mapping *historyEntityMapping, now time.Time) []ProbeIncident {
+	if len(incidents) == 0 || len(reports) == 0 || mapping == nil {
+		return incidents
+	}
+
+	ret := make([]ProbeIncident, 0, len(incidents))
+	for _, incident := range incidents {
+		if historyProbeIncidentCoveredByReport(incident, reports, mapping, now) {
+			continue
+		}
+		ret = append(ret, incident)
+	}
+	return ret
+}
+
+func historyProbeIncidentCoveredByReport(incident ProbeIncident, reports []*OutageReport, mapping *historyEntityMapping, now time.Time) bool {
+	if incident.EntityKind == "" || incident.EntityID == "" || incident.StartsAt.IsZero() {
+		return false
+	}
+
+	key := historyKey(incident.EntityKind, incident.EntityID)
+	probeStart, probeEnd := probeIncidentInterval(incident, now)
+	for _, report := range reports {
+		if report == nil || report.BeginsAt.IsZero() {
+			continue
+		}
+		if _, ok := mapping.outageHistoryKeys(report)[key]; !ok {
+			continue
+		}
+
+		reportStart, reportEnd := outageReportInterval(report)
+		reportStart = reportStart.Add(-historyReportedIncidentGrace)
+		reportEnd = reportEnd.Add(historyReportedIncidentGrace)
+		if historyIntervalsOverlap(probeStart, probeEnd, reportStart, reportEnd) {
+			return true
+		}
+	}
+	return false
+}
+
+func probeIncidentInterval(incident ProbeIncident, now time.Time) (time.Time, time.Time) {
+	start := incident.StartsAt
+	end := now
+	if incident.EndsAt != nil {
+		end = *incident.EndsAt
+	}
+	if end.Before(start) {
+		end = start
+	}
+	return start, end
+}
+
+func outageReportInterval(report *OutageReport) (time.Time, time.Time) {
+	start := report.BeginsAt
+	end := outageEndsAt(report)
+	if end.IsZero() || end.Before(start) {
+		end = start
+	}
+	return start, end
+}
+
+func historyIntervalsOverlap(aStart time.Time, aEnd time.Time, bStart time.Time, bEnd time.Time) bool {
+	return !aEnd.Before(bStart) && !bEnd.Before(aStart)
 }
 
 func outageHistoryKeys(st *Status, report *OutageReport) map[string]struct{} {
