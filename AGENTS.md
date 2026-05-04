@@ -45,6 +45,9 @@ updates.
 
 Do not commit local `config.json` or built `vpsf-status` binaries; both are
 ignored. Keep sample configuration changes synchronized with `config/config.go`.
+When changing Go dependencies in `go.mod` or `go.sum`, update
+`nix/package.nix` so its `vendorHash` matches the new module graph, and verify
+the package with `nix build .#vpsf-status`.
 Runtime paths are resolved from `data_dir`, so templates and assets must work
 with both `.` and deployment-specific data directories.
 
