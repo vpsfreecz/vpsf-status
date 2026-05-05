@@ -53,7 +53,7 @@ func spawnHttpCheck(st *Status, ws *WebService, target ProbeTarget, gauge promet
 		checkHTTPOnce(ws, gauge, client, now)
 		status, message := webServiceProbeStatus(ws)
 		recordProbeStatus(st, target, status, message, now)
-		time.Sleep(checkInterval)
+		sleepUntilNextProbe(now, checkInterval)
 	}
 }
 

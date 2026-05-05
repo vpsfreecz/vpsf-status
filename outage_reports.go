@@ -44,8 +44,9 @@ func checkOutageReports(st *Status, checkInterval time.Duration, checkTimeout ti
 	api := liveOutageReportsClient{api: newVpsAdminClient(st.VpsAdmin.Api.Url, checkTimeout)}
 
 	for {
-		refreshOutageReportsOnce(st, api, time.Now())
-		time.Sleep(checkInterval)
+		now := time.Now()
+		refreshOutageReportsOnce(st, api, now)
+		sleepUntilNextProbe(now, checkInterval)
 	}
 }
 

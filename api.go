@@ -33,7 +33,7 @@ func checkApi(st *Status, checkInterval time.Duration, checkTimeout time.Duratio
 	for {
 		now := time.Now()
 		refreshVpsAdminNodesOnce(st, api, now)
-		time.Sleep(checkInterval)
+		sleepUntilNextProbe(now, checkInterval)
 	}
 }
 
