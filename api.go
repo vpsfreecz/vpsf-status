@@ -28,9 +28,7 @@ func (c liveVpsAdminNodeStatusClient) PublicNodeStatus() (*client.ActionNodePubl
 }
 
 func checkApi(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
-	apiClient := client.New(st.VpsAdmin.Api.Url)
-	apiClient.SetTimeout(checkTimeout)
-	api := liveVpsAdminNodeStatusClient{api: apiClient}
+	api := liveVpsAdminNodeStatusClient{api: newVpsAdminClient(st.VpsAdmin.Api.Url, checkTimeout)}
 
 	for {
 		now := time.Now()

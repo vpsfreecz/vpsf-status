@@ -57,12 +57,8 @@ func spawnHttpCheck(st *Status, ws *WebService, target ProbeTarget, gauge promet
 	}
 }
 
-func newHTTPCheckClient(checkTimeout time.Duration) httpRequestDoer {
-	if checkTimeout <= 0 {
-		return http.DefaultClient
-	}
-
-	return &http.Client{Timeout: checkTimeout}
+func newHTTPCheckClient(checkTimeout time.Duration) *http.Client {
+	return newProbeHTTPClient(checkTimeout)
 }
 
 func checkHTTPOnce(ws *WebService, gauge prometheus.Gauge, client httpRequestDoer, now time.Time) {
@@ -115,6 +111,7 @@ func sendHttpRequest(client httpRequestDoer, ws *WebService) (*http.Response, er
 	if err != nil {
 		return nil, err
 	}
+	req.Close = true
 
 	return client.Do(req)
 }

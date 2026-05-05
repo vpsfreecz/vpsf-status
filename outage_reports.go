@@ -41,9 +41,7 @@ func (c liveOutageReportsClient) ListLocations() (*client.ActionLocationIndexRes
 }
 
 func checkOutageReports(st *Status, checkInterval time.Duration, checkTimeout time.Duration) {
-	apiClient := client.New(st.VpsAdmin.Api.Url)
-	apiClient.SetTimeout(checkTimeout)
-	api := liveOutageReportsClient{api: apiClient}
+	api := liveOutageReportsClient{api: newVpsAdminClient(st.VpsAdmin.Api.Url, checkTimeout)}
 
 	for {
 		refreshOutageReportsOnce(st, api, time.Now())

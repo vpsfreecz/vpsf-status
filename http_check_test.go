@@ -3,9 +3,13 @@ package main
 import (
 	"errors"
 	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -133,10 +137,53 @@ func TestCheckHTTPOnce(t *testing.T) {
 			if req.URL.String() != tt.wantRequest {
 				t.Fatalf("request URL = %s, want %s", req.URL.String(), tt.wantRequest)
 			}
+			if !req.Close {
+				t.Fatal("request should ask the transport to close the connection")
+			}
 			if ws.Url != "https://display.example/" {
 				t.Fatalf("display URL changed to %s", ws.Url)
 			}
 		})
+	}
+}
+
+func TestNewHTTPCheckClientDoesNotReuseConnections(t *testing.T) {
+	var newConnections int32
+
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	server.Config.ConnState = func(conn net.Conn, state http.ConnState) {
+		if state == http.StateNew {
+			atomic.AddInt32(&newConnections, 1)
+		}
+	}
+	server.Start()
+	defer server.Close()
+
+	ws := &WebService{
+		Label:    "service",
+		Url:      server.URL,
+		CheckUrl: server.URL,
+	}
+	client := newHTTPCheckClient(5 * time.Second)
+	gauge := prometheus.NewGauge(prometheus.GaugeOpts{Name: "test_no_reuse_http_status"})
+
+	checkHTTPOnce(ws, gauge, client, fixedNow)
+	checkHTTPOnce(ws, gauge, client, fixedNow.Add(time.Second))
+
+	if got := atomic.LoadInt32(&newConnections); got != 2 {
+		t.Fatalf("connections = %d, want 2", got)
+	}
+	if client.Timeout != 5*time.Second {
+		t.Fatalf("client timeout = %s, want 5s", client.Timeout)
+	}
+	transport, ok := client.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("transport type = %T, want *http.Transport", client.Transport)
+	}
+	if !transport.DisableKeepAlives {
+		t.Fatal("transport should disable keep-alives")
 	}
 }
 
