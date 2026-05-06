@@ -30,24 +30,83 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Update dependencies
+      - name: Record starting revision
+        run: |
+          echo "UPDATE_START_REF=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Update flake input
         run: |
           set -euo pipefail
 
-          nix flake update
+          old_rev="$(jq -r '.nodes.nixpkgs.locked.rev // empty' flake.lock)"
+          if [ -z "$old_rev" ]; then
+            echo "Unable to read nixpkgs revision from flake.lock." >&2
+            exit 1
+          fi
+
+          nix flake update nixpkgs
+
+          if git diff --quiet -- flake.lock; then
+            echo "No flake input updates to commit."
+            exit 0
+          fi
+
+          new_rev="$(jq -r '.nodes.nixpkgs.locked.rev // empty' flake.lock)"
+          if [ -z "$new_rev" ]; then
+            echo "Unable to read updated nixpkgs revision from flake.lock." >&2
+            exit 1
+          fi
+
+          commit_msg="$(mktemp)"
+          trap 'rm -f "$commit_msg"' EXIT
+
+          printf 'flake: nixpkgs %.11s -> %.11s\n' "$old_rev" "$new_rev" > "$commit_msg"
+
+          git add -- flake.lock
+          git commit -F "$commit_msg"
+
+      - name: Update Go dependencies
+        run: |
+          set -euo pipefail
+
+          old_go_mod="$(mktemp)"
+          new_go_mod="$(mktemp)"
+          direct_changes="$(mktemp)"
+          commit_msg="$(mktemp)"
+          build_log="$(mktemp)"
+          trap 'rm -f "$old_go_mod" "$new_go_mod" "$direct_changes" "$commit_msg" "$build_log"' EXIT
+
+          nix develop --command go mod edit -json > "$old_go_mod"
+
           nix develop --command go get -u -t ./...
           nix develop --command go mod tidy
 
-      - name: Refresh Nix vendor hash
-        run: |
-          set -euo pipefail
+          if git diff --quiet -- go.mod go.sum; then
+            echo "No Go dependency updates to commit."
+            exit 0
+          fi
+
+          nix develop --command go mod edit -json > "$new_go_mod"
+
+          jq --slurp -r '
+            def direct:
+              (.Require // [])
+              | map(select((.Indirect // false) | not))
+              | map({key: .Path, value: .Version})
+              | from_entries;
+
+            (.[0] | direct) as $old
+            | (.[1] | direct) as $new
+            | (($old + $new) | keys | sort[])
+            | select(($old[.] // "") != ($new[.] // ""))
+            | [., ($old[.] // ""), ($new[.] // "")]
+            | @tsv
+          ' "$old_go_mod" "$new_go_mod" > "$direct_changes"
 
           perl -0pi -e 's/vendorHash = (?:lib\.fakeHash|"[^"]+");/vendorHash = lib.fakeHash;/' nix/package.nix
 
-          build_log="$(mktemp)"
           if nix build .#vpsf-status --no-link 2>"$build_log"; then
             echo "Nix build unexpectedly succeeded with lib.fakeHash." >&2
-            rm -f "$build_log"
             exit 1
           fi
 
@@ -57,12 +116,62 @@ jobs:
 
           if [ -z "$vendor_hash" ]; then
             cat "$build_log" >&2
-            rm -f "$build_log"
             exit 1
           fi
 
           perl -0pi -e "s/vendorHash = lib\\.fakeHash;/vendorHash = \"$vendor_hash\";/" nix/package.nix
-          rm -f "$build_log"
+
+          direct_count="$(wc -l < "$direct_changes" | tr -d ' ')"
+          if [ "$direct_count" -eq 0 ]; then
+            subject="go: update indirect dependencies"
+          elif [ "$direct_count" -eq 1 ]; then
+            IFS=$'\t' read -r module_path old_version new_version < "$direct_changes"
+            module_name="${module_path##*/}"
+            if [[ "$module_name" =~ ^v[0-9]+$ ]]; then
+              parent_path="${module_path%/*}"
+              module_name="${parent_path##*/}/${module_name}"
+            fi
+
+            if [ -z "$old_version" ]; then
+              subject="go: add $module_name $new_version"
+            elif [ -z "$new_version" ]; then
+              subject="go: remove $module_name"
+            else
+              subject="go: update $module_name to $new_version"
+            fi
+          else
+            subject="go: update $direct_count direct dependencies"
+          fi
+
+          printf '%s\n\n' "$subject" > "$commit_msg"
+          if [ "$direct_count" -eq 0 ]; then
+            printf 'No direct dependency version changes were detected.\n\n' >> "$commit_msg"
+          else
+            printf 'Direct dependency changes:\n\n' >> "$commit_msg"
+            while IFS=$'\t' read -r module_path old_version new_version; do
+              printf '%s:\n' "$module_path" >> "$commit_msg"
+              if [ -z "$old_version" ]; then
+                printf '  added %s\n\n' "$new_version" >> "$commit_msg"
+              elif [ -z "$new_version" ]; then
+                printf '  removed %s\n\n' "$old_version" >> "$commit_msg"
+              else
+                printf '  %s -> %s\n\n' "$old_version" "$new_version" >> "$commit_msg"
+              fi
+            done < "$direct_changes"
+          fi
+          printf 'Refresh nix/package.nix vendorHash for the updated Go module graph.\n' >> "$commit_msg"
+
+          git add -A -- go.mod go.sum nix/package.nix
+          git commit -F "$commit_msg"
+
+      - name: Check committed dependency updates
+        run: |
+          set -euo pipefail
+
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git status --short
+            exit 1
+          fi
 
       - name: Run tests
         run: nix develop --command go test ./...
@@ -70,16 +179,13 @@ jobs:
       - name: Build Nix package
         run: nix build .#vpsf-status --no-link
 
-      - name: Commit changes
+      - name: Push changes
         run: |
           set -euo pipefail
 
-          git add go.mod go.sum flake.lock nix/package.nix
-
-          if git diff --cached --quiet; then
-            echo "No dependency updates to commit."
+          if [ "$(git rev-parse HEAD)" = "$UPDATE_START_REF" ]; then
+            echo "No dependency updates to push."
             exit 0
           fi
 
-          git commit -m "Update dependencies"
           git push origin "HEAD:${{ github.event.repository.default_branch }}"
