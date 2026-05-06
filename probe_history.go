@@ -53,6 +53,9 @@ func recordNodeStorageProbe(st *Status, node *Node, now time.Time) {
 
 	status := historyProbeStateError
 	message := node.GetStorageStateMessage()
+	if node.PoolStatus && node.PoolState == "online" && node.IsStorageScanIssue() {
+		message = node.GetStorageScanMessage()
+	}
 
 	if node.ApiMaintenance {
 		status = historyProbeStateMaintenance
@@ -60,6 +63,8 @@ func recordNodeStorageProbe(st *Status, node *Node, now time.Time) {
 	} else if node.IsStorageOperational() {
 		status = historyProbeStateOperational
 		message = "online"
+	} else if node.IsStorageHardFailure() {
+		status = historyProbeStateDown
 	} else if node.IsStorageDegraded() {
 		status = historyProbeStateDegraded
 		if node.IsStorageScrubIssue() || node.IsStorageResilverIssue() {

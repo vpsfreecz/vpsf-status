@@ -41,3 +41,86 @@ func TestRecordNodeStorageProbeTreatsOnlineScrubAsOperational(t *testing.T) {
 		t.Fatalf("degraded scrub event = %+v, want degraded storage scrub event", got)
 	}
 }
+
+func TestRecordNodeStorageProbeClassifiesStorageFailures(t *testing.T) {
+	tests := []struct {
+		name        string
+		poolStatus  bool
+		poolState   string
+		poolScan    string
+		wantStatus  string
+		wantMessage string
+	}{
+		{
+			name:        "suspended",
+			poolStatus:  true,
+			poolState:   "suspended",
+			poolScan:    "none",
+			wantStatus:  historyProbeStateDown,
+			wantMessage: "Storage not operational",
+		},
+		{
+			name:        "faulted",
+			poolStatus:  true,
+			poolState:   "faulted",
+			poolScan:    "none",
+			wantStatus:  historyProbeStateDown,
+			wantMessage: "Storage not operational",
+		},
+		{
+			name:        "error",
+			poolStatus:  true,
+			poolState:   "error",
+			poolScan:    "none",
+			wantStatus:  historyProbeStateError,
+			wantMessage: "Storage status check failed",
+		},
+		{
+			name:        "unknown",
+			poolStatus:  true,
+			poolState:   "unknown",
+			poolScan:    "none",
+			wantStatus:  historyProbeStateError,
+			wantMessage: "Unable to determine storage status",
+		},
+		{
+			name:        "unavailable",
+			poolStatus:  false,
+			poolState:   "unknown",
+			poolScan:    "none",
+			wantStatus:  historyProbeStateError,
+			wantMessage: "Unable to determine storage status",
+		},
+		{
+			name:        "scan error",
+			poolStatus:  true,
+			poolState:   "online",
+			poolScan:    "error",
+			wantStatus:  historyProbeStateError,
+			wantMessage: "Storage scan status check failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, st, _ := newTestApplication(t)
+			node := &Node{
+				Name:       "node1.prg",
+				OsType:     "vpsadminos",
+				PoolStatus: tt.poolStatus,
+				PoolState:  tt.poolState,
+				PoolScan:   tt.poolScan,
+			}
+
+			recordNodeStorageProbe(st, node, fixedNow)
+
+			events := st.History.ProbeEventsFor(historyEntityNode, "node1.prg", fixedNow, historyDefaultDays)
+			if len(events) != 1 {
+				t.Fatalf("probe events = %+v, want one", events)
+			}
+			if got := events[0]; got.Method != "Storage" || got.Status != tt.wantStatus || got.Message != tt.wantMessage {
+				t.Fatalf("storage event = %+v, want status=%s message=%q", got, tt.wantStatus, tt.wantMessage)
+			}
+		})
+	}
+}

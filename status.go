@@ -472,11 +472,19 @@ func (r *OutageReport) IsOutage() bool {
 }
 
 func (n *Node) IsOperational() bool {
-	return n.ApiStatus && n.IsStorageOperational() && n.Ping.PacketLoss <= 20
+	return n.Ping.IsUp() && n.ApiStatus && n.IsStorageOperational()
 }
 
 func (n *Node) IsDegraded() bool {
-	return n.ApiStatus && n.PoolStatus && (n.IsStorageDegraded() || (n.Ping.PacketLoss > 20 && n.Ping.PacketLoss < 100))
+	if !n.Ping.IsUp() && !n.Ping.IsWarning() {
+		return false
+	}
+
+	if n.IsStorageHardFailure() {
+		return false
+	}
+
+	return !n.IsOperational()
 }
 
 func (n *Node) IsStorageSupported() bool {
@@ -489,7 +497,7 @@ func (n *Node) IsStorageOperational() bool {
 	}
 
 	scanOperational := n.PoolScan == "none" || n.IsStorageScrubIssue()
-	return n.ApiStatus && n.PoolStatus && n.PoolState == "online" && scanOperational
+	return n.PoolStatus && n.PoolState == "online" && scanOperational
 }
 
 func (n *Node) IsStorageDegraded() bool {
@@ -497,12 +505,28 @@ func (n *Node) IsStorageDegraded() bool {
 		return false
 	}
 
-	scanDegraded := n.PoolScan != "none" && !n.IsStorageScrubIssue()
-	return n.ApiStatus && n.PoolStatus && (n.PoolState != "online" || scanDegraded)
+	scanDegraded := n.PoolScan == "resilver"
+	return n.PoolStatus && (n.PoolState == "degraded" || scanDegraded)
+}
+
+func (n *Node) IsStorageHardFailure() bool {
+	if !n.IsStorageSupported() {
+		return false
+	}
+
+	return n.PoolStatus && (n.PoolState == "suspended" || n.PoolState == "faulted")
 }
 
 func (n *Node) IsStorageStateIssue() bool {
-	return n.PoolState != "online"
+	return n.IsStorageSupported() && n.PoolStatus && n.PoolState != "online"
+}
+
+func (n *Node) IsStorageScanIssue() bool {
+	if !n.IsStorageSupported() || !n.PoolStatus {
+		return false
+	}
+
+	return n.PoolScan != "none" && !n.IsStorageScrubIssue() && !n.IsStorageResilverIssue()
 }
 
 func (n *Node) IsStorageScrubIssue() bool {
@@ -527,6 +551,10 @@ func (n *Node) GetStorageStateMessage() string {
 		return "Storage not operational"
 	case "faulted":
 		return "Storage not operational"
+	case "unknown":
+		return "Unable to determine storage status"
+	case "error":
+		return "Storage status check failed"
 	default:
 		return "Storage is in a unknown state"
 	}
@@ -544,6 +572,10 @@ func (n *Node) GetStorageScanMessage() string {
 		return fmt.Sprintf("Storage is being scrubbed to check data integrity, %.1f %% done", n.PoolScanPercent)
 	case "resilver":
 		return fmt.Sprintf("Storage is being resilvered to replace disks, %.1f %% done", n.PoolScanPercent)
+	case "unknown":
+		return "Unable to determine storage scan status"
+	case "error":
+		return "Storage scan status check failed"
 	default:
 		return "Storage scan is in a unknown state"
 	}

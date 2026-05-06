@@ -424,6 +424,24 @@ func TestRoutesServeIndexPartialDownState(t *testing.T) {
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
 }
 
+func TestRoutesServeIndexTreatsMissingVpsAdminNodeStatusAsDegradedWhenPingResponds(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	setVpsAdminService(st, "api", st.VpsAdmin.Api, false, false, http.StatusInternalServerError)
+	node := st.GlobalNodeMap["node2.prg"]
+	setNodeState(st, st.LocationMap["Praha"], node, false, false, "vpsadminos", false, "unknown", "none", 0, 0)
+
+	rr := getThroughRoutes(t, app, "/")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(t, body, "Unable to determine storage status")
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
+}
+
 func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 	app, st, cfg := newTestApplication(t)
 	setOperationalFixture(st)
@@ -495,8 +513,8 @@ func TestRoutesServeIndexWebMaintenanceAndStorageBranches(t *testing.T) {
 		"Storage is being scrubbed to check data integrity, 15.0 % done",
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
-	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
+	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
 	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
