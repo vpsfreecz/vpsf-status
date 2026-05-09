@@ -9,7 +9,7 @@ buildGoModule {
   pname = "vpsf-status";
   inherit src version;
 
-  vendorHash = "sha256-CErq5Qy3Z9K+rgg1XnDUxwx83yrEu1OZfXNU2P855OQ=";
+  vendorHash = "sha256-tFmfyotn3OpR8a2BUdb2LUbVSjg3AHcKrb8KaYT7Gy4=";
 
   postInstall = ''
     mkdir -p $out/share/vpsf-status
