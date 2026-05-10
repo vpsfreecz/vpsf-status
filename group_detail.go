@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func createGroupDetailView(st *Status, kind string, id string, now time.Time) (EntityDetailView, bool) {
+func createGroupDetailView(st *Status, kind string, id string, now time.Time, probePage int) (EntityDetailView, bool) {
 	if st == nil || kind == "" {
 		return EntityDetailView{}, false
 	}
@@ -62,7 +62,11 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time) (E
 	data := newHistoryData(st, now)
 	ret.History = createGroupHistoryView(st, now, groupTarget, ret.Label, data)
 	ret.Availability = availabilityDetailViews(groupAvailabilityWithData(st, probeTargets, reportedTargets, now, data))
-	ret.Events = probeEventDetailViews(groupProbeEvents(st, probeTargets, now))
+	logPage, page := paginatedProbeLog(probePage, func(limit int, offset int) ProbeLogPage {
+		return groupProbeLog(st, probeTargets, now, limit, offset)
+	})
+	ret.Events = probeLogEventDetailViews(st, logPage.Events, now, data)
+	ret.EventPagination = newProbeLogPaginationView("/group", kind, id, page, logPage.Total)
 	return ret, true
 }
 
@@ -246,5 +250,23 @@ func groupProbeEvents(st *Status, targets []historyEntityInfo, now time.Time) []
 		return ret[i].ChangedAt.After(ret[j].ChangedAt)
 	})
 
+	return ret
+}
+
+func groupProbeLog(st *Status, targets []historyEntityInfo, now time.Time, limit int, offset int) ProbeLogPage {
+	if st == nil || st.History == nil {
+		return ProbeLogPage{}
+	}
+
+	ret := st.History.ProbeLogForTargets(targets, now, historyDaysForStatus(st), limit, offset)
+	labels := make(map[string]string, len(targets))
+	for _, target := range targets {
+		labels[historyKey(target.Kind, target.ID)] = target.Label
+	}
+	for i := range ret.Events {
+		if ret.Events[i].EntityLabel == "" {
+			ret.Events[i].EntityLabel = labels[historyKey(ret.Events[i].EntityKind, ret.Events[i].EntityID)]
+		}
+	}
 	return ret
 }

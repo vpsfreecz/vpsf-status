@@ -1120,7 +1120,7 @@ func (hs *HistoryStore) ProbeLogForTargets(targets []historyEntityInfo, now time
 			) AS ends_at
 		FROM probe_events p
 		WHERE p.changed_at >= ? AND (`+targetWhere+`)
-		ORDER BY p.changed_at DESC, p.id DESC
+		ORDER BY p.changed_at DESC, p.entity_label ASC, p.method ASC, p.id DESC
 		LIMIT ? OFFSET ?
 	`, queryArgs...)
 

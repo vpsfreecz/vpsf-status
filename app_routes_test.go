@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	stdjson "encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -130,9 +131,73 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 
 	body := rr.Body.String()
 	requireNotContains(t, body, "Rendered at:", `<p><a href="/">Status</a></p>`)
+	requireNotContains(t, body, `aria-label="Probe log pages"`)
 	if strings.Index(body, "Availability") > strings.Index(body, "Probe log") {
 		t.Fatalf("availability should be rendered above probe log")
 	}
+}
+
+func TestRoutesServeEntityDetailProbeLogCoverage(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	if err := st.History.ReplaceOutages([]*OutageReport{
+		testHistoryOutage(7301, fixedNow.Add(-20*time.Minute), "Node outage", []OutageEntity{
+			{Name: "Node", Id: 101, Label: "Node node1.prg"},
+		}),
+	}, fixedNow); err != nil {
+		t.Fatalf("replace outages: %v", err)
+	}
+
+	target := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateDown, "not responding", fixedNow.Add(-10*time.Minute)); err != nil {
+		t.Fatalf("record down status: %v", err)
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateOperational, "responding", fixedNow.Add(-2*time.Minute)); err != nil {
+		t.Fatalf("record recovery: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg")
+	requireStatus(t, rr, http.StatusOK)
+
+	requireContains(
+		t,
+		rr.Body.String(),
+		"Covered by",
+		"Outage: Node outage",
+		`href="https://vpsadmin.vpsfree.cz/?page=outage&amp;action=show&amp;id=7301"`,
+		"text-bg-danger",
+		"probe-covered-danger",
+	)
+}
+
+func TestRoutesPaginateEntityProbeLog(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	recordProbeLogEvents(t, st, ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}, 55, fixedNow.Add(-2*time.Hour))
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg")
+	requireStatus(t, rr, http.StatusOK)
+	body := rr.Body.String()
+	requireContains(t, body, "event 54", "event 05", "probe_page=2", "Next")
+	requireNotContains(t, body, "event 04")
+
+	rr = getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg&probe_page=2")
+	requireStatus(t, rr, http.StatusOK)
+	body = rr.Body.String()
+	requireContains(t, body, "event 04", "event 00", `aria-current="page">2`)
+	requireNotContains(t, body, "event 54")
 }
 
 func TestRoutesServeEntityDetailReportedAvailabilityWithoutProbeLogRows(t *testing.T) {
@@ -302,6 +367,30 @@ func TestRoutesServeGroupDetailCombinedProbeLog(t *testing.T) {
 	if resolverIndex > nodeIndex {
 		t.Fatalf("probe log should be sorted newest first")
 	}
+}
+
+func TestRoutesPaginateGroupProbeLog(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	recordProbeLogEvents(t, st, ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}, 51, fixedNow.Add(-2*time.Hour))
+
+	rr := getThroughRoutes(t, app, "/group?kind=location&id=3")
+	requireStatus(t, rr, http.StatusOK)
+	body := rr.Body.String()
+	requireContains(t, body, "event 50", "probe_page=2", `href="/group?id=3&amp;kind=location&amp;probe_page=2"`)
+	requireNotContains(t, body, "event 00")
+
+	rr = getThroughRoutes(t, app, "/group?kind=location&id=3&probe_page=2")
+	requireStatus(t, rr, http.StatusOK)
+	body = rr.Body.String()
+	requireContains(t, body, "event 00", `href="/group?id=3&amp;kind=location"`)
+	requireNotContains(t, body, "event 50")
 }
 
 func TestRoutesServeServiceGroupDetailHidesReportedAvailability(t *testing.T) {
@@ -1054,6 +1143,20 @@ func getThroughRoutesWithHeaders(t *testing.T, app *application, target string, 
 	rr := httptest.NewRecorder()
 	app.routes().ServeHTTP(rr, req)
 	return rr
+}
+
+func recordProbeLogEvents(t *testing.T, st *Status, target ProbeTarget, count int, start time.Time) {
+	t.Helper()
+
+	for i := 0; i < count; i++ {
+		status := historyProbeStateOperational
+		if i%2 == 1 {
+			status = historyProbeStateDown
+		}
+		if err := st.History.RecordProbeStatus(target, status, fmt.Sprintf("event %02d", i), start.Add(time.Duration(i)*time.Minute)); err != nil {
+			t.Fatalf("record probe event %d: %v", i, err)
+		}
+	}
 }
 
 func gunzipBody(t *testing.T, body []byte) []byte {

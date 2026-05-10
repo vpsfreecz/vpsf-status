@@ -68,11 +68,12 @@
 					<th>Method</th>
 					<th>Status</th>
 					<th>Message</th>
+					<th>Covered by</th>
 				</tr>
 			</thead>
 			<tbody>
 				{{ range $event := .Entity.Events }}
-				<tr class="table-{{ $event.StatusClass }}">
+				<tr class="table-{{ $event.StatusClass }}{{ if $event.HasCoverage }} probe-covered probe-covered-{{ $event.CoveredBy.Class }}{{ if $event.GroupStart }} probe-covered-start{{ end }}{{ if $event.GroupEnd }} probe-covered-end{{ end }}{{ end }}">
 					<td>{{ $event.ChangedAt }}</td>
 					{{ if $.Entity.ShowEventEntity }}
 					<td>{{ $event.Entity }}</td>
@@ -80,10 +81,54 @@
 					<td>{{ $event.Method }}</td>
 					<td>{{ $event.Status }}</td>
 					<td>{{ $event.Message }}</td>
+					<td>
+						{{ if $event.HasCoverage }}
+							{{ if $event.CoveredBy.URL }}
+							<a class="badge text-bg-{{ $event.CoveredBy.Class }} text-decoration-none" href="{{ $event.CoveredBy.URL }}" target="_blank" rel="noopener">{{ $event.CoveredBy.Label }}</a>
+							{{ else }}
+							<span class="badge text-bg-{{ $event.CoveredBy.Class }}">{{ $event.CoveredBy.Label }}</span>
+							{{ end }}
+						{{ else }}
+						<span class="text-muted">-</span>
+						{{ end }}
+					</td>
 				</tr>
 				{{ end }}
 			</tbody>
 		</table>
+		{{ with .Entity.EventPagination }}
+		{{ if .HasPages }}
+		<nav aria-label="Probe log pages">
+			<ul class="pagination pagination-sm">
+				<li class="page-item{{ if not .HasPrevious }} disabled{{ end }}">
+					{{ if .HasPrevious }}
+					<a class="page-link" href="{{ .PreviousURL }}">Previous</a>
+					{{ else }}
+					<span class="page-link">Previous</span>
+					{{ end }}
+				</li>
+				{{ range $link := .Links }}
+				<li class="page-item{{ if $link.Current }} active{{ end }}{{ if $link.Disabled }} disabled{{ end }}">
+					{{ if $link.Disabled }}
+					<span class="page-link">{{ $link.Label }}</span>
+					{{ else if $link.Current }}
+					<span class="page-link" aria-current="page">{{ $link.Label }}</span>
+					{{ else }}
+					<a class="page-link" href="{{ $link.URL }}">{{ $link.Label }}</a>
+					{{ end }}
+				</li>
+				{{ end }}
+				<li class="page-item{{ if not .HasNext }} disabled{{ end }}">
+					{{ if .HasNext }}
+					<a class="page-link" href="{{ .NextURL }}">Next</a>
+					{{ else }}
+					<span class="page-link">Next</span>
+					{{ end }}
+				</li>
+			</ul>
+		</nav>
+		{{ end }}
+		{{ end }}
 		{{ else }}
 		<div class="alert alert-secondary">No probe changes recorded.</div>
 		{{ end }}

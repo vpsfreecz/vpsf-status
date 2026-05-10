@@ -2,8 +2,15 @@ package main
 
 import (
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	probeLogPageParam = "probe_page"
+	probeLogPageSize  = 50
 )
 
 type EntityDetailView struct {
@@ -16,6 +23,7 @@ type EntityDetailView struct {
 	History                  HistoryBarView
 	Availability             []AvailabilityView
 	Events                   []ProbeEventView
+	EventPagination          ProbeLogPaginationView
 	ShowReportedAvailability bool
 	ShowEventEntity          bool
 }
@@ -47,6 +55,22 @@ type ProbeEventCoverageView struct {
 	Class string
 }
 
+type ProbeLogPaginationView struct {
+	Page        int
+	Total       int
+	TotalPages  int
+	PreviousURL string
+	NextURL     string
+	Links       []ProbeLogPageLinkView
+}
+
+type ProbeLogPageLinkView struct {
+	Label    string
+	URL      string
+	Current  bool
+	Disabled bool
+}
+
 func (e EntityDetailView) HasEvents() bool {
 	return len(e.Events) > 0
 }
@@ -59,7 +83,19 @@ func (e ProbeEventView) HasCoverage() bool {
 	return e.CoveredBy.ID != 0
 }
 
-func createEntityDetailView(st *Status, kind string, id string, now time.Time) (EntityDetailView, bool) {
+func (p ProbeLogPaginationView) HasPages() bool {
+	return p.TotalPages > 1
+}
+
+func (p ProbeLogPaginationView) HasPrevious() bool {
+	return p.PreviousURL != ""
+}
+
+func (p ProbeLogPaginationView) HasNext() bool {
+	return p.NextURL != ""
+}
+
+func createEntityDetailView(st *Status, kind string, id string, now time.Time, probePage int) (EntityDetailView, bool) {
 	if st == nil || kind == "" || id == "" {
 		return EntityDetailView{}, false
 	}
@@ -120,10 +156,114 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time) (
 	ret.Availability = availabilityDetailViews(entityAvailabilityWithData(st, kind, id, now, data))
 
 	if st.History != nil {
-		ret.Events = probeEventDetailViews(st.History.ProbeEventsFor(kind, id, now, historyDaysForStatus(st)))
+		logPage, page := paginatedProbeLog(probePage, func(limit int, offset int) ProbeLogPage {
+			return st.History.ProbeLogFor(kind, id, now, historyDaysForStatus(st), limit, offset)
+		})
+		ret.Events = probeLogEventDetailViews(st, logPage.Events, now, data)
+		ret.EventPagination = newProbeLogPaginationView("/entity", kind, id, page, logPage.Total)
 	}
 
 	return ret, true
+}
+
+func paginatedProbeLog(requestedPage int, query func(limit int, offset int) ProbeLogPage) (ProbeLogPage, int) {
+	page := normalizeProbeLogPage(requestedPage)
+	ret := query(probeLogPageSize, probeLogOffset(page))
+	totalPages := probeLogTotalPages(ret.Total)
+	if totalPages > 0 && page > totalPages {
+		page = totalPages
+		ret = query(probeLogPageSize, probeLogOffset(page))
+	}
+	return ret, page
+}
+
+func normalizeProbeLogPage(page int) int {
+	if page < 1 {
+		return 1
+	}
+	return page
+}
+
+func probeLogOffset(page int) int {
+	return (normalizeProbeLogPage(page) - 1) * probeLogPageSize
+}
+
+func probeLogTotalPages(total int) int {
+	if total <= 0 {
+		return 0
+	}
+	return (total + probeLogPageSize - 1) / probeLogPageSize
+}
+
+func newProbeLogPaginationView(path string, kind string, id string, page int, total int) ProbeLogPaginationView {
+	totalPages := probeLogTotalPages(total)
+	page = normalizeProbeLogPage(page)
+	if totalPages > 0 && page > totalPages {
+		page = totalPages
+	}
+
+	ret := ProbeLogPaginationView{
+		Page:       page,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+	if totalPages <= 1 {
+		return ret
+	}
+
+	if page > 1 {
+		ret.PreviousURL = probeLogPageURL(path, kind, id, page-1)
+	}
+	if page < totalPages {
+		ret.NextURL = probeLogPageURL(path, kind, id, page+1)
+	}
+	ret.Links = probeLogPageLinks(path, kind, id, page, totalPages)
+	return ret
+}
+
+func probeLogPageLinks(path string, kind string, id string, page int, totalPages int) []ProbeLogPageLinkView {
+	if totalPages <= 1 {
+		return nil
+	}
+
+	ret := make([]ProbeLogPageLinkView, 0)
+	lastAdded := 0
+	addPage := func(n int) {
+		if n < 1 || n > totalPages || n <= lastAdded {
+			return
+		}
+		if lastAdded != 0 && n > lastAdded+1 {
+			ret = append(ret, ProbeLogPageLinkView{Label: "...", Disabled: true})
+		}
+		ret = append(ret, ProbeLogPageLinkView{
+			Label:   strconv.Itoa(n),
+			URL:     probeLogPageURL(path, kind, id, n),
+			Current: n == page,
+		})
+		lastAdded = n
+	}
+
+	addPage(1)
+	for n := page - 2; n <= page+2; n++ {
+		if n > 1 && n < totalPages {
+			addPage(n)
+		}
+	}
+	addPage(totalPages)
+
+	return ret
+}
+
+func probeLogPageURL(path string, kind string, id string, page int) string {
+	q := url.Values{}
+	q.Set("kind", kind)
+	if id != "" {
+		q.Set("id", id)
+	}
+	if page > 1 {
+		q.Set(probeLogPageParam, strconv.Itoa(page))
+	}
+	return path + "?" + q.Encode()
 }
 
 func availabilityDetailViews(stats []availabilityResult) []AvailabilityView {

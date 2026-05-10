@@ -31,6 +31,12 @@
 		.history-popover-meta { display: block; margin-top: .15rem; color: #6c757d; font-size: .8125rem; }
 		.history-popover-meta span { display: block; }
 		.history-popover-empty { color: #6c757d; }
+		.probe-covered-danger { --probe-covered-color: #dc3545; }
+		.probe-covered-warning { --probe-covered-color: #ffc107; }
+		.probe-covered td:first-child { box-shadow: inset .25rem 0 0 var(--probe-covered-color); }
+		.probe-covered:not(.probe-covered-start) td { border-top-color: transparent; }
+		.probe-covered-start td { border-top-width: 2px; }
+		.probe-covered-end td { border-bottom-width: 2px; }
 		</style>
 	</head>
 	<body>

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
@@ -92,7 +93,7 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 
 func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
-		entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+		entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r))
 		if !ok {
 			return notFoundPayload(), nil
 		}
@@ -120,7 +121,7 @@ func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
 	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
-		group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now)
+		group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r))
 		if !ok {
 			return notFoundPayload(), nil
 		}
@@ -206,6 +207,18 @@ func (app *application) currentTime() time.Time {
 	}
 
 	return time.Now()
+}
+
+func probeLogPageFromRequest(r *http.Request) int {
+	if r == nil || r.URL == nil {
+		return 1
+	}
+
+	page, err := strconv.Atoi(r.URL.Query().Get(probeLogPageParam))
+	if err != nil || page < 1 {
+		return 1
+	}
+	return page
 }
 
 func (app *application) ensureCaches() {
