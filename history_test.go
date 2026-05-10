@@ -304,6 +304,125 @@ func TestHistoryStoreBatchesProbeEventQueries(t *testing.T) {
 	}
 }
 
+func TestHistoryStorePaginatesProbeLogForEntity(t *testing.T) {
+	hs, err := openHistoryStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("open history store: %v", err)
+	}
+
+	target := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	records := []struct {
+		status string
+		at     time.Time
+	}{
+		{historyProbeStateOperational, fixedNow.Add(-4 * time.Hour)},
+		{historyProbeStateDown, fixedNow.Add(-3 * time.Hour)},
+		{historyProbeStateOperational, fixedNow.Add(-2 * time.Hour)},
+		{historyProbeStateDegraded, fixedNow.Add(-time.Hour)},
+	}
+	for _, record := range records {
+		if err := hs.RecordProbeStatus(target, record.status, record.status, record.at); err != nil {
+			t.Fatalf("record probe status: %v", err)
+		}
+	}
+
+	page := hs.ProbeLogFor(historyEntityNode, "node1.prg", fixedNow, historyDefaultDays, 2, 0)
+	if page.Total != 4 || len(page.Events) != 2 {
+		t.Fatalf("first page = %+v, want total 4 and 2 events", page)
+	}
+	if page.Events[0].Status != historyProbeStateDegraded || !page.Events[0].EndsAt.IsZero() {
+		t.Fatalf("latest event = %+v, want degraded open event", page.Events[0])
+	}
+	if page.Events[1].Status != historyProbeStateOperational || !page.Events[1].EndsAt.Equal(records[3].at) {
+		t.Fatalf("second event = %+v, want operational ending at next event", page.Events[1])
+	}
+
+	page = hs.ProbeLogFor(historyEntityNode, "node1.prg", fixedNow, historyDefaultDays, 2, 2)
+	if page.Total != 4 || len(page.Events) != 2 {
+		t.Fatalf("second page = %+v, want total 4 and 2 events", page)
+	}
+	if page.Events[0].Status != historyProbeStateDown || !page.Events[0].EndsAt.Equal(records[2].at) {
+		t.Fatalf("third event = %+v, want down ending at recovery", page.Events[0])
+	}
+	if page.Events[1].Status != historyProbeStateOperational || !page.Events[1].EndsAt.Equal(records[1].at) {
+		t.Fatalf("fourth event = %+v, want operational ending at failure", page.Events[1])
+	}
+}
+
+func TestHistoryStorePaginatesProbeLogForTargets(t *testing.T) {
+	hs, err := openHistoryStore(t.TempDir())
+	if err != nil {
+		t.Fatalf("open history store: %v", err)
+	}
+
+	node1 := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	node2 := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node2.prg",
+		EntityLabel: "node2.prg",
+		Method:      "Ping",
+	}
+	other := ProbeTarget{
+		EntityKind:  historyEntityDnsResolver,
+		EntityID:    "resolver-prg",
+		EntityLabel: "resolver-prg",
+		Method:      "Lookup",
+	}
+	records := []struct {
+		target ProbeTarget
+		status string
+		at     time.Time
+	}{
+		{node1, historyProbeStateOperational, fixedNow.Add(-4 * time.Hour)},
+		{node1, historyProbeStateDown, fixedNow.Add(-3 * time.Hour)},
+		{node1, historyProbeStateOperational, fixedNow.Add(-2 * time.Hour)},
+		{node2, historyProbeStateOperational, fixedNow.Add(-90 * time.Minute)},
+		{node1, historyProbeStateDegraded, fixedNow.Add(-time.Hour)},
+		{other, historyProbeStateOperational, fixedNow.Add(-30 * time.Minute)},
+	}
+	for _, record := range records {
+		if err := hs.RecordProbeStatus(record.target, record.status, record.status, record.at); err != nil {
+			t.Fatalf("record probe status: %v", err)
+		}
+	}
+
+	targets := []historyEntityInfo{
+		{Kind: historyEntityNode, ID: "node1.prg", Label: "node1.prg"},
+		{Kind: historyEntityNode, ID: "node2.prg", Label: "node2.prg"},
+	}
+	page := hs.ProbeLogForTargets(targets, fixedNow, historyDefaultDays, 3, 0)
+	if page.Total != 5 || len(page.Events) != 3 {
+		t.Fatalf("group first page = %+v, want total 5 and 3 events", page)
+	}
+	if page.Events[0].EntityID != "node1.prg" || page.Events[0].Status != historyProbeStateDegraded {
+		t.Fatalf("group latest event = %+v, want node1 degraded", page.Events[0])
+	}
+	if page.Events[1].EntityID != "node2.prg" || page.Events[1].Status != historyProbeStateOperational {
+		t.Fatalf("group second event = %+v, want node2 operational", page.Events[1])
+	}
+	if !page.Events[2].EndsAt.Equal(records[4].at) {
+		t.Fatalf("group third event = %+v, want node1 event ending at next node1 change", page.Events[2])
+	}
+
+	page = hs.ProbeLogForTargets(targets, fixedNow, historyDefaultDays, 3, 3)
+	if page.Total != 5 || len(page.Events) != 2 {
+		t.Fatalf("group second page = %+v, want total 5 and 2 events", page)
+	}
+	if page.Events[0].EntityID != "node1.prg" || page.Events[0].Status != historyProbeStateDown {
+		t.Fatalf("group page 2 first event = %+v, want node1 down", page.Events[0])
+	}
+}
+
 func TestHistoryStorePersistsOutages(t *testing.T) {
 	dir := t.TempDir()
 	hs, err := openHistoryStore(dir)

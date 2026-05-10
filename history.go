@@ -66,6 +66,16 @@ type ProbeEvent struct {
 	ChangedAt time.Time `json:"changed_at"`
 }
 
+type ProbeLogEvent struct {
+	ProbeEvent
+	EndsAt time.Time
+}
+
+type ProbeLogPage struct {
+	Events []ProbeLogEvent
+	Total  int
+}
+
 type ProbeIncident struct {
 	ProbeTarget
 	Status   string     `json:"status"`
@@ -1022,6 +1032,101 @@ func (hs *HistoryStore) ProbeEventsForTargets(targets []historyEntityInfo, now t
 	return ret
 }
 
+func (hs *HistoryStore) ProbeLogFor(kind string, id string, now time.Time, days int, limit int, offset int) ProbeLogPage {
+	if hs == nil || kind == "" || id == "" {
+		return ProbeLogPage{}
+	}
+	limit, offset = normalizeProbeLogLimitOffset(limit, offset)
+	if limit == 0 {
+		return ProbeLogPage{}
+	}
+
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+
+	cutoff := formatHistoryTime(historyStartDay(now, days))
+	total := hs.countProbeEventsLocked(
+		`entity_kind = ? AND entity_id = ? AND changed_at >= ?`,
+		kind,
+		id,
+		cutoff,
+	)
+	events := hs.queryProbeLogEventsLocked(`
+		SELECT
+			p.entity_kind, p.entity_id, p.entity_label, p.method, p.status,
+			p.message, p.changed_at,
+			(
+				SELECT p2.changed_at
+				FROM probe_events p2
+				WHERE p2.entity_kind = p.entity_kind
+					AND p2.entity_id = p.entity_id
+					AND p2.method = p.method
+					AND (
+						p2.changed_at > p.changed_at
+						OR (p2.changed_at = p.changed_at AND p2.id > p.id)
+					)
+				ORDER BY p2.changed_at ASC, p2.id ASC
+				LIMIT 1
+			) AS ends_at
+		FROM probe_events p
+		WHERE p.entity_kind = ? AND p.entity_id = ? AND p.changed_at >= ?
+		ORDER BY p.changed_at DESC, p.id DESC
+		LIMIT ? OFFSET ?
+	`, kind, id, cutoff, limit, offset)
+
+	return ProbeLogPage{Events: events, Total: total}
+}
+
+func (hs *HistoryStore) ProbeLogForTargets(targets []historyEntityInfo, now time.Time, days int, limit int, offset int) ProbeLogPage {
+	if hs == nil || len(targets) == 0 {
+		return ProbeLogPage{}
+	}
+	limit, offset = normalizeProbeLogLimitOffset(limit, offset)
+	if limit == 0 {
+		return ProbeLogPage{}
+	}
+
+	queryTargets := probeEventQueryTargets(targets, false)
+	if len(queryTargets) == 0 {
+		return ProbeLogPage{}
+	}
+	targetWhere, targetArgs := probeEventTargetWhere(queryTargets)
+
+	hs.mu.Lock()
+	defer hs.mu.Unlock()
+
+	cutoff := formatHistoryTime(historyStartDay(now, days))
+	countArgs := append([]any{cutoff}, targetArgs...)
+	total := hs.countProbeEventsLocked(`changed_at >= ? AND (`+targetWhere+`)`, countArgs...)
+
+	queryArgs := append([]any{cutoff}, targetArgs...)
+	queryArgs = append(queryArgs, limit, offset)
+	events := hs.queryProbeLogEventsLocked(`
+		SELECT
+			p.entity_kind, p.entity_id, p.entity_label, p.method, p.status,
+			p.message, p.changed_at,
+			(
+				SELECT p2.changed_at
+				FROM probe_events p2
+				WHERE p2.entity_kind = p.entity_kind
+					AND p2.entity_id = p.entity_id
+					AND p2.method = p.method
+					AND (
+						p2.changed_at > p.changed_at
+						OR (p2.changed_at = p.changed_at AND p2.id > p.id)
+					)
+				ORDER BY p2.changed_at ASC, p2.id ASC
+				LIMIT 1
+			) AS ends_at
+		FROM probe_events p
+		WHERE p.changed_at >= ? AND (`+targetWhere+`)
+		ORDER BY p.changed_at DESC, p.id DESC
+		LIMIT ? OFFSET ?
+	`, queryArgs...)
+
+	return ProbeLogPage{Events: events, Total: total}
+}
+
 func (hs *HistoryStore) ProbeEventsForAvailability(kind string, id string, method string, start time.Time, end time.Time) []ProbeEvent {
 	if hs == nil || kind == "" || id == "" || method == "" || !start.Before(end) {
 		return nil
@@ -1179,6 +1284,50 @@ func probeEventTargetWhere(targets []probeEventQueryTarget) (string, []any) {
 	return strings.Join(parts, " OR "), args
 }
 
+func normalizeProbeLogLimitOffset(limit int, offset int) (int, int) {
+	if limit < 0 {
+		limit = 0
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func (hs *HistoryStore) countProbeEventsLocked(where string, args ...any) int {
+	if where == "" {
+		return 0
+	}
+
+	var ret int
+	if err := hs.db.QueryRow(`SELECT COUNT(*) FROM probe_events WHERE `+where, args...).Scan(&ret); err != nil {
+		return 0
+	}
+	return ret
+}
+
+func (hs *HistoryStore) queryProbeLogEventsLocked(query string, args ...any) []ProbeLogEvent {
+	rows, err := hs.db.Query(query, args...)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	ret := make([]ProbeLogEvent, 0)
+	for rows.Next() {
+		event, err := scanProbeLogEvent(rows)
+		if err != nil {
+			return nil
+		}
+		ret = append(ret, event)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil
+	}
+	return ret
+}
+
 type scanner interface {
 	Scan(dest ...any) error
 }
@@ -1203,6 +1352,40 @@ func scanProbeEvent(row scanner) (ProbeEvent, error) {
 		return ProbeEvent{}, err
 	}
 	event.ChangedAt = t
+	return event, nil
+}
+
+func scanProbeLogEvent(row scanner) (ProbeLogEvent, error) {
+	var changedAt string
+	var endsAt sql.NullString
+	event := ProbeLogEvent{}
+	if err := row.Scan(
+		&event.EntityKind,
+		&event.EntityID,
+		&event.EntityLabel,
+		&event.Method,
+		&event.Status,
+		&event.Message,
+		&changedAt,
+		&endsAt,
+	); err != nil {
+		return ProbeLogEvent{}, err
+	}
+
+	t, err := parseHistoryTime(changedAt)
+	if err != nil {
+		return ProbeLogEvent{}, err
+	}
+	event.ChangedAt = t
+
+	if endsAt.Valid {
+		t, err = parseHistoryTime(endsAt.String)
+		if err != nil {
+			return ProbeLogEvent{}, err
+		}
+		event.EndsAt = t
+	}
+
 	return event, nil
 }
 
