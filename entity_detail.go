@@ -35,6 +35,16 @@ type ProbeEventView struct {
 	Status      string
 	StatusClass string
 	Message     string
+	CoveredBy   ProbeEventCoverageView
+	GroupStart  bool
+	GroupEnd    bool
+}
+
+type ProbeEventCoverageView struct {
+	ID    int64
+	Label string
+	URL   string
+	Class string
 }
 
 func (e EntityDetailView) HasEvents() bool {
@@ -43,6 +53,10 @@ func (e EntityDetailView) HasEvents() bool {
 
 func (e EntityDetailView) HasAvailability() bool {
 	return len(e.Availability) > 0
+}
+
+func (e ProbeEventView) HasCoverage() bool {
+	return e.CoveredBy.ID != 0
 }
 
 func createEntityDetailView(st *Status, kind string, id string, now time.Time) (EntityDetailView, bool) {
@@ -133,19 +147,116 @@ func availabilityDetailViews(stats []availabilityResult) []AvailabilityView {
 	return ret
 }
 
+func probeLogEventDetailViews(st *Status, events []ProbeLogEvent, now time.Time, data *historyData) []ProbeEventView {
+	data = ensureHistoryData(st, now, data)
+
+	ret := make([]ProbeEventView, 0, len(events))
+	for _, event := range events {
+		view := probeEventDetailView(event.ProbeEvent)
+		if report := probeEventResponsibleReport(event, data.reports, data.mapping, now); report != nil {
+			view.CoveredBy = probeEventCoverageView(st, report)
+		}
+		ret = append(ret, view)
+	}
+
+	setProbeEventCoverageGroups(ret)
+	return ret
+}
+
 func probeEventDetailViews(events []ProbeEvent) []ProbeEventView {
 	ret := make([]ProbeEventView, 0, len(events))
 	for _, event := range events {
-		ret = append(ret, ProbeEventView{
-			ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
-			Entity:      probeEventEntityLabel(event),
-			Method:      event.Method,
-			Status:      statusTitle(event.Status),
-			StatusClass: probeStatusClass(event.Status),
-			Message:     event.Message,
-		})
+		ret = append(ret, probeEventDetailView(event))
 	}
 	return ret
+}
+
+func probeEventDetailView(event ProbeEvent) ProbeEventView {
+	return ProbeEventView{
+		ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
+		Entity:      probeEventEntityLabel(event),
+		Method:      event.Method,
+		Status:      statusTitle(event.Status),
+		StatusClass: probeStatusClass(event.Status),
+		Message:     event.Message,
+	}
+}
+
+func probeEventResponsibleReport(event ProbeLogEvent, reports []*OutageReport, mapping *historyEntityMapping, now time.Time) *OutageReport {
+	if isOperationalProbeState(event.Status) || event.ChangedAt.IsZero() || len(reports) == 0 || mapping == nil {
+		return nil
+	}
+
+	key := historyKey(event.EntityKind, event.EntityID)
+	probeStart := event.ChangedAt
+	probeEnd := event.EndsAt
+	if probeEnd.IsZero() {
+		probeEnd = now
+	}
+	if probeEnd.Before(probeStart) {
+		probeEnd = probeStart
+	}
+
+	var best *OutageReport
+	var bestOverlap time.Duration
+	for _, report := range reports {
+		if report == nil || report.BeginsAt.IsZero() {
+			continue
+		}
+		if _, ok := mapping.outageHistoryKeys(report)[key]; !ok {
+			continue
+		}
+
+		reportStart, reportEnd := outageReportInterval(report)
+		reportStart = reportStart.Add(-historyReportedIncidentGrace)
+		reportEnd = reportEnd.Add(historyReportedIncidentGrace)
+		if !historyIntervalsOverlap(probeStart, probeEnd, reportStart, reportEnd) {
+			continue
+		}
+
+		overlap := minTime(probeEnd, reportEnd).Sub(maxTime(probeStart, reportStart))
+		if best == nil ||
+			overlap > bestOverlap ||
+			(overlap == bestOverlap && report.BeginsAt.After(best.BeginsAt)) ||
+			(overlap == bestOverlap && report.BeginsAt.Equal(best.BeginsAt) && report.Id < best.Id) {
+			best = report
+			bestOverlap = overlap
+		}
+	}
+
+	return best
+}
+
+func probeEventCoverageView(st *Status, report *OutageReport) ProbeEventCoverageView {
+	if report == nil {
+		return ProbeEventCoverageView{}
+	}
+
+	class := "danger"
+	if report.IsMaintenance() {
+		class = "warning"
+	}
+
+	return ProbeEventCoverageView{
+		ID:    report.Id,
+		Label: outageSummary(report),
+		URL:   outageHistoryIncident(st, report).URL,
+		Class: class,
+	}
+}
+
+func setProbeEventCoverageGroups(events []ProbeEventView) {
+	for i := range events {
+		if !events[i].HasCoverage() {
+			continue
+		}
+		events[i].GroupStart = i == 0 || !sameProbeEventCoverage(events[i-1], events[i])
+		events[i].GroupEnd = i == len(events)-1 || !sameProbeEventCoverage(events[i], events[i+1])
+	}
+}
+
+func sameProbeEventCoverage(a ProbeEventView, b ProbeEventView) bool {
+	return a.CoveredBy.ID != 0 && a.CoveredBy.ID == b.CoveredBy.ID
 }
 
 func probeEventEntityLabel(event ProbeEvent) string {
