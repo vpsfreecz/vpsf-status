@@ -8,7 +8,7 @@ require (
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.5
 	github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260504133612-45a5170b7190
-	modernc.org/sqlite v1.50.0
+	modernc.org/sqlite v1.50.1
 )
 
 require (
