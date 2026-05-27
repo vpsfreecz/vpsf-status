@@ -71,7 +71,7 @@
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.Impact }}</td>
+					<td>{{ $outage.ImpactLabel }}</td>
 					<td>{{ $outage.EnSummary }}</td>
 					<td>
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
@@ -120,7 +120,7 @@
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.Impact }}</td>
+					<td>{{ $outage.ImpactLabel }}</td>
 					<td>{{ $outage.EnSummary }}</td>
 					<td>
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>

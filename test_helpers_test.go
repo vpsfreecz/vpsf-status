@@ -274,7 +274,7 @@ func addOutageFixture(st *Status) {
 				Duration:      90 * time.Minute,
 				Type:          "planned_outage",
 				State:         "announced",
-				Impact:        "partial",
+				Impact:        "system_restart",
 				EnSummary:     "Router replacement",
 				EnDescription: "Planned router replacement.",
 				AffectedEntities: []OutageEntity{
@@ -289,7 +289,7 @@ func addOutageFixture(st *Status) {
 				Duration:      30 * time.Minute,
 				Type:          "unplanned_outage",
 				State:         "resolved",
-				Impact:        "full",
+				Impact:        "unavailability",
 				EnSummary:     "Power failure",
 				EnDescription: "Power failure was resolved.",
 				AffectedEntities: []OutageEntity{

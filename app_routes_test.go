@@ -698,7 +698,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Duration:  90 * time.Minute,
 				Type:      "planned_outage",
 				State:     "announced",
-				Impact:    "partial",
+				Impact:    "system_restart",
 				EnSummary: "Router replacement",
 				AffectedEntities: []OutageEntity{
 					{Name: "node", Id: 101, Label: "node1.prg"},
@@ -710,7 +710,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Duration:  45 * time.Minute,
 				Type:      "unplanned_outage",
 				State:     "announced",
-				Impact:    "full",
+				Impact:    "unavailability",
 				EnSummary: "Switch down",
 				AffectedEntities: []OutageEntity{
 					{Name: "location", Id: 3, Label: "Praha"},
@@ -724,7 +724,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Duration:  30 * time.Minute,
 				Type:      "planned_outage",
 				State:     "resolved",
-				Impact:    "partial",
+				Impact:    "system_restart",
 				EnSummary: "Old maintenance",
 				AffectedEntities: []OutageEntity{
 					{Name: "node", Id: 102, Label: "node2.prg"},
@@ -736,7 +736,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Duration:  15 * time.Minute,
 				Type:      "unplanned_outage",
 				State:     "resolved",
-				Impact:    "full",
+				Impact:    "unavailability",
 				EnSummary: "Recent outage",
 				AffectedEntities: []OutageEntity{
 					{Name: "location", Id: 4, Label: "Brno"},
@@ -749,7 +749,8 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	body := rr.Body.String()
-	requireContains(t, body, "Reported", "Resolved", "Switch down", "Old maintenance")
+	requireContains(t, body, "Reported", "Resolved", "Switch down", "Old maintenance", "System restart", "Unavailability")
+	requireNotContains(t, body, "system_restart", "unavailability")
 	requireOccurrences(t, body, "Planned and Unplanned Outages", 2)
 }
 
@@ -1052,7 +1053,7 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	requireJSONNumber(t, rawAnnounced, "duration", 90)
 	requireJSONString(t, rawAnnounced, "type", "planned_outage")
 	requireJSONString(t, rawAnnounced, "state", "announced")
-	requireJSONString(t, rawAnnounced, "impact", "partial")
+	requireJSONString(t, rawAnnounced, "impact", "system_restart")
 	requireJSONString(t, rawAnnounced, "en_summary", "Router replacement")
 	requireJSONString(t, rawAnnounced, "en_description", "Planned router replacement.")
 	rawAnnouncedEntity := requireSliceMap(t, requireSliceValue(t, rawAnnounced, "entities"), 0)
@@ -1065,7 +1066,7 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	requireJSONNumber(t, rawRecent, "duration", 30)
 	requireJSONString(t, rawRecent, "type", "unplanned_outage")
 	requireJSONString(t, rawRecent, "state", "resolved")
-	requireJSONString(t, rawRecent, "impact", "full")
+	requireJSONString(t, rawRecent, "impact", "unavailability")
 
 	if len(body.Locations) != 2 || body.Locations[0].Label != "Praha" || len(body.Locations[0].Nodes) != 2 {
 		t.Fatalf("locations = %+v", body.Locations)

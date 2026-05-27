@@ -496,6 +496,31 @@ func (r *OutageReport) TypeLabel() string {
 	}
 }
 
+func (r *OutageReport) ImpactLabel() string {
+	if r == nil {
+		return ""
+	}
+
+	switch r.Impact {
+	case "tbd":
+		return "TBD"
+	case "system_restart":
+		return "System restart"
+	case "system_reset":
+		return "System reset"
+	case "network":
+		return "Network"
+	case "performance":
+		return "Performance"
+	case "unavailability":
+		return "Unavailability"
+	case "export":
+		return "NFS export"
+	default:
+		return r.Impact
+	}
+}
+
 func normalizeOutageType(outageType string) string {
 	switch outageType {
 	case legacyOutageTypeMaintenance:

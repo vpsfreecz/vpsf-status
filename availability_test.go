@@ -349,7 +349,7 @@ func availabilityTestOutage(id int64, beginsAt time.Time, duration time.Duration
 		Duration:         duration,
 		Type:             "unplanned_outage",
 		State:            "resolved",
-		Impact:           "full",
+		Impact:           "unavailability",
 		EnSummary:        "Test outage",
 		AffectedEntities: entities,
 	}
