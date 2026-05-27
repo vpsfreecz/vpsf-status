@@ -1259,10 +1259,10 @@ func outageSummary(report *OutageReport) string {
 	}
 
 	if report.IsMaintenance() {
-		return "Maintenance: " + summary
+		return "Planned outage: " + summary
 	}
 
-	return "Outage: " + summary
+	return "Unplanned outage: " + summary
 }
 
 func outageHistoryIncident(st *Status, report *OutageReport) HistoryIncidentView {

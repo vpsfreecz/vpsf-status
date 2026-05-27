@@ -347,7 +347,7 @@ func availabilityTestOutage(id int64, beginsAt time.Time, duration time.Duration
 		Id:               id,
 		BeginsAt:         beginsAt,
 		Duration:         duration,
-		Type:             "outage",
+		Type:             "unplanned_outage",
 		State:            "resolved",
 		Impact:           "full",
 		EnSummary:        "Test outage",

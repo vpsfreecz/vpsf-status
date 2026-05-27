@@ -36,11 +36,11 @@
 		<h2>
 			Reported
 			{{ if and .Status.OutageReports.AnyActiveMaintenance .Status.OutageReports.AnyActiveOutage }}
-			Maintenances and Outages
+			Planned and Unplanned Outages
 			{{ else if .Status.OutageReports.AnyActiveMaintenance }}
-			Maintenances
+			Planned Outages
 			{{ else }}
-			Outages
+			Unplanned Outages
 			{{ end }}
 		</h2>
 		<table class="table table-sm">
@@ -63,9 +63,9 @@
 					<td>{{ $outage.Duration }}</td>
 					<td>
 						{{ if $outage.IsMaintenance }}
-						<i class="bi bi-clipboard2-check text-success" aria-label="Maintenance" title="Maintenance"></i>
+						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ else }}
-						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage" title="Outage"></i>
+						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ end }}
 					</td>
 					<td>
@@ -85,11 +85,11 @@
 		<h2>
 			Resolved
 			{{ if and .Status.OutageReports.AnyRecentMaintenance .Status.OutageReports.AnyRecentOutage }}
-			Maintenances and Outages
+			Planned and Unplanned Outages
 			{{ else if .Status.OutageReports.AnyRecentMaintenance }}
-			Maintenances
+			Planned Outages
 			{{ else }}
-			Outages
+			Unplanned Outages
 			{{ end }}
 		</h2>
 		<table class="table table-sm">
@@ -112,9 +112,9 @@
 					<td>{{ $outage.Duration }}</td>
 					<td>
 						{{ if $outage.IsMaintenance }}
-						<i class="bi bi-clipboard2-check text-success" aria-label="Maintenance" title="Maintenance"></i>
+						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ else }}
-						<i class="bi bi-exclamation-circle text-danger" aria-label="Outage" title="Outage"></i>
+						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ end }}
 					</td>
 					<td>

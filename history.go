@@ -379,7 +379,7 @@ func (hs *HistoryStore) ReplaceOutages(reports []*OutageReport, _ time.Time) err
 			formatHistoryTime(report.BeginsAt),
 			nullableHistoryTime(report.FinishedAt),
 			int(report.Duration.Minutes()),
-			report.Type,
+			normalizeOutageType(report.Type),
 			report.State,
 			report.Impact,
 			report.CsSummary,
@@ -461,6 +461,7 @@ func (hs *HistoryStore) OutageReports() []*OutageReport {
 				return nil
 			}
 		}
+		row.report.Type = normalizeOutageType(row.report.Type)
 		row.report.Duration = time.Duration(durationMinutes) * time.Minute
 		outages = append(outages, row)
 	}

@@ -50,10 +50,10 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{
 		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
-			apiOutage(1001, "maintenance", "announced", fixedNow.Add(2*time.Hour), 90, "partial", "Router replacement"),
-			apiOutage(1002, "outage", "announced", fixedNow.Add(3*time.Hour), 45, "full", "Switch down"),
-			apiOutage(1003, "maintenance", "resolved", fixedNow.Add(-2*time.Hour), 30, "partial", "Old maintenance"),
-			apiOutage(1004, "outage", "resolved", fixedNow.Add(-1*time.Hour), 15, "full", "Recent outage"),
+			apiOutage(1001, "planned_outage", "announced", fixedNow.Add(2*time.Hour), 90, "partial", "Router replacement"),
+			apiOutage(1002, "unplanned_outage", "announced", fixedNow.Add(3*time.Hour), 45, "full", "Switch down"),
+			apiOutage(1003, "planned_outage", "resolved", fixedNow.Add(-2*time.Hour), 30, "partial", "Old maintenance"),
+			apiOutage(1004, "unplanned_outage", "resolved", fixedNow.Add(-1*time.Hour), 15, "full", "Recent outage"),
 		}),
 		entities: map[int64]*client.ActionOutageEntityIndexResponse{
 			1001: outageEntityResponse(true, []*client.ActionOutageEntityIndexOutput{{Name: "node", EntityId: 101, Label: "node1.prg"}}),
@@ -95,8 +95,8 @@ func TestRefreshOutageReportsOnceKeepsOldReportsOnlyInHistory(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{
 		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
-			apiOutage(1001, "outage", "resolved", fixedNow.Add(-10*24*time.Hour), 30, "full", "Old outage"),
-			apiOutage(1002, "outage", "resolved", fixedNow.Add(-1*time.Hour), 15, "full", "Recent outage"),
+			apiOutage(1001, "unplanned_outage", "resolved", fixedNow.Add(-10*24*time.Hour), 30, "full", "Old outage"),
+			apiOutage(1002, "unplanned_outage", "resolved", fixedNow.Add(-1*time.Hour), 15, "full", "Recent outage"),
 		}),
 	}
 
@@ -180,10 +180,10 @@ func TestRefreshOutageReportsOncePreservesStaleReportsOnAPIFailure(t *testing.T)
 		AnyRecent:            true,
 		AnyRecentOutage:      true,
 		ActiveList: []*OutageReport{
-			{Id: 1001, Type: "maintenance", State: "announced"},
+			{Id: 1001, Type: "planned_outage", State: "announced"},
 		},
 		RecentList: []*OutageReport{
-			{Id: 1002, Type: "outage", State: "resolved"},
+			{Id: 1002, Type: "unplanned_outage", State: "resolved"},
 		},
 	}
 
@@ -207,7 +207,7 @@ func TestRefreshOutageReportsOncePreservesOutageWhenEntityFetchFails(t *testing.
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{
 		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
-			apiOutage(1001, "outage", "announced", fixedNow, 15, "full", "Entity fetch failed"),
+			apiOutage(1001, "unplanned_outage", "announced", fixedNow, 15, "full", "Entity fetch failed"),
 		}),
 		entities: map[int64]*client.ActionOutageEntityIndexResponse{
 			1001: outageEntityResponse(false, nil),
@@ -228,7 +228,7 @@ func TestRefreshOutageReportsOncePreservesOutagesWhenLocationFetchFails(t *testi
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{
 		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{
-			apiOutage(1001, "outage", "announced", fixedNow, 15, "full", "Location fetch failed"),
+			apiOutage(1001, "unplanned_outage", "announced", fixedNow, 15, "full", "Location fetch failed"),
 		}),
 		locationErr: errors.New("locations failed"),
 	}
@@ -245,7 +245,7 @@ func TestRefreshOutageReportsOncePreservesOutagesWhenLocationFetchFails(t *testi
 
 func TestRefreshOutageReportsOnceHandlesMalformedBeginTime(t *testing.T) {
 	_, st, _ := newTestApplication(t)
-	outage := apiOutage(1001, "maintenance", "announced", fixedNow, 15, "partial", "Bad time")
+	outage := apiOutage(1001, "planned_outage", "announced", fixedNow, 15, "partial", "Bad time")
 	outage.BeginsAt = "not-a-time"
 	api := &fakeOutageClient{
 		resp: outageIndexResponse(true, "", []*client.ActionOutageIndexOutput{outage}),

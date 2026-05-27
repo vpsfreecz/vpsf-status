@@ -34,7 +34,7 @@ func TestProbeLogEventDetailViewsMarkCoveredFailures(t *testing.T) {
 	}
 	if !views[0].HasCoverage() ||
 		views[0].CoveredBy.ID != 5101 ||
-		views[0].CoveredBy.Label != "Outage: Node outage" ||
+		views[0].CoveredBy.Label != "Unplanned outage: Node outage" ||
 		views[0].CoveredBy.URL != "https://vpsadmin.vpsfree.cz/?page=outage&action=show&id=5101" ||
 		views[0].CoveredBy.Class != "danger" ||
 		!views[0].GroupStart ||
@@ -70,7 +70,7 @@ func TestProbeEventResponsibleReportUsesGraceAndBestMatch(t *testing.T) {
 	older.Duration = 10 * time.Minute
 	newer := testHistoryOutage(5203, fixedNow.Add(-60*time.Minute), "Newer maintenance", entity)
 	newer.Duration = 10 * time.Minute
-	newer.Type = "maintenance"
+	newer.Type = "planned_outage"
 	event = testProbeLogEvent(target, historyProbeStateDown, fixedNow.Add(-70*time.Minute), fixedNow.Add(-35*time.Minute))
 	if got := probeEventResponsibleReport(event, []*OutageReport{older, newer}, mapping, fixedNow); got == nil || got.Id != 5203 {
 		t.Fatalf("best overlap report = %+v, want newer maintenance", got)

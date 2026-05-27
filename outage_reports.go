@@ -75,7 +75,7 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 		v := OutageReport{
 			Id:               outage.Id,
 			Duration:         time.Duration(outage.Duration) * time.Minute,
-			Type:             outage.Type,
+			Type:             normalizeOutageType(outage.Type),
 			State:            outage.State,
 			Impact:           outage.Impact,
 			CsSummary:        outage.CsSummary,
@@ -136,7 +136,7 @@ func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *Outa
 		if report.State == "announced" {
 			reports.AnyActive = true
 
-			if report.Type == "maintenance" {
+			if report.IsMaintenance() {
 				reports.AnyActiveMaintenance = true
 			} else {
 				reports.AnyActiveOutage = true
@@ -146,7 +146,7 @@ func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *Outa
 		} else if !report.BeginsAt.IsZero() && !report.BeginsAt.Before(recentSince) {
 			reports.AnyRecent = true
 
-			if report.Type == "maintenance" {
+			if report.IsMaintenance() {
 				reports.AnyRecentMaintenance = true
 			} else {
 				reports.AnyRecentOutage = true

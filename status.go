@@ -68,6 +68,13 @@ type OutageEntity struct {
 	Label string
 }
 
+const (
+	outageTypePlanned           = "planned_outage"
+	outageTypeUnplanned         = "unplanned_outage"
+	legacyOutageTypeMaintenance = "maintenance"
+	legacyOutageTypeOutage      = "outage"
+)
+
 type Location struct {
 	Id              int
 	Label           string
@@ -361,7 +368,7 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Id:            outage.Id,
 			BeginsAt:      outage.BeginsAt,
 			Duration:      int(outage.Duration.Minutes()),
-			Type:          outage.Type,
+			Type:          outage.NormalizedType(),
 			State:         outage.State,
 			Impact:        outage.Impact,
 			CsSummary:     outage.CsSummary,
@@ -387,7 +394,7 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Id:            outage.Id,
 			BeginsAt:      outage.BeginsAt,
 			Duration:      int(outage.Duration.Minutes()),
-			Type:          outage.Type,
+			Type:          outage.NormalizedType(),
 			State:         outage.State,
 			Impact:        outage.Impact,
 			CsSummary:     outage.CsSummary,
@@ -464,11 +471,40 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 }
 
 func (r *OutageReport) IsMaintenance() bool {
-	return r.Type == "maintenance"
+	return r.NormalizedType() == outageTypePlanned
 }
 
 func (r *OutageReport) IsOutage() bool {
-	return r.Type == "outage"
+	return r.NormalizedType() == outageTypeUnplanned
+}
+
+func (r *OutageReport) NormalizedType() string {
+	if r == nil {
+		return ""
+	}
+	return normalizeOutageType(r.Type)
+}
+
+func (r *OutageReport) TypeLabel() string {
+	switch r.NormalizedType() {
+	case outageTypePlanned:
+		return "Planned outage"
+	case outageTypeUnplanned:
+		return "Unplanned outage"
+	default:
+		return r.Type
+	}
+}
+
+func normalizeOutageType(outageType string) string {
+	switch outageType {
+	case legacyOutageTypeMaintenance:
+		return outageTypePlanned
+	case legacyOutageTypeOutage:
+		return outageTypeUnplanned
+	default:
+		return outageType
+	}
 }
 
 func (n *Node) IsOperational() bool {

@@ -84,7 +84,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 2, Total: 2})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Operational: 1, Total: 1})
-	requireNotContains(t, body, "Reported Maintenances", "Unable to fetch outage reports", "Last 90 days", "Overall status history")
+	requireNotContains(t, body, "Reported Planned Outages", "Unable to fetch outage reports", "Last 90 days", "Overall status history")
 }
 
 func TestRoutesServeEntityDetail(t *testing.T) {
@@ -169,7 +169,7 @@ func TestRoutesServeEntityDetailProbeLogCoverage(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"Covered by",
-		"Outage: Node outage",
+		"Unplanned outage: Node outage",
 		`href="https://vpsadmin.vpsfree.cz/?page=outage&amp;action=show&amp;id=7301"`,
 		"text-bg-danger",
 		"probe-covered-danger",
@@ -443,7 +443,7 @@ func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 			Id:        2001,
 			BeginsAt:  beginsAt,
 			Duration:  30 * time.Minute,
-			Type:      "outage",
+			Type:      "unplanned_outage",
 			State:     "resolved",
 			EnSummary: "Power failure",
 			AffectedEntities: []OutageEntity{
@@ -461,7 +461,7 @@ func TestRoutesServeHistoryPopoverWithOutageLinks(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"history-popover",
-		"Outage: Power failure",
+		"Unplanned outage: Power failure",
 		"Started: "+beginsAt.Local().Format(historyIncidentTimeFormat),
 		"Expected duration: 30 min",
 		`href="https://vpsadmin.vpsfree.cz/?page=outage&amp;action=show&amp;id=2001"`,
@@ -550,9 +550,9 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 		rr.Body.String(),
 		"Maintenance notice",
 		"Reported",
-		"Maintenances",
+		"Planned Outages",
 		"Resolved",
-		"Outages",
+		"Unplanned Outages",
 		"Router replacement",
 		"Power failure",
 		"node1.prg",
@@ -696,7 +696,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Id:        1001,
 				BeginsAt:  fixedNow.Add(2 * time.Hour),
 				Duration:  90 * time.Minute,
-				Type:      "maintenance",
+				Type:      "planned_outage",
 				State:     "announced",
 				Impact:    "partial",
 				EnSummary: "Router replacement",
@@ -708,7 +708,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Id:        1002,
 				BeginsAt:  fixedNow.Add(3 * time.Hour),
 				Duration:  45 * time.Minute,
-				Type:      "outage",
+				Type:      "unplanned_outage",
 				State:     "announced",
 				Impact:    "full",
 				EnSummary: "Switch down",
@@ -722,7 +722,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Id:        1003,
 				BeginsAt:  fixedNow.Add(-2 * time.Hour),
 				Duration:  30 * time.Minute,
-				Type:      "maintenance",
+				Type:      "planned_outage",
 				State:     "resolved",
 				Impact:    "partial",
 				EnSummary: "Old maintenance",
@@ -734,7 +734,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 				Id:        1004,
 				BeginsAt:  fixedNow.Add(-1 * time.Hour),
 				Duration:  15 * time.Minute,
-				Type:      "outage",
+				Type:      "unplanned_outage",
 				State:     "resolved",
 				Impact:    "full",
 				EnSummary: "Recent outage",
@@ -750,7 +750,7 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 
 	body := rr.Body.String()
 	requireContains(t, body, "Reported", "Resolved", "Switch down", "Old maintenance")
-	requireOccurrences(t, body, "Maintenances and Outages", 2)
+	requireOccurrences(t, body, "Planned and Unplanned Outages", 2)
 }
 
 func TestRoutesServeIndexAllDownState(t *testing.T) {
@@ -1039,10 +1039,10 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	if !body.OutageReports.Status || len(body.OutageReports.Announced) != 1 || len(body.OutageReports.Recent) != 1 {
 		t.Fatalf("outage_reports = %+v", body.OutageReports)
 	}
-	if got := body.OutageReports.Announced[0]; got.Id != 1001 || got.Type != "maintenance" || got.State != "announced" || got.Entities[0].Label != "node1.prg" {
+	if got := body.OutageReports.Announced[0]; got.Id != 1001 || got.Type != "planned_outage" || got.State != "announced" || got.Entities[0].Label != "node1.prg" {
 		t.Fatalf("announced outage = %+v", got)
 	}
-	if got := body.OutageReports.Recent[0]; got.Id != 1002 || got.Type != "outage" || got.State != "resolved" || got.Entities[0].Label != "Praha" {
+	if got := body.OutageReports.Recent[0]; got.Id != 1002 || got.Type != "unplanned_outage" || got.State != "resolved" || got.Entities[0].Label != "Praha" {
 		t.Fatalf("recent outage = %+v", got)
 	}
 	rawOutages := requireMapValue(t, raw, "outage_reports")
@@ -1050,7 +1050,7 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	requireJSONNumber(t, rawAnnounced, "id", 1001)
 	requireJSONString(t, rawAnnounced, "begins_at", "2026-05-02T12:30:00Z")
 	requireJSONNumber(t, rawAnnounced, "duration", 90)
-	requireJSONString(t, rawAnnounced, "type", "maintenance")
+	requireJSONString(t, rawAnnounced, "type", "planned_outage")
 	requireJSONString(t, rawAnnounced, "state", "announced")
 	requireJSONString(t, rawAnnounced, "impact", "partial")
 	requireJSONString(t, rawAnnounced, "en_summary", "Router replacement")
@@ -1063,7 +1063,7 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	requireJSONNumber(t, rawRecent, "id", 1002)
 	requireJSONString(t, rawRecent, "begins_at", "2026-05-02T09:30:00Z")
 	requireJSONNumber(t, rawRecent, "duration", 30)
-	requireJSONString(t, rawRecent, "type", "outage")
+	requireJSONString(t, rawRecent, "type", "unplanned_outage")
 	requireJSONString(t, rawRecent, "state", "resolved")
 	requireJSONString(t, rawRecent, "impact", "full")
 

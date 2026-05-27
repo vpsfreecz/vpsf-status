@@ -434,7 +434,7 @@ func TestHistoryStorePersistsOutages(t *testing.T) {
 		Id:        1001,
 		BeginsAt:  fixedNow.Add(-24 * time.Hour),
 		Duration:  30 * time.Minute,
-		Type:      "outage",
+		Type:      "unplanned_outage",
 		State:     "resolved",
 		EnSummary: "Power failure",
 		AffectedEntities: []OutageEntity{
@@ -544,7 +544,7 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 		Id:        1001,
 		BeginsAt:  fixedNow.Add(-24 * time.Hour),
 		Duration:  30 * time.Minute,
-		Type:      "outage",
+		Type:      "unplanned_outage",
 		State:     "resolved",
 		EnSummary: "Power failure",
 		AffectedEntities: []OutageEntity{
@@ -555,7 +555,7 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 		Id:        1002,
 		BeginsAt:  fixedNow.Add(-48 * time.Hour),
 		Duration:  30 * time.Minute,
-		Type:      "outage",
+		Type:      "unplanned_outage",
 		State:     "resolved",
 		EnSummary: "Location power failure",
 		AffectedEntities: []OutageEntity{
@@ -622,7 +622,7 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 	if len(node1.Lanes) != 0 {
 		t.Fatalf("per-entity node history lanes = %+v, want none", node1.Lanes)
 	}
-	if incident, ok := historyDayIncident(node1, fixedNow.Add(-24*time.Hour), "Outage: Power failure"); !ok {
+	if incident, ok := historyDayIncident(node1, fixedNow.Add(-24*time.Hour), "Unplanned outage: Power failure"); !ok {
 		t.Fatalf("node1 outage incidents = %+v, want outage incident", historyDayIncidents(node1, fixedNow.Add(-24*time.Hour)))
 	} else if incident.StartLabel != "Started: "+nodeOutage.BeginsAt.Local().Format(historyIncidentTimeFormat) || incident.DurationLabel != "Expected duration: 30 min" {
 		t.Fatalf("node1 outage incident = %+v, want start and expected duration", incident)
@@ -639,7 +639,7 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 	if got := historyDayLaneState(praha, fixedNow.Add(-24*time.Hour), historyKey(historyEntityNode, "node1.prg")); got != historySeverityOutage {
 		t.Fatalf("Praha node1 outage lane = %q, want outage", got)
 	}
-	if !historyDayHasIncident(praha, fixedNow.Add(-24*time.Hour), "node1.prg: Outage: Power failure") {
+	if !historyDayHasIncident(praha, fixedNow.Add(-24*time.Hour), "node1.prg: Unplanned outage: Power failure") {
 		t.Fatalf("Praha outage popover incidents = %+v, want node label", historyDayIncidents(praha, fixedNow.Add(-24*time.Hour)))
 	}
 	if got := historyDayLaneState(praha, fixedNow.Add(-24*time.Hour), historyKey(historyEntityNode, "node2.prg")); got != historySeverityOperational {
@@ -701,7 +701,7 @@ func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
 	serviceMaintenance := testHistoryOutage(4002, fixedNow.Add(-70*time.Minute), "Service maintenance", []OutageEntity{
 		{Name: "Web service", Label: "vpsfree.cz"},
 	})
-	serviceMaintenance.Type = "maintenance"
+	serviceMaintenance.Type = "planned_outage"
 	nameserverOutage := testHistoryOutage(4003, fixedNow.Add(-80*time.Minute), "Nameserver outage", []OutageEntity{
 		{Name: "Name server", Label: "ns1.vpsfree.cz"},
 	})
@@ -743,13 +743,13 @@ func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
 	if historyDayHasIncident(nodeHistory, fixedNow, "Probe: node1.prg Ping not responding") {
 		t.Fatalf("covered node probe incidents = %+v, want probe hidden", historyDayIncidents(nodeHistory, fixedNow))
 	}
-	if !historyDayHasIncident(nodeHistory, fixedNow, "Outage: Node outage") {
+	if !historyDayHasIncident(nodeHistory, fixedNow, "Unplanned outage: Node outage") {
 		t.Fatalf("node incidents = %+v, want outage retained", historyDayIncidents(nodeHistory, fixedNow))
 	}
 	if historyDayHasIncident(serviceHistory, fixedNow, "Probe: vpsfree.cz HTTP HTTP 500") {
 		t.Fatalf("grace-covered service probe incidents = %+v, want probe hidden", historyDayIncidents(serviceHistory, fixedNow))
 	}
-	if !historyDayHasIncident(serviceHistory, fixedNow, "Maintenance: Service maintenance") {
+	if !historyDayHasIncident(serviceHistory, fixedNow, "Planned outage: Service maintenance") {
 		t.Fatalf("service incidents = %+v, want maintenance retained", historyDayIncidents(serviceHistory, fixedNow))
 	}
 	if !historyDayHasIncident(nameserverHistory, fixedNow, "Probe: ns1.vpsfree.cz DNS lookup failed") {
@@ -763,7 +763,7 @@ func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
 	if historyDayHasIncident(praha, fixedNow, "Probe: node1.prg Ping not responding") {
 		t.Fatalf("Praha incidents = %+v, want covered node probe hidden", historyDayIncidents(praha, fixedNow))
 	}
-	if !historyDayHasIncident(praha, fixedNow, "node1.prg: Outage: Node outage") {
+	if !historyDayHasIncident(praha, fixedNow, "node1.prg: Unplanned outage: Node outage") {
 		t.Fatalf("Praha incidents = %+v, want node outage retained", historyDayIncidents(praha, fixedNow))
 	}
 
@@ -928,7 +928,7 @@ func TestHistoryViewsIncludeRemovedNodeOutagesInGroupLane(t *testing.T) {
 	assertHistoryLaneState(t, praha, environmentDay, historyEntityNode, "node9.stg", historySeverityOutage)
 	assertHistoryLaneState(t, praha, locationDay, historyEntityNode, "node1.prg", historySeverityOperational)
 	assertHistoryLaneState(t, praha, environmentDay, historyEntityNode, "node2.prg", historySeverityOperational)
-	if !historyDayHasIncident(praha, nodeDay, "node9.stg (removed): Outage: Removed node outage") {
+	if !historyDayHasIncident(praha, nodeDay, "node9.stg (removed): Unplanned outage: Removed node outage") {
 		t.Fatalf("removed node incidents = %+v, want removed-node label", historyDayIncidents(praha, nodeDay))
 	}
 	if got := view.HistoryFor(historyEntityNode, "node9.stg"); len(got.Days) != 0 {
@@ -1042,7 +1042,7 @@ func testHistoryOutage(id int64, beginsAt time.Time, summary string, entities []
 		Id:               id,
 		BeginsAt:         beginsAt,
 		Duration:         30 * time.Minute,
-		Type:             "outage",
+		Type:             "unplanned_outage",
 		State:            "resolved",
 		EnSummary:        summary,
 		AffectedEntities: entities,
