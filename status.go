@@ -36,15 +36,15 @@ type VpsAdminLocation struct {
 }
 
 type OutageReports struct {
-	Status               bool
-	ActiveList           []*OutageReport
-	RecentList           []*OutageReport
-	AnyActive            bool
-	AnyActiveMaintenance bool
-	AnyActiveOutage      bool
-	AnyRecent            bool
-	AnyRecentMaintenance bool
-	AnyRecentOutage      bool
+	Status             bool
+	ActiveList         []*OutageReport
+	RecentList         []*OutageReport
+	AnyActive          bool
+	AnyActivePlanned   bool
+	AnyActiveUnplanned bool
+	AnyRecent          bool
+	AnyRecentPlanned   bool
+	AnyRecentUnplanned bool
 }
 
 type OutageReport struct {
@@ -470,11 +470,11 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 	return ret
 }
 
-func (r *OutageReport) IsMaintenance() bool {
+func (r *OutageReport) IsPlannedOutage() bool {
 	return r.NormalizedType() == outageTypePlanned
 }
 
-func (r *OutageReport) IsOutage() bool {
+func (r *OutageReport) IsUnplannedOutage() bool {
 	return r.NormalizedType() == outageTypeUnplanned
 }
 

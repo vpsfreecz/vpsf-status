@@ -262,11 +262,11 @@ func addOutageFixture(st *Status) {
 	recentAt := fixedNow.Add(-1 * time.Hour)
 
 	st.OutageReports = &OutageReports{
-		Status:               true,
-		AnyActive:            true,
-		AnyActiveMaintenance: true,
-		AnyRecent:            true,
-		AnyRecentOutage:      true,
+		Status:             true,
+		AnyActive:          true,
+		AnyActivePlanned:   true,
+		AnyRecent:          true,
+		AnyRecentUnplanned: true,
 		ActiveList: []*OutageReport{
 			{
 				Id:            1001,

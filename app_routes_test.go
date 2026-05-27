@@ -684,13 +684,13 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 	setOperationalFixture(st)
 
 	st.OutageReports = &OutageReports{
-		Status:               true,
-		AnyActive:            true,
-		AnyActiveMaintenance: true,
-		AnyActiveOutage:      true,
-		AnyRecent:            true,
-		AnyRecentMaintenance: true,
-		AnyRecentOutage:      true,
+		Status:             true,
+		AnyActive:          true,
+		AnyActivePlanned:   true,
+		AnyActiveUnplanned: true,
+		AnyRecent:          true,
+		AnyRecentPlanned:   true,
+		AnyRecentUnplanned: true,
 		ActiveList: []*OutageReport{
 			{
 				Id:        1001,

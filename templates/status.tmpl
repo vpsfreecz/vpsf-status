@@ -35,9 +35,9 @@
 		{{ if .Status.OutageReports.AnyActive }}
 		<h2>
 			Reported
-			{{ if and .Status.OutageReports.AnyActiveMaintenance .Status.OutageReports.AnyActiveOutage }}
+			{{ if and .Status.OutageReports.AnyActivePlanned .Status.OutageReports.AnyActiveUnplanned }}
 			Planned and Unplanned Outages
-			{{ else if .Status.OutageReports.AnyActiveMaintenance }}
+			{{ else if .Status.OutageReports.AnyActivePlanned }}
 			Planned Outages
 			{{ else }}
 			Unplanned Outages
@@ -58,11 +58,11 @@
 			<tbody>
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.ActiveList }}
-				<tr class="table-{{ if $outage.IsMaintenance }}warning{{ else }}danger{{ end }}">
+				<tr class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
 					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
 					<td>{{ $outage.Duration }}</td>
 					<td>
-						{{ if $outage.IsMaintenance }}
+						{{ if $outage.IsPlannedOutage }}
 						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
@@ -84,9 +84,9 @@
 		{{ if .Status.OutageReports.AnyRecent }}
 		<h2>
 			Resolved
-			{{ if and .Status.OutageReports.AnyRecentMaintenance .Status.OutageReports.AnyRecentOutage }}
+			{{ if and .Status.OutageReports.AnyRecentPlanned .Status.OutageReports.AnyRecentUnplanned }}
 			Planned and Unplanned Outages
-			{{ else if .Status.OutageReports.AnyRecentMaintenance }}
+			{{ else if .Status.OutageReports.AnyRecentPlanned }}
 			Planned Outages
 			{{ else }}
 			Unplanned Outages
@@ -107,11 +107,11 @@
 			<tbody>
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.RecentList }}
-				<tr class="table-{{ if $outage.IsMaintenance }}warning{{ else }}danger{{ end }}">
+				<tr class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
 					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
 					<td>{{ $outage.Duration }}</td>
 					<td>
-						{{ if $outage.IsMaintenance }}
+						{{ if $outage.IsPlannedOutage }}
 						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>

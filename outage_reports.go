@@ -136,20 +136,20 @@ func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *Outa
 		if report.State == "announced" {
 			reports.AnyActive = true
 
-			if report.IsMaintenance() {
-				reports.AnyActiveMaintenance = true
+			if report.IsPlannedOutage() {
+				reports.AnyActivePlanned = true
 			} else {
-				reports.AnyActiveOutage = true
+				reports.AnyActiveUnplanned = true
 			}
 
 			reports.ActiveList = append(reports.ActiveList, report)
 		} else if !report.BeginsAt.IsZero() && !report.BeginsAt.Before(recentSince) {
 			reports.AnyRecent = true
 
-			if report.IsMaintenance() {
-				reports.AnyRecentMaintenance = true
+			if report.IsPlannedOutage() {
+				reports.AnyRecentPlanned = true
 			} else {
-				reports.AnyRecentOutage = true
+				reports.AnyRecentUnplanned = true
 			}
 
 			reports.RecentList = append(reports.RecentList, report)

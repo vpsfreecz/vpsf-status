@@ -373,7 +373,7 @@ func probeEventCoverageView(st *Status, report *OutageReport) ProbeEventCoverage
 	}
 
 	class := "danger"
-	if report.IsMaintenance() {
+	if report.IsPlannedOutage() {
 		class = "warning"
 	}
 

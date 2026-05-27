@@ -204,7 +204,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 
 	for _, report := range reports {
 		severity := historySeverityOutage
-		if report.IsMaintenance() {
+		if report.IsPlannedOutage() {
 			severity = historySeverityMaintenance
 		}
 
@@ -256,7 +256,7 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 		}
 
 		severity := historySeverityOutage
-		if report.IsMaintenance() {
+		if report.IsPlannedOutage() {
 			severity = historySeverityMaintenance
 		}
 		applyHistoryIncident(&bar, report.BeginsAt, outageEndsAt(report), severity, outageHistoryIncident(st, report))
@@ -302,7 +302,7 @@ func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget
 
 	for _, report := range data.reports {
 		severity := historySeverityOutage
-		if report.IsMaintenance() {
+		if report.IsPlannedOutage() {
 			severity = historySeverityMaintenance
 		}
 		incident := outageHistoryIncident(st, report)
@@ -1258,7 +1258,7 @@ func outageSummary(report *OutageReport) string {
 		summary = fmt.Sprintf("Outage #%d", report.Id)
 	}
 
-	if report.IsMaintenance() {
+	if report.IsPlannedOutage() {
 		return "Planned outage: " + summary
 	}
 
