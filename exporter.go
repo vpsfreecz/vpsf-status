@@ -12,6 +12,10 @@ type Exporter struct {
 	up                  prometheus.Gauge
 	notice              prometheus.Gauge
 	indexLastRender     prometheus.Gauge
+	indexLastAttempt    prometheus.Gauge
+	indexRenderDuration prometheus.Gauge
+	indexRenderFailures prometheus.Counter
+	indexRenderSkips    prometheus.Counter
 	vpsAdminStatus      *prometheus.GaugeVec
 	nodeVpsAdminStatus  *prometheus.GaugeVec
 	nodePing            *prometheus.GaugeVec
@@ -45,6 +49,30 @@ func newExporter() *Exporter {
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_index_last_render_timestamp_seconds",
 				Help: "Unix timestamp of the last successful index page render.",
+			},
+		),
+		indexLastAttempt: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "vpsfstatus_index_last_render_attempt_timestamp_seconds",
+				Help: "Unix timestamp of the last index page render attempt.",
+			},
+		),
+		indexRenderDuration: prometheus.NewGauge(
+			prometheus.GaugeOpts{
+				Name: "vpsfstatus_index_render_duration_seconds",
+				Help: "Duration of the last successful index page render in seconds.",
+			},
+		),
+		indexRenderFailures: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "vpsfstatus_index_render_failures_total",
+				Help: "Total number of failed index page render attempts.",
+			},
+		),
+		indexRenderSkips: prometheus.NewCounter(
+			prometheus.CounterOpts{
+				Name: "vpsfstatus_index_render_skips_total",
+				Help: "Total number of skipped index page renders because visible content did not change.",
 			},
 		),
 		vpsAdminStatus: prometheus.NewGaugeVec(
@@ -137,6 +165,10 @@ func newExporter() *Exporter {
 		exporter.up,
 		exporter.notice,
 		exporter.indexLastRender,
+		exporter.indexLastAttempt,
+		exporter.indexRenderDuration,
+		exporter.indexRenderFailures,
+		exporter.indexRenderSkips,
 		exporter.vpsAdminStatus,
 		exporter.nodeVpsAdminStatus,
 		exporter.nodePing,

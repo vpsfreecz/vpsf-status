@@ -79,6 +79,7 @@ func refreshVpsAdminNodesOnce(st *Status, api vpsAdminNodeStatusClient, now time
 
 	st.Exporter.vpsAdminStatus.With(prometheus.Labels{"service": "api"}).Set(0)
 	recordVpsAdminServiceProbe(st, "api", st.VpsAdmin.Api, now)
+	st.requestIndexRenderIfConfigured()
 }
 
 func failApi(st *Status, message string, now time.Time) {
@@ -118,6 +119,7 @@ func failApi(st *Status, message string, now time.Time) {
 			recordNodeProbes(st, node, now)
 		}
 	}
+	st.requestIndexRenderIfConfigured()
 }
 
 func updateNode(apiNode *client.ActionNodePublicStatusOutput, st *Status, now time.Time) {

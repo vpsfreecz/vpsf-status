@@ -51,6 +51,7 @@ func spawnDnsResolverCheck(st *Status, r *DnsResolver, target ProbeTarget, gauge
 			message = "lookup succeeded"
 		}
 		recordProbeStatus(st, target, status, message, now)
+		st.requestIndexRenderIfConfigured()
 		time.Sleep(checkInterval)
 	}
 }

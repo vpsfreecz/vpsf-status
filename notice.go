@@ -56,5 +56,6 @@ func checkNoticeFileOnce(st *Status, path string) error {
 		st.Exporter.notice.Set(0)
 	}
 
+	st.requestIndexRenderIfConfigured()
 	return err
 }

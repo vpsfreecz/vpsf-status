@@ -68,6 +68,7 @@ func spawnPingCheck(st *Status, pc *PingCheck, target ProbeTarget, gauge prometh
 		checkPingOnce(pc, gauge, runPing, now)
 		status, message := pingProbeStatus(pc)
 		recordProbeStatus(st, target, status, message, now)
+		st.requestIndexRenderIfConfigured()
 		time.Sleep(checkInterval)
 	}
 }

@@ -3,20 +3,11 @@
 {{ define "status_counts" }}<span class="status-counts ms-1" aria-label="{{ .Operational }} operational, {{ .Degraded }} degraded or under maintenance, {{ .Down }} down, {{ .Total }} total"><span class="text-success" title="Operational">{{ .Operational }}</span>{{ if gt .Degraded 0 }}/<span class="text-warning" title="Degraded or under maintenance">{{ .Degraded }}</span>{{ end }}{{ if gt .Down 0 }}/<span class="text-danger" title="Down">{{ .Down }}</span>{{ end }}/<span class="text-body" title="Total">{{ .Total }}</span></span>{{ end }}
 
 {{ define "content" }}
-<nav class="navbar bg-light">
-	<div class="container-fluid">
-		<div class="navbar-brand clearfix">
-			<a class="float-start" href="/">
-				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-			</a>
-			<h1 class="navbar-text float-start">Status</h1>
-		</div>
-		<span class="navbar-text">
-			Rendered at: {{ .RenderedAt }}
-		</span>
-	</div>
-</nav>
+{{ template "index_header" . }}
+{{ template "index_body" . }}
+{{ end }}
 
+{{ define "index_body" }}
 {{ if .Notice.Any }}
 <div class="row">
 	<div class="col">

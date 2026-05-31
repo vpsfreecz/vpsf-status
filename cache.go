@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"html/template"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -158,6 +159,11 @@ func writeResponse(w http.ResponseWriter, r *http.Request, entry *cachedResponse
 		if len(entry.gzipBody) > 0 {
 			w.Header().Set("Content-Encoding", "gzip")
 			body = entry.gzipBody
+		} else if len(entry.body) > 0 {
+			if gzipBody := gzipBytes(entry.body); len(gzipBody) > 0 {
+				w.Header().Set("Content-Encoding", "gzip")
+				body = gzipBody
+			}
 		}
 	}
 
@@ -169,14 +175,39 @@ func writeResponse(w http.ResponseWriter, r *http.Request, entry *cachedResponse
 
 func gzipBytes(body []byte) []byte {
 	var buf bytes.Buffer
-	zw := gzip.NewWriter(&buf)
-	if _, err := zw.Write(body); err != nil {
-		return nil
-	}
-	if err := zw.Close(); err != nil {
+	if !writeGzipChunks(&buf, body) {
 		return nil
 	}
 	return buf.Bytes()
+}
+
+func writeGzipChunks(w io.Writer, chunks ...[]byte) bool {
+	zw := gzipWriterPool.Get().(*gzip.Writer)
+	defer gzipWriterPool.Put(zw)
+
+	zw.Reset(w)
+	for _, chunk := range chunks {
+		if len(chunk) == 0 {
+			continue
+		}
+		if _, err := zw.Write(chunk); err != nil {
+			return false
+		}
+	}
+	if err := zw.Close(); err != nil {
+		return false
+	}
+	return true
+}
+
+var gzipWriterPool = sync.Pool{
+	New: func() any {
+		zw, err := gzip.NewWriterLevel(io.Discard, gzip.BestSpeed)
+		if err != nil {
+			return gzip.NewWriter(io.Discard)
+		}
+		return zw
+	},
 }
 
 func requestAcceptsGzip(r *http.Request) bool {

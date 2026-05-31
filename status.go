@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/vpsfreecz/vpsf-status/config"
@@ -20,6 +21,9 @@ type Status struct {
 	GlobalNodeMap     map[string]*Node
 	Services          *Services
 	Exporter          *Exporter
+
+	indexHistoryVersion atomic.Uint64
+	requestIndexRender  func()
 }
 
 type VpsAdmin struct {
@@ -321,6 +325,24 @@ func (st *Status) initialize(cfg *config.Config) {
 	time.Sleep(5 * time.Second)
 	st.Initialized = true
 	st.Exporter.up.Set(1)
+	st.requestIndexRenderIfConfigured()
+}
+
+func (st *Status) requestIndexRenderIfConfigured() {
+	if st == nil || st.requestIndexRender == nil {
+		return
+	}
+
+	st.requestIndexRender()
+}
+
+func (st *Status) markIndexHistoryChanged() {
+	if st == nil {
+		return
+	}
+
+	st.indexHistoryVersion.Add(1)
+	st.requestIndexRenderIfConfigured()
 }
 
 func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {

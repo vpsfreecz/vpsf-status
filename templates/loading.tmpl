@@ -1,20 +1,11 @@
 {{ define "title" }}vpsFree.cz Status{{ end }}
 
 {{ define "content" }}
-<nav class="navbar bg-light">
-	<div class="container-fluid">
-		<div class="navbar-brand clearfix">
-			<a class="float-start" href="/">
-				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-			</a>
-			<h1 class="navbar-text float-start">Status</h1>
-		</div>
-		<span class="navbar-text">
-			Rendered at: {{ .RenderedAt }}
-		</span>
-	</div>
-</nav>
+{{ template "index_header" . }}
+{{ template "index_body" . }}
+{{ end }}
 
+{{ define "index_body" }}
 {{ if .Notice.Any }}
 <div class="row">
 	<div class="col">

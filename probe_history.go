@@ -11,8 +11,14 @@ func recordProbeStatus(st *Status, target ProbeTarget, status string, message st
 		return
 	}
 
-	if err := st.History.RecordProbeStatus(target, status, message, now); err != nil {
+	changed, err := st.History.RecordProbeStatusChanged(target, status, message, now)
+	if err != nil {
 		log.Printf("Unable to record probe history: %+v", err)
+		return
+	}
+
+	if changed {
+		st.markIndexHistoryChanged()
 	}
 }
 

@@ -27,10 +27,11 @@ type application struct {
 }
 
 type htmlTemplate struct {
-	loading *template.Template
-	status  *template.Template
-	entity  *template.Template
-	about   *template.Template
+	loading    *template.Template
+	status     *template.Template
+	indexShell *template.Template
+	entity     *template.Template
+	about      *template.Template
 }
 
 type StatusData struct {
@@ -38,6 +39,12 @@ type StatusData struct {
 	Status     *StatusView
 	RenderedAt string
 	Notice     Notice
+}
+
+type IndexShellData struct {
+	Config     *config.Config
+	RenderedAt string
+	Body       template.HTML
 }
 
 type AboutData struct {
@@ -63,6 +70,12 @@ func (app *application) parseTemplates() error {
 		return err
 	}
 
+	if tpl, err := app.parseTemplateWithLayout("index_shell.tmpl"); err == nil {
+		app.templates.indexShell = tpl
+	} else {
+		return err
+	}
+
 	if tpl, err := app.parseTemplateWithLayout("entity.tmpl"); err == nil {
 		app.templates.entity = tpl
 	} else {
@@ -81,6 +94,7 @@ func (app *application) parseTemplates() error {
 func (app *application) parseTemplateWithLayout(name string) (*template.Template, error) {
 	tpl, err := template.ParseFiles(
 		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
+		filepath.Join(app.config.DataDir, "templates/index_header.tmpl"),
 		filepath.Join(app.config.DataDir, "templates/history_bar.tmpl"),
 		filepath.Join(app.config.DataDir, fmt.Sprintf("templates/%s", name)),
 	)

@@ -537,6 +537,25 @@ func requireGaugeFamily(t *testing.T, families map[string]*dto.MetricFamily, nam
 	return family
 }
 
+func requireCounterFamily(t *testing.T, families map[string]*dto.MetricFamily, name string, help string) *dto.MetricFamily {
+	t.Helper()
+
+	family := families[name]
+	if family == nil {
+		t.Fatalf("missing metric family %s", name)
+	}
+
+	if got := family.GetHelp(); got != help {
+		t.Fatalf("metric %s help = %q, want %q", name, got, help)
+	}
+
+	if got := family.GetType(); got != dto.MetricType_COUNTER {
+		t.Fatalf("metric %s type = %s, want COUNTER", name, got)
+	}
+
+	return family
+}
+
 func requireMetricFamilies(t *testing.T, families map[string]*dto.MetricFamily, names ...string) {
 	t.Helper()
 
@@ -612,6 +631,23 @@ func requireUnlabeledMetricValue(t *testing.T, family *dto.MetricFamily, value f
 	}
 
 	if got := metric.GetGauge().GetValue(); got != value {
+		t.Fatalf("metric %s = %v, want %v", family.GetName(), got, value)
+	}
+}
+
+func requireUnlabeledCounterValue(t *testing.T, family *dto.MetricFamily, value float64) {
+	t.Helper()
+
+	if len(family.GetMetric()) != 1 {
+		t.Fatalf("metric %s has %d samples, want 1", family.GetName(), len(family.GetMetric()))
+	}
+
+	metric := family.GetMetric()[0]
+	if labels := metricLabels(metric); len(labels) != 0 {
+		t.Fatalf("metric %s labels = %v, want none", family.GetName(), labels)
+	}
+
+	if got := metric.GetCounter().GetValue(); got != value {
 		t.Fatalf("metric %s = %v, want %v", family.GetName(), got, value)
 	}
 }

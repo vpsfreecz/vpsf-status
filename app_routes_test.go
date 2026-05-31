@@ -843,7 +843,7 @@ func TestRoutesServePreRenderedIndexUntilRefreshed(t *testing.T) {
 
 	stale := getThroughRoutes(t, app, "/")
 	requireStatus(t, stale, http.StatusOK)
-	requireContains(t, stale.Body.String(), "No issues reported.", "Rendered at: Sat May  2 10:30:00 UTC 2026")
+	requireContains(t, stale.Body.String(), "No issues reported.", "Rendered at: Sat May  2 10:30:02 UTC 2026")
 	requireNotContains(t, stale.Body.String(), `aria-label="Down"`)
 
 	if _, err := app.refreshIndexResponse(now); err != nil {

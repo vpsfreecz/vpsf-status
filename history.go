@@ -636,11 +636,16 @@ func (hs *HistoryStore) EntitySnapshots() []HistoryEntitySnapshot {
 }
 
 func (hs *HistoryStore) RecordProbeStatus(target ProbeTarget, status string, message string, now time.Time) error {
+	_, err := hs.RecordProbeStatusChanged(target, status, message, now)
+	return err
+}
+
+func (hs *HistoryStore) RecordProbeStatusChanged(target ProbeTarget, status string, message string, now time.Time) (bool, error) {
 	if hs == nil {
-		return nil
+		return false, nil
 	}
 	if target.EntityKind == "" || target.EntityID == "" || target.Method == "" {
-		return nil
+		return false, nil
 	}
 	if status == "" {
 		status = historyProbeStateOperational
@@ -651,13 +656,13 @@ func (hs *HistoryStore) RecordProbeStatus(target ProbeTarget, status string, mes
 
 	tx, err := hs.db.Begin()
 	if err != nil {
-		return fmt.Errorf("begin probe history update: %w", err)
+		return false, fmt.Errorf("begin probe history update: %w", err)
 	}
 	defer tx.Rollback()
 
 	state, exists, err := queryProbeStateTx(tx, target)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	changed := false
@@ -670,17 +675,17 @@ func (hs *HistoryStore) RecordProbeStatus(target ProbeTarget, status string, mes
 			LastSeen:    now,
 		}
 		if err := upsertProbeStateTx(tx, state); err != nil {
-			return err
+			return false, err
 		}
 		if err := appendProbeEventTx(tx, target, status, message, now); err != nil {
-			return err
+			return false, err
 		}
 		changed = true
 	} else if state.Status != status {
 		if !isOperationalProbeState(state.Status) {
 			closed, err := closeProbeStateIncidentTx(tx, state, now)
 			if err != nil {
-				return err
+				return false, err
 			}
 			changed = closed || changed
 		}
@@ -692,10 +697,10 @@ func (hs *HistoryStore) RecordProbeStatus(target ProbeTarget, status string, mes
 		state.LastSeen = now
 		state.IncidentPromoted = false
 		if err := upsertProbeStateTx(tx, state); err != nil {
-			return err
+			return false, err
 		}
 		if err := appendProbeEventTx(tx, target, status, message, now); err != nil {
-			return err
+			return false, err
 		}
 		changed = true
 	} else if !isOperationalProbeState(status) && !state.IncidentPromoted && !now.Before(state.Since.Add(probeIncidentThreshold)) {
@@ -703,20 +708,20 @@ func (hs *HistoryStore) RecordProbeStatus(target ProbeTarget, status string, mes
 		state.Message = message
 		state.LastSeen = now
 		if err := openProbeIncidentTx(tx, state); err != nil {
-			return err
+			return false, err
 		}
 		state.IncidentPromoted = true
 		if err := upsertProbeStateTx(tx, state); err != nil {
-			return err
+			return false, err
 		}
 		changed = true
 	}
 
 	if !changed {
-		return nil
+		return false, nil
 	}
 
-	return tx.Commit()
+	return true, tx.Commit()
 }
 
 func queryProbeStateTx(tx *sql.Tx, target ProbeTarget) (ProbeState, bool, error) {

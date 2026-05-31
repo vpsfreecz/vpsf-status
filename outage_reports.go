@@ -117,6 +117,7 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 	reports := createCurrentOutageReports(allReports, now)
 	slices.Reverse(reports.RecentList)
 	st.OutageReports = reports
+	st.requestIndexRenderIfConfigured()
 }
 
 func outageReportFetchStart(st *Status, now time.Time) time.Time {
@@ -161,6 +162,7 @@ func createCurrentOutageReports(allReports []*OutageReport, now time.Time) *Outa
 
 func failOutages(st *Status) {
 	st.OutageReports.Status = false
+	st.requestIndexRenderIfConfigured()
 }
 
 func fetchOutageEntities(api outageReportsClient, report *OutageReport) error {
