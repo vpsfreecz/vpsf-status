@@ -2,10 +2,19 @@
   description = "vpsFree.cz status service";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    vpsadmin.url = "github:vpsfreecz/vpsadmin";
+    vpsadminos.follows = "vpsadmin/vpsadminos";
+    nixpkgs.follows = "vpsadminos/nixpkgs";
   };
 
-  outputs = { self, nixpkgs, ... }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      vpsadmin,
+      vpsadminos,
+      ...
+    }:
     let
       systems = [
         "x86_64-linux"
@@ -13,9 +22,19 @@
         "x86_64-darwin"
         "aarch64-darwin"
       ];
+      testSystems = [ "x86_64-linux" ];
 
       forAllSystems = nixpkgs.lib.genAttrs systems;
+      forTestSystems = nixpkgs.lib.genAttrs testSystems;
       version = self.shortRev or self.dirtyShortRev or "dirty";
+      hasTestRunner = system: builtins.elem system testSystems;
+
+      suiteArgsFor = system: {
+        vpsadminosPath = vpsadminos.outPath;
+        vpsadminPath = vpsadmin.outPath;
+        vpsfStatusModule = self.nixosModules.vpsf-status;
+        vpsfStatusPackage = self.packages.${system}.vpsf-status;
+      };
     in
     {
       overlays.default = final: _prev: {
@@ -35,7 +54,40 @@
         {
           vpsf-status = pkgs.vpsf-status;
           default = pkgs.vpsf-status;
+        }
+        // nixpkgs.lib.optionalAttrs (hasTestRunner system) {
+          test-runner = vpsadminos.packages.${system}.test-runner;
         });
+
+      apps = forAllSystems (
+        system:
+        nixpkgs.lib.optionalAttrs (hasTestRunner system) {
+          test-runner = {
+            type = "app";
+            program = "${vpsadminos.packages.${system}.test-runner}/bin/test-runner";
+          };
+        }
+      );
+
+      tests = forTestSystems (
+        system:
+        vpsadminos.lib.testFramework.mkTests {
+          inherit system;
+          pkgsPath = nixpkgs.outPath;
+          testsRoot = ./tests;
+          suiteArgs = suiteArgsFor system;
+        }
+      );
+
+      testsMeta = forTestSystems (
+        system:
+        vpsadminos.lib.testFramework.mkTestsMeta {
+          inherit system;
+          pkgsPath = nixpkgs.outPath;
+          testsRoot = ./tests;
+          suiteArgs = suiteArgsFor system;
+        }
+      );
 
       nixosModules = {
         vpsf-status =

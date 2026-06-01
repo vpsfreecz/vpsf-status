@@ -78,6 +78,8 @@ in
       serviceConfig = {
         User = cfg.user;
         Group = cfg.group;
+        AmbientCapabilities = [ "CAP_NET_RAW" ];
+        CapabilityBoundingSet = [ "CAP_NET_RAW" ];
         ExecStart = toString [
           "${cfg.package}/bin/vpsf-status"
           "${configFile}"

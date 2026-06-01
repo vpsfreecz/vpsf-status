@@ -5,4 +5,7 @@ build:
 hooks:
 	lefthook install
 
-.PHONY: build hooks
+test-integration:
+	./test-runner.sh test -t ci
+
+.PHONY: build hooks test-integration
