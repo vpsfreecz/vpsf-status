@@ -7,13 +7,14 @@ import (
 )
 
 type Status struct {
-	GeneratedAt   time.Time     `json:"generated_at"`
-	Notice        Notice        `json:"notice"`
-	VpsAdmin      VpsAdmin      `json:"vpsadmin"`
-	OutageReports OutageReports `json:"outage_reports"`
-	Locations     []Location    `json:"locations"`
-	WebServices   []WebService  `json:"web_services"`
-	NameServers   []NameServer  `json:"nameservers"`
+	GeneratedAt        time.Time          `json:"generated_at"`
+	Notice             Notice             `json:"notice"`
+	VpsAdmin           VpsAdmin           `json:"vpsadmin"`
+	OutageReports      OutageReports      `json:"outage_reports"`
+	SecurityAdvisories SecurityAdvisories `json:"security_advisories"`
+	Locations          []Location         `json:"locations"`
+	WebServices        []WebService       `json:"web_services"`
+	NameServers        []NameServer       `json:"nameservers"`
 }
 
 type Notice struct {
@@ -52,6 +53,30 @@ type OutageEntity struct {
 	Name  string `json:"name"`
 	Id    int64  `json:"id"`
 	Label string `json:"label"`
+}
+
+type SecurityAdvisories struct {
+	Status bool               `json:"status"`
+	Recent []SecurityAdvisory `json:"recent"`
+}
+
+type SecurityAdvisory struct {
+	Id                int64                 `json:"id"`
+	PublishedAt       time.Time             `json:"published_at"`
+	UpdatedAt         time.Time             `json:"updated_at"`
+	State             string                `json:"state"`
+	Cves              []SecurityAdvisoryCve `json:"cves"`
+	Name              string                `json:"name"`
+	EnSummary         string                `json:"en_summary"`
+	EnDescription     string                `json:"en_description"`
+	EnResponse        string                `json:"en_response"`
+	AffectedNodeCount int64                 `json:"affected_node_count"`
+}
+
+type SecurityAdvisoryCve struct {
+	Id    int64  `json:"id"`
+	CveId string `json:"cve_id"`
+	Url   string `json:"url"`
 }
 
 type Location struct {
