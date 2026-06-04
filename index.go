@@ -373,6 +373,7 @@ func (app *application) indexRenderSignature(notice Notice) string {
 	writeVpsAdminSignature(h, st.VpsAdmin)
 	writeVpsAdminLocationsSignature(h, st.VpsAdminLocations)
 	writeOutageReportsSignature(h, st.OutageReports)
+	writeSecurityAdvisoriesSignature(h, st.SecurityAdvisories)
 
 	for _, loc := range st.LocationList {
 		writeIndexSignature(h, "location", loc.Id, loc.Label)
@@ -473,6 +474,45 @@ func writeOutageReportSignature(h hash.Hash, prefix string, report *OutageReport
 	)
 	for _, entity := range report.AffectedEntities {
 		writeIndexSignature(h, prefix+"_entity", entity.Name, entity.Id, entity.Label)
+	}
+}
+
+func writeSecurityAdvisoriesSignature(h hash.Hash, advisories *SecurityAdvisories) {
+	if advisories == nil {
+		writeIndexSignature(h, "security_advisories", "nil")
+		return
+	}
+
+	writeIndexSignature(
+		h,
+		"security_advisories",
+		advisories.Status,
+		advisories.AnyRecent,
+	)
+	for _, advisory := range advisories.RecentList {
+		writeSecurityAdvisorySignature(h, "recent_security_advisory", advisory)
+	}
+}
+
+func writeSecurityAdvisorySignature(h hash.Hash, prefix string, advisory *SecurityAdvisory) {
+	if advisory == nil {
+		writeIndexSignature(h, prefix, "nil")
+		return
+	}
+
+	writeIndexSignature(
+		h,
+		prefix,
+		advisory.Id,
+		advisory.PublishedAt.UnixNano(),
+		advisory.UpdatedAt.UnixNano(),
+		advisory.State,
+		advisory.Name,
+		advisory.EnSummary,
+		advisory.AffectedNodeCount,
+	)
+	for _, cve := range advisory.Cves {
+		writeIndexSignature(h, prefix+"_cve", cve.Id, cve.CveId, cve.Url)
 	}
 }
 

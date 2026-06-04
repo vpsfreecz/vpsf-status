@@ -3,11 +3,12 @@ package main
 import "time"
 
 type StatusView struct {
-	VpsAdmin      VpsAdminView
-	Locations     []LocationView
-	Services      ServicesView
-	OutageReports *OutageReports
-	History       map[string]HistoryBarView
+	VpsAdmin           VpsAdminView
+	Locations          []LocationView
+	Services           ServicesView
+	OutageReports      *OutageReports
+	SecurityAdvisories *SecurityAdvisories
+	History            map[string]HistoryBarView
 }
 
 type VpsAdminView struct {
@@ -68,10 +69,11 @@ func createStatusView(st *Status, now time.Time) StatusView {
 
 func createStatusViewWithData(st *Status, now time.Time, data *historyData) StatusView {
 	ret := StatusView{
-		VpsAdmin:      createVpsAdminView(st.VpsAdmin),
-		Locations:     createLocationView(st.LocationList),
-		Services:      createServicesView(st.Services),
-		OutageReports: st.OutageReports,
+		VpsAdmin:           createVpsAdminView(st.VpsAdmin),
+		Locations:          createLocationView(st.LocationList),
+		Services:           createServicesView(st.Services),
+		OutageReports:      st.OutageReports,
+		SecurityAdvisories: st.SecurityAdvisories,
 	}
 
 	groups, history := createHistoryViewsWithData(st, now, data)

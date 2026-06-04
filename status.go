@@ -10,17 +10,18 @@ import (
 )
 
 type Status struct {
-	Initialized       bool
-	VpsAdmin          VpsAdmin
-	VpsAdminLocations map[int64]VpsAdminLocation
-	OutageReports     *OutageReports
-	History           *HistoryStore
-	HistoryDays       int
-	LocationList      []*Location
-	LocationMap       map[string]*Location
-	GlobalNodeMap     map[string]*Node
-	Services          *Services
-	Exporter          *Exporter
+	Initialized        bool
+	VpsAdmin           VpsAdmin
+	VpsAdminLocations  map[int64]VpsAdminLocation
+	OutageReports      *OutageReports
+	SecurityAdvisories *SecurityAdvisories
+	History            *HistoryStore
+	HistoryDays        int
+	LocationList       []*Location
+	LocationMap        map[string]*Location
+	GlobalNodeMap      map[string]*Node
+	Services           *Services
+	Exporter           *Exporter
 
 	indexHistoryVersion atomic.Uint64
 	requestIndexRender  func()
@@ -70,6 +71,31 @@ type OutageEntity struct {
 	Name  string
 	Id    int64
 	Label string
+}
+
+type SecurityAdvisories struct {
+	Status     bool
+	RecentList []*SecurityAdvisory
+	AnyRecent  bool
+}
+
+type SecurityAdvisory struct {
+	Id                int64
+	PublishedAt       time.Time
+	UpdatedAt         time.Time
+	State             string
+	Cves              []SecurityAdvisoryCve
+	Name              string
+	EnSummary         string
+	EnDescription     string
+	EnResponse        string
+	AffectedNodeCount int64
+}
+
+type SecurityAdvisoryCve struct {
+	Id    int64
+	CveId string
+	Url   string
 }
 
 const (
@@ -155,6 +181,9 @@ func openConfig(cfg *config.Config) *Status {
 		OutageReports: &OutageReports{
 			ActiveList: make([]*OutageReport, 0),
 			RecentList: make([]*OutageReport, 0),
+		},
+		SecurityAdvisories: &SecurityAdvisories{
+			RecentList: make([]*SecurityAdvisory, 0),
 		},
 		Exporter: newExporter(),
 	}
@@ -302,6 +331,9 @@ func (st *Status) initialize(cfg *config.Config) {
 	go checkOutageReports(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
+	go checkSecurityAdvisories(st, checkInterval, checkTimeout)
+	time.Sleep(1 * time.Second)
+
 	checkVpsAdminWebServices(st, checkInterval, checkTimeout)
 	time.Sleep(1 * time.Second)
 
@@ -347,6 +379,7 @@ func (st *Status) markIndexHistoryChanged() {
 
 func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 	outages := st.OutageReports
+	advisories := st.SecurityAdvisories
 
 	ret := &json.Status{
 		VpsAdmin: json.VpsAdmin{
@@ -373,6 +406,13 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Status:    outages.Status,
 			Announced: make([]json.OutageReport, len(outages.ActiveList)),
 			Recent:    make([]json.OutageReport, len(outages.RecentList)),
+		},
+		SecurityAdvisories: json.SecurityAdvisories{
+			Status: advisories.Status,
+			Recent: make(
+				[]json.SecurityAdvisory,
+				len(advisories.RecentList),
+			),
 		},
 		Locations:   make([]json.Location, len(st.LocationList)),
 		WebServices: make([]json.WebService, len(st.Services.Web)),
@@ -435,6 +475,30 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 		}
 
 		ret.OutageReports.Recent[iOutage] = jsonOutage
+	}
+
+	for iAdvisory, advisory := range advisories.RecentList {
+		cves := make([]json.SecurityAdvisoryCve, len(advisory.Cves))
+		for iCve, cve := range advisory.Cves {
+			cves[iCve] = json.SecurityAdvisoryCve{
+				Id:    cve.Id,
+				CveId: cve.CveId,
+				Url:   cve.Url,
+			}
+		}
+
+		ret.SecurityAdvisories.Recent[iAdvisory] = json.SecurityAdvisory{
+			Id:                advisory.Id,
+			PublishedAt:       advisory.PublishedAt,
+			UpdatedAt:         advisory.UpdatedAt,
+			State:             advisory.State,
+			Cves:              cves,
+			Name:              advisory.Name,
+			EnSummary:         advisory.EnSummary,
+			EnDescription:     advisory.EnDescription,
+			EnResponse:        advisory.EnResponse,
+			AffectedNodeCount: advisory.AffectedNodeCount,
+		}
 	}
 
 	for iLoc, loc := range st.LocationList {
