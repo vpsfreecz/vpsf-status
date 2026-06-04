@@ -276,8 +276,6 @@ func apiOutage(id int64, outageType string, state string, beginsAt time.Time, du
 		BeginsAt:      apiTimestamp(beginsAt),
 		Duration:      duration,
 		Impact:        impact,
-		CsSummary:     summary + " CS",
-		CsDescription: summary + " CS description",
 		EnSummary:     summary,
 		EnDescription: summary + " description",
 	}

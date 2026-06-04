@@ -41,8 +41,8 @@ github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec h1:W09IVJc94
 github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec/go.mod h1:qqbHyh8v60DhA7CoWK5oRCqLrMHRGoxYCSS9EjAz6Eo=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260504133612-45a5170b7190 h1:IJvGYjA+ytnu+c63c31iAf3+CYiGtYaDVgnAx+6PDlA=
-github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260504133612-45a5170b7190/go.mod h1:n7aZvL8Z1XGeKF6lDkdmsfGdBOh8SiKxl07FXjpGygw=
+github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260604065514-1d9240f3d27b h1:Wrmp6NHg7JJV41izyS1om3ou6udmPWi3OkbXpW1ELyU=
+github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260604065514-1d9240f3d27b/go.mod h1:n7aZvL8Z1XGeKF6lDkdmsfGdBOh8SiKxl07FXjpGygw=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.yaml.in/yaml/v2 v2.4.4 h1:tuyd0P+2Ont/d6e2rl3be67goVK4R6deVxCUX5vyPaQ=

@@ -109,6 +109,10 @@ func setOperationalFixture(st *Status) {
 		ActiveList: make([]*OutageReport, 0),
 		RecentList: make([]*OutageReport, 0),
 	}
+	st.SecurityAdvisories = &SecurityAdvisories{
+		Status:     true,
+		RecentList: make([]*SecurityAdvisory, 0),
+	}
 
 	setVpsAdminService(st, "api", st.VpsAdmin.Api, true, false, http.StatusOK)
 	setVpsAdminService(st, "webui", st.VpsAdmin.Webui, true, false, http.StatusOK)
@@ -300,6 +304,33 @@ func addOutageFixture(st *Status) {
 	}
 }
 
+func addSecurityAdvisoryFixture(st *Status) {
+	st.SecurityAdvisories = &SecurityAdvisories{
+		Status:    true,
+		AnyRecent: true,
+		RecentList: []*SecurityAdvisory{
+			{
+				Id:          2001,
+				PublishedAt: fixedNow.Add(-2 * time.Hour),
+				UpdatedAt:   fixedNow.Add(-90 * time.Minute),
+				State:       "published",
+				Cves: []SecurityAdvisoryCve{
+					{
+						Id:    3001,
+						CveId: "CVE-2026-2001",
+						Url:   "https://www.cve.org/CVERecord?id=CVE-2026-2001",
+					},
+				},
+				Name:              "Dirty Pipe",
+				EnSummary:         "Kernel vulnerability was mitigated on all affected nodes.",
+				EnDescription:     "The vulnerable kernel version is no longer running.",
+				EnResponse:        "All affected nodes were restarted into a fixed kernel.",
+				AffectedNodeCount: 2,
+			},
+		},
+	}
+}
+
 func writeNotice(t *testing.T, cfg *config.Config, text string) {
 	t.Helper()
 
@@ -346,6 +377,24 @@ func requireNotContains(t *testing.T, body string, substrings ...string) {
 		if strings.Contains(body, s) {
 			t.Fatalf("expected body not to contain %q\nbody:\n%s", s, body)
 		}
+	}
+}
+
+func requireBefore(t *testing.T, body string, before string, after string) {
+	t.Helper()
+
+	beforeIndex := strings.Index(body, before)
+	if beforeIndex == -1 {
+		t.Fatalf("expected body to contain %q\nbody:\n%s", before, body)
+	}
+
+	afterIndex := strings.Index(body, after)
+	if afterIndex == -1 {
+		t.Fatalf("expected body to contain %q\nbody:\n%s", after, body)
+	}
+
+	if beforeIndex >= afterIndex {
+		t.Fatalf("expected %q to appear before %q\nbody:\n%s", before, after, body)
 	}
 }
 

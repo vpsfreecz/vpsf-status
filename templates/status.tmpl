@@ -127,9 +127,40 @@
 				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
 			</div>
 			{{ end }}
-		{{ else if not .Status.OutageReports.Status }}
+		{{ end }}
+		{{ if not .Status.OutageReports.Status }}
 		<div class="alert alert-danger" role="alert">
 			Unable to fetch outage reports from vpsAdmin.
+		</div>
+		{{ end }}
+		{{ if .Status.SecurityAdvisories.AnyRecent }}
+		<h2>Recent Security Advisories</h2>
+		<table class="table table-sm">
+			<thead>
+				<tr>
+					<th>Published</th>
+					<th>CVE</th>
+					<th>Summary</th>
+					<th>Link</th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range $advisory := .Status.SecurityAdvisories.RecentList }}
+				<tr class="table-info">
+					<td>{{ $advisory.PublishedAt.Local.Format "2006-01-02 15:04 MST" }}</td>
+					<td>{{ $advisory.CveLabel }}</td>
+					<td>{{ $advisory.EnSummary }}</td>
+					<td>
+						<a href="{{ $webuiUrl }}/?page=security_advisory&action=show&id={{ $advisory.Id }}" target="_blank">More information</a>
+					</td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+		{{ end }}
+		{{ if not .Status.SecurityAdvisories.Status }}
+		<div class="alert alert-danger" role="alert">
+			Unable to fetch security advisories from vpsAdmin.
 		</div>
 		{{ end }}
 	</div>

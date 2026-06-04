@@ -332,6 +332,54 @@ import ../make-test.nix (
         RUBY
       end
 
+      def create_security_advisory(summary)
+        services.api_ruby_json(code: <<~RUBY)
+          Dir[File.join(ENV.fetch('API_DIR'), 'models', 'security_advisory*.rb')]
+            .sort
+            .each { |path| require path }
+          lang_en = Language.find_or_create_by!(code: 'en') do |lang|
+            lang.label = 'English'
+          end
+          admin = User.find(${toString seed.adminUser.id})
+          advisory = SecurityAdvisory.create!(
+            state: :draft,
+            name: 'Status Integration Kernel Bug',
+            created_by: admin
+          )
+          advisory.update_cves!('CVE-2026-9001')
+          advisory.update_translations!(
+            lang_en => {
+              summary: #{summary.inspect},
+              description: 'Created by the vpsf-status integration test',
+              response: 'All affected nodes were mitigated'
+            }
+          )
+          SecurityAdvisory.advisory_nodes.each do |node|
+            SecurityAdvisoryNodeStatus.create!(
+              security_advisory: advisory,
+              node: node,
+              state: :mitigated,
+              vulnerable_until: Time.now.utc - 3600,
+              mitigated_since: Time.now.utc - 1800
+            )
+          end
+          advisory.publish!(published_by: admin)
+          puts JSON.dump(
+            id: advisory.id,
+            cves: advisory.security_advisory_cves.order(:cve_id).map { |cve|
+              {
+                id: cve.id,
+                cve_id: cve.cve_id,
+                url: cve.url
+              }
+            },
+            name: advisory.name,
+            summary: #{summary.inspect},
+            affected_node_count: advisory.affected_node_count
+          )
+        RUBY
+      end
+
       before(:suite) do
         services.start
         services.wait_for_vpsadmin_api(timeout: 600)
@@ -512,6 +560,26 @@ import ../make-test.nix (
               recent_report &&
               recent_report.fetch('state') == 'resolved' &&
               recent_report.fetch('en_summary') == recent.fetch('summary')
+          end
+        end
+      end
+
+      describe 'security advisories', order: :defined do
+        it 'reports recent published advisories' do
+          advisory = create_security_advisory(
+            'vpsf-status security advisory summary'
+          )
+
+          wait_for_status_json('security advisories', timeout: 90) do |json|
+            advisories = json.dig('security_advisories', 'recent')
+            recent = advisories.find { |row| row.fetch('id') == advisory.fetch('id') }
+
+            recent &&
+              recent.fetch('state') == 'published' &&
+              recent.fetch('cves') == advisory.fetch('cves') &&
+              recent.fetch('name') == advisory.fetch('name') &&
+              recent.fetch('en_summary') == advisory.fetch('summary') &&
+              recent.fetch('affected_node_count') == advisory.fetch('affected_node_count')
           end
         end
       end
