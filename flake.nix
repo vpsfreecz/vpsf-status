@@ -30,7 +30,6 @@
       hasTestRunner = system: builtins.elem system testSystems;
 
       suiteArgsFor = system: {
-        vpsadminosPath = vpsadminos.outPath;
         vpsadminPath = vpsadmin.outPath;
         vpsfStatusModule = self.nixosModules.vpsf-status;
         vpsfStatusPackage = self.packages.${system}.vpsf-status;
@@ -44,7 +43,8 @@
         };
       };
 
-      packages = forAllSystems (system:
+      packages = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs {
             inherit system;
@@ -57,7 +57,8 @@
         }
         // nixpkgs.lib.optionalAttrs (hasTestRunner system) {
           test-runner = vpsadminos.packages.${system}.test-runner;
-        });
+        }
+      );
 
       apps = forAllSystems (
         system:
@@ -96,13 +97,15 @@
             imports = [ ./nix/module.nix ];
 
             services.vpsf-status.package =
-              lib.mkDefault self.packages.${pkgs.stdenv.hostPlatform.system}.vpsf-status;
+              lib.mkDefault
+                self.packages.${pkgs.stdenv.hostPlatform.system}.vpsf-status;
           };
 
         default = self.nixosModules.vpsf-status;
       };
 
-      devShells = forAllSystems (system:
+      devShells = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs { inherit system; };
         in
@@ -128,6 +131,7 @@
               fi
             '';
           };
-        });
+        }
+      );
     };
 }

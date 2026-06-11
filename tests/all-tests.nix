@@ -4,15 +4,15 @@
   configuration ? null,
   testConfig ? { },
   suiteArgs ? { },
+  testFramework,
 }:
 let
-  vpsadminosPath = suiteArgs.vpsadminosPath or (throw "suiteArgs.vpsadminosPath is required");
   vpsadminPath = suiteArgs.vpsadminPath or (throw "suiteArgs.vpsadminPath is required");
   vpsfStatusModule = suiteArgs.vpsfStatusModule or (throw "suiteArgs.vpsfStatusModule is required");
-  vpsfStatusPackage = suiteArgs.vpsfStatusPackage or (throw "suiteArgs.vpsfStatusPackage is required");
+  vpsfStatusPackage =
+    suiteArgs.vpsfStatusPackage or (throw "suiteArgs.vpsfStatusPackage is required");
   suiteArgs' = suiteArgs // {
     inherit
-      vpsadminosPath
       vpsadminPath
       vpsfStatusModule
       vpsfStatusPackage
@@ -21,7 +21,7 @@ let
 
   nixpkgs = import pkgs { inherit system; };
   lib = nixpkgs.lib;
-  testLib = import (vpsadminosPath + "/test-runner/nix/lib.nix") {
+  testLib = testFramework.makeTestLib {
     inherit
       pkgs
       system
