@@ -72,6 +72,59 @@ func TestIndexRefreshRendersChangedBody(t *testing.T) {
 	requireContains(t, string(body.body), `aria-label="Down"`)
 }
 
+func TestIndexRefreshRendersChangedCzechSummaries(t *testing.T) {
+	now := fixedNow
+	app, st, _ := newTestApplication(t)
+	app.now = func() time.Time {
+		return now
+	}
+	setOperationalFixture(st)
+	addOutageFixture(st)
+	addSecurityAdvisoryFixture(st)
+
+	st.OutageReports.ActiveList[0].CsSummary = "Původní výměna routeru"
+	st.SecurityAdvisories.RecentList[0].CsSummary = "Původní bezpečnostní oznámení."
+
+	app.ensureLocales()
+	loc, ok := app.locales.localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale is not available")
+	}
+
+	body, rendered, err := app.refreshIndexBody(now, true, loc)
+	if err != nil {
+		t.Fatalf("render Czech index body: %v", err)
+	}
+	if !rendered {
+		t.Fatal("forced Czech index body render was skipped")
+	}
+	requireContains(t, string(body.body), "Původní výměna routeru", "Původní bezpečnostní oznámení.")
+
+	st.OutageReports.ActiveList[0].CsSummary = "Nová výměna routeru"
+	now = fixedNow.Add(2 * time.Second)
+	body, rendered, err = app.refreshIndexBody(now, false, loc)
+	if err != nil {
+		t.Fatalf("refresh Czech index body after outage text change: %v", err)
+	}
+	if !rendered {
+		t.Fatal("Czech index body was skipped after outage summary changed")
+	}
+	requireContains(t, string(body.body), "Nová výměna routeru")
+	requireNotContains(t, string(body.body), "Původní výměna routeru")
+
+	st.SecurityAdvisories.RecentList[0].CsSummary = "Nové bezpečnostní oznámení."
+	now = fixedNow.Add(4 * time.Second)
+	body, rendered, err = app.refreshIndexBody(now, false, loc)
+	if err != nil {
+		t.Fatalf("refresh Czech index body after advisory text change: %v", err)
+	}
+	if !rendered {
+		t.Fatal("Czech index body was skipped after security advisory summary changed")
+	}
+	requireContains(t, string(body.body), "Nové bezpečnostní oznámení.")
+	requireNotContains(t, string(body.body), "Původní bezpečnostní oznámení.")
+}
+
 func TestIndexRefreshKeepaliveRendersUnchangedBody(t *testing.T) {
 	now := fixedNow
 	app, st, _ := newTestApplication(t)

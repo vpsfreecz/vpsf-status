@@ -46,8 +46,8 @@ func TestRoutesRedirectHTMLToCanonicalLanguage(t *testing.T) {
 		"Accept-Language": "cs-CZ,cs;q=0.9,en;q=0.8",
 	})
 	requireStatus(t, rr, http.StatusFound)
-	if got := rr.Header().Get("Location"); got != "/?lang=en" {
-		t.Fatalf("Location = %q, want /?lang=en", got)
+	if got := rr.Header().Get("Location"); got != "/?lang=cs" {
+		t.Fatalf("Location = %q, want /?lang=cs", got)
 	}
 	if got := rr.Header().Values("Vary"); !containsString(got, "Accept-Language") {
 		t.Fatalf("Vary = %#v, want Accept-Language", got)
@@ -58,6 +58,47 @@ func TestRoutesRedirectHTMLToCanonicalLanguage(t *testing.T) {
 	if got := rr.Header().Get("Location"); got != "/entity?id=node1.prg&kind=node&lang=en" {
 		t.Fatalf("Location = %q, want canonical English entity URL", got)
 	}
+}
+
+func TestRoutesServeIndexCzechLocale(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+	addOutageFixture(st)
+	addSecurityAdvisoryFixture(st)
+
+	st.OutageReports.ActiveList[0].CsSummary = "Výměna routeru"
+	st.OutageReports.RecentList[0].CsSummary = "Výpadek napájení"
+	st.SecurityAdvisories.RecentList[0].CsSummary = "Zranitelnost jádra byla opravena na všech dotčených nodech."
+
+	rr := getThroughRoutes(t, app, "/?lang=cs")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(
+		t,
+		body,
+		`<html lang="cs">`,
+		"Vygenerováno:",
+		"Nahlášené",
+		"Plánované odstávky",
+		"Vyřešené",
+		"Neplánované výpadky",
+		`class="dropdown-item" href="/?lang=en"`,
+		`class="dropdown-item active" href="/?lang=cs"`,
+		">English</a>",
+		">Česky</a>",
+		"Výměna routeru",
+		"Výpadek napájení",
+		"Restart systému",
+		"Nedostupnost",
+		"Nedávná bezpečnostní oznámení",
+		"Zranitelnost jádra byla opravena na všech dotčených nodech.",
+		`href="/group?kind=vpsadmin&amp;lang=cs"`,
+		`href="/entity?id=node1.prg&amp;kind=node&amp;lang=cs"`,
+		`href="/?lang=en"`,
+		`href="/?lang=cs"`,
+	)
+	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Planned Outages")
 }
 
 func TestRoutesServeIndexOperationalState(t *testing.T) {
@@ -157,6 +198,43 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 	if strings.Index(body, "Availability") > strings.Index(body, "Probe log") {
 		t.Fatalf("availability should be rendered above probe log")
 	}
+}
+
+func TestRoutesServeEntityDetailCzechLocale(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	target := ProbeTarget{
+		EntityKind:  historyEntityNode,
+		EntityID:    "node1.prg",
+		EntityLabel: "node1.prg",
+		Method:      "Ping",
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateDown, "not responding", fixedNow.Add(-10*time.Minute)); err != nil {
+		t.Fatalf("record down status: %v", err)
+	}
+	if err := st.History.RecordProbeStatus(target, historyProbeStateOperational, "responding", fixedNow.Add(-2*time.Minute)); err != nil {
+		t.Fatalf("record recovery: %v", err)
+	}
+
+	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg&lang=cs")
+	requireStatus(t, rr, http.StatusOK)
+
+	body := rr.Body.String()
+	requireContains(
+		t,
+		body,
+		`<html lang="cs">`,
+		`<a class="navbar-link" href="/?lang=cs">Zpět na Status</a>`,
+		"Dostupnost",
+		"30 dní",
+		"Hlášené",
+		"Probe",
+		"Události",
+		"Mimo provoz",
+		"Probe: node1.prg Ping not responding",
+	)
+	requireNotContains(t, body, "Back to Status", "Availability", "Probe log")
 }
 
 func TestRoutesServeEntityDetailProbeLogCoverage(t *testing.T) {

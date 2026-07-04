@@ -1,0 +1,416 @@
+["app.title"]
+other = "vpsFree.cz Status"
+
+["language.label"]
+other = "Jazyk"
+
+["language.en"]
+other = "English"
+
+["language.cs"]
+other = "Česky"
+
+["language.switch_to"]
+other = "Přepnout jazyk: {{.Language}}"
+
+["nav.status"]
+other = "Status"
+
+["nav.back_to_status"]
+other = "Zpět na Status"
+
+["nav.rendered_at"]
+other = "Vygenerováno:"
+
+["footer.prometheus_metrics"]
+other = "Prometheus metriky"
+
+["footer.about"]
+other = "O aplikaci"
+
+["notice.updated_at"]
+other = "Aktualizováno {{.UpdatedAt}}"
+
+["loading.title"]
+other = "Inicializace..."
+
+["loading.body"]
+other = "vpsFree.cz Status se inicializuje a bude připraven za několik sekund, zkuste prosím stránku obnovit."
+
+["status_counts.aria"]
+other = "{{.Operational}} v provozu, {{.Degraded}} degradováno nebo v údržbě, {{.Down}} mimo provoz, {{.Total}} celkem"
+
+["status.operational"]
+other = "V provozu"
+
+["status.degraded"]
+other = "Degradováno"
+
+["status.degraded_or_maintenance"]
+other = "Degradováno nebo v údržbě"
+
+["status.down"]
+other = "Mimo provoz"
+
+["status.under_maintenance"]
+other = "V údržbě"
+
+["status.online"]
+other = "Online"
+
+["status.responding"]
+other = "Odpovídá"
+
+["status.error"]
+other = "Chyba"
+
+["status.unknown"]
+other = "Neznámý"
+
+["status.total"]
+other = "Celkem"
+
+["status.not_supported"]
+other = "Nepodporováno"
+
+["status.not_available"]
+other = "n/a"
+
+["status.probe.maintenance"]
+other = "Údržba"
+
+["status.probe.operational"]
+other = "V provozu"
+
+["status.probe.degraded"]
+other = "Degradováno"
+
+["status.probe.down"]
+other = "Mimo provoz"
+
+["status.probe.error"]
+other = "Chyba"
+
+["outages.reported"]
+other = "Nahlášené"
+
+["outages.resolved"]
+other = "Vyřešené"
+
+["outages.planned"]
+other = "Plánované odstávky"
+
+["outages.unplanned"]
+other = "Neplánované výpadky"
+
+["outages.planned_and_unplanned"]
+other = "Plánované odstávky a neplánované výpadky"
+
+["outages.no_issues"]
+other = "Nejsou hlášeny žádné problémy. Viz"
+
+["outages.history"]
+other = "historie"
+
+["outages.unable_fetch"]
+other = "Nepodařilo se načíst hlášení výpadků z vpsAdminu."
+
+["outage.type.planned"]
+other = "Odstávka"
+
+["outage.type.unplanned"]
+other = "Výpadek"
+
+["outage.summary.fallback"]
+other = "Výpadek #{{.ID}}"
+
+["outage.summary.planned"]
+other = "Odstávka: {{.Summary}}"
+
+["outage.summary.unplanned"]
+other = "Výpadek: {{.Summary}}"
+
+["outage.impact.tbd"]
+other = "Bude upřesněno"
+
+["outage.impact.system_restart"]
+other = "Restart systému"
+
+["outage.impact.system_reset"]
+other = "Reset systému"
+
+["outage.impact.network"]
+other = "Síť"
+
+["outage.impact.performance"]
+other = "Výkon"
+
+["outage.impact.unavailability"]
+other = "Nedostupnost"
+
+["outage.impact.export"]
+other = "NFS export"
+
+["outage.more_information"]
+other = "Více informací"
+
+["security.recent"]
+other = "Nedávná bezpečnostní oznámení"
+
+["security.unable_fetch"]
+other = "Nepodařilo se načíst bezpečnostní oznámení z vpsAdminu."
+
+["table.date"]
+other = "Datum"
+
+["table.duration"]
+other = "Trvání"
+
+["table.type"]
+other = "Typ"
+
+["table.systems"]
+other = "Systémy"
+
+["table.impact"]
+other = "Dopad"
+
+["table.reason"]
+other = "Důvod"
+
+["table.link"]
+other = "Odkaz"
+
+["table.published"]
+other = "Publikováno"
+
+["table.cve"]
+other = "CVE"
+
+["table.summary"]
+other = "Shrnutí"
+
+["table.service"]
+other = "Služba"
+
+["table.description"]
+other = "Popis"
+
+["table.status"]
+other = "Status"
+
+["table.node"]
+other = "Node"
+
+["table.storage"]
+other = "Úložiště"
+
+["table.ping"]
+other = "Ping"
+
+["table.name"]
+other = "Název"
+
+["table.lookup"]
+other = "Lookup"
+
+["table.time"]
+other = "Čas"
+
+["table.entity"]
+other = "Entita"
+
+["table.method"]
+other = "Metoda"
+
+["table.message"]
+other = "Zpráva"
+
+["table.covered_by"]
+other = "Pokryto"
+
+["table.period"]
+other = "Období"
+
+["table.reported"]
+other = "Hlášené"
+
+["table.probe"]
+other = "Probe"
+
+["section.web_services"]
+other = "Webové služby"
+
+["section.nodes"]
+other = "Nody"
+
+["section.dns_resolvers"]
+other = "DNS resolvery"
+
+["section.services"]
+other = "Služby"
+
+["section.name_servers"]
+other = "DNS servery"
+
+["section.availability"]
+other = "Dostupnost"
+
+["section.probe_log"]
+other = "Události"
+
+["service.vpsadmin.webui.description"]
+other = "Hlavní webové rozhraní vpsAdminu"
+
+["service.vpsadmin.api.description"]
+other = "HTTP API server"
+
+["service.vpsadmin.console"]
+other = "Vzdálená konzole"
+
+["service.vpsadmin.console.description"]
+other = "Rozhraní pro vzdálenou konzoli VPS"
+
+["entity.group.node"]
+other = "Node"
+
+["entity.group.vpsadmin"]
+other = "vpsAdmin"
+
+["entity.group.dns_resolver"]
+other = "DNS resolver"
+
+["entity.group.web_service"]
+other = "Webová služba"
+
+["entity.group.name_server"]
+other = "Nameserver"
+
+["entity.group.group"]
+other = "Skupina"
+
+["entity.group.location"]
+other = "Lokalita"
+
+["availability.30_days"]
+other = "30 dní"
+
+["availability.90_days"]
+other = "90 dní"
+
+["availability.180_days"]
+other = "180 dní"
+
+["availability.1_year"]
+other = "1 rok"
+
+["probe_log.pages"]
+other = "Stránky událostí"
+
+["probe_log.previous"]
+other = "Předchozí"
+
+["probe_log.next"]
+other = "Další"
+
+["probe_log.no_changes"]
+other = "Nejsou zaznamenány žádné události."
+
+["history.aria"]
+other = "Historie {{.Label}}"
+
+["history.no_incidents"]
+other = "Žádné incidenty"
+
+["history.day_summary.empty"]
+other = "{{.Date}}: žádné incidenty"
+
+["history.day_summary.incidents"]
+other = "{{.Date}}: {{.Summary}}"
+
+["history.removed"]
+other = "{{.Label}} (odstraněno)"
+
+["history.incident.lane"]
+other = "{{.Label}}: {{.Text}}"
+
+["history.incident.started"]
+other = "Začátek: {{.Time}}"
+
+["history.incident.expected_duration"]
+other = "Očekávané trvání"
+
+["history.incident.observed_duration"]
+other = "Naměřené trvání"
+
+["history.incident.duration"]
+other = "{{.Label}}: {{.Minutes}} min"
+
+["history.incident.duration_open"]
+other = "{{.Label}}: {{.Minutes}} min zatím"
+
+["history.probe_incident"]
+other = "Probe: {{.Label}} {{.Method}} {{.Message}}"
+
+["storage.unable_status"]
+other = "Nepodařilo se zjistit status úložiště"
+
+["storage.online"]
+other = "Úložiště je online"
+
+["storage.degraded"]
+other = "Selhal nejméně jeden disk, úložiště dál funguje"
+
+["storage.not_operational"]
+other = "Úložiště není funkční"
+
+["storage.check_failed"]
+other = "Kontrola statusu úložiště selhala"
+
+["storage.unknown_state"]
+other = "Úložiště je v neznámém stavu"
+
+["storage.scan.none"]
+other = "Neběží"
+
+["storage.scan.scrub"]
+other = "Na úložišti běží scrub pro kontrolu integrity dat, hotovo {{.Percent}} %"
+
+["storage.scan.resilver"]
+other = "Na úložišti běží resilver kvůli náhradě disků, hotovo {{.Percent}} %"
+
+["storage.scan.unable"]
+other = "Nepodařilo se zjistit status scanu úložiště"
+
+["storage.scan.failed"]
+other = "Kontrola statusu scanu úložiště selhala"
+
+["storage.scan.unknown"]
+other = "Scan úložiště je v neznámém stavu"
+
+["about.title"]
+other = "O aplikaci vpsFree.cz Status"
+
+["about.intro"]
+other = "je aplikace, která monitoruje stav infrastruktury vpsFree.cz. Používá nezávislé síťové připojení, a proto by měla být dostupná i při problémech s naším primárním připojením nebo jinými částmi infrastruktury."
+
+["about.checks"]
+other = "Kontroly se spouštějí automaticky každých {{.Interval}} sekund."
+
+["about.reports.before_vpsadmin"]
+other = "Ověřené problémy s dopadem na naše členy hlásíme pokud možno přes"
+
+["about.reports.before_history"]
+other = ". Viz"
+
+["about.history"]
+other = "historii"
+
+["about.reports.after_history"]
+other = "takových plánovaných odstávek a neplánovaných výpadků. Pokud při výpadku nefunguje vpsAdmin, můžeme na této stránce zveřejnit informace o problému a očekávaném vyřešení."
+
+["about.source.before_link"]
+other = "Zdrojový kód aplikace"
+
+["about.source.link"]
+other = "najdete na GitHubu."
