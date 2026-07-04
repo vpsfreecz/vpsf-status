@@ -12,9 +12,9 @@ buildGoModule {
 
   vendorHash =
     if vpsadminGoClientSource != null then
-      "sha256-1+51I1kIJMVq5gBcrh7oPvFJiUgdcbUnjqb0y40SoRo="
+      "sha256-N6vS4SGVeWkBc23/z8zT1Hbz+MC7BvOsjqJkw+bXcgI="
     else
-      "sha256-D8wImkdUvapGiudMcbvtGwkPOjbQHGKEGPGY7A4yFa4=";
+      "sha256-PjJc/wdD/qiGW0A7OgL1VaM2UDvUBepsFxdfexSHOT8=";
 
   postPatch = lib.optionalString (vpsadminGoClientSource != null) ''
     cp -a ${vpsadminGoClientSource} ../vpsadmin-go-client

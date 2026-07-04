@@ -18,12 +18,13 @@ type application struct {
 	config    *config.Config
 	status    *Status
 	templates htmlTemplate
+	locales   *localeCatalog
 	now       func() time.Time
 
-	responseCache *responseCache
-	noticeCache   *noticeCache
-	indexResponse *preRenderedIndex
-	aboutResponse cachedResponse
+	responseCache  *responseCache
+	noticeCache    *noticeCache
+	indexResponse  *preRenderedIndex
+	aboutResponses map[string]cachedResponse
 }
 
 type htmlTemplate struct {
@@ -36,6 +37,7 @@ type htmlTemplate struct {
 
 type StatusData struct {
 	Config     *config.Config
+	Locale     *pageLocale
 	Status     *StatusView
 	RenderedAt string
 	Notice     Notice
@@ -43,21 +45,26 @@ type StatusData struct {
 
 type IndexShellData struct {
 	Config     *config.Config
+	Locale     *pageLocale
 	RenderedAt string
 	Body       template.HTML
 }
 
 type AboutData struct {
 	Config *config.Config
+	Locale *pageLocale
 }
 
 type EntityData struct {
 	Config     *config.Config
+	Locale     *pageLocale
 	Entity     EntityDetailView
 	RenderedAt string
 }
 
 func (app *application) parseTemplates() error {
+	app.ensureLocales()
+
 	if tpl, err := app.parseTemplateWithLayout("loading.tmpl"); err == nil {
 		app.templates.loading = tpl
 	} else {
@@ -88,11 +95,13 @@ func (app *application) parseTemplates() error {
 		return err
 	}
 
-	return app.renderAbout()
+	return app.renderAboutResponses()
 }
 
 func (app *application) parseTemplateWithLayout(name string) (*template.Template, error) {
-	tpl, err := template.ParseFiles(
+	tpl, err := template.New("layout.tmpl").Funcs(template.FuncMap{
+		"dict": templateDict,
+	}).ParseFiles(
 		filepath.Join(app.config.DataDir, "templates/layout.tmpl"),
 		filepath.Join(app.config.DataDir, "templates/index_header.tmpl"),
 		filepath.Join(app.config.DataDir, "templates/history_bar.tmpl"),
@@ -106,8 +115,13 @@ func (app *application) parseTemplateWithLayout(name string) (*template.Template
 }
 
 func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
+	loc, redirected := app.resolveHTMLLocale(w, r)
+	if redirected {
+		return
+	}
+
 	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
-		entity, ok := createEntityDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r))
+		entity, ok := createEntityDetailViewForLocale(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r), loc)
 		if !ok {
 			return notFoundPayload(), nil
 		}
@@ -115,6 +129,7 @@ func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 		var buf bytes.Buffer
 		err := app.templates.entity.Execute(&buf, EntityData{
 			Config:     app.config,
+			Locale:     loc,
 			Entity:     entity,
 			RenderedAt: now.Format(time.UnixDate),
 		})
@@ -134,8 +149,13 @@ func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
+	loc, redirected := app.resolveHTMLLocale(w, r)
+	if redirected {
+		return
+	}
+
 	app.serveCachedResponse(w, r, routeCacheKey(r), func(now time.Time) (responsePayload, error) {
-		group, ok := createGroupDetailView(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r))
+		group, ok := createGroupDetailViewForLocale(app.status, r.URL.Query().Get("kind"), r.URL.Query().Get("id"), now, probeLogPageFromRequest(r), loc)
 		if !ok {
 			return notFoundPayload(), nil
 		}
@@ -143,6 +163,7 @@ func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
 		var buf bytes.Buffer
 		err := app.templates.entity.Execute(&buf, EntityData{
 			Config:     app.config,
+			Locale:     loc,
 			Entity:     group,
 			RenderedAt: now.Format(time.UnixDate),
 		})
@@ -185,8 +206,18 @@ func (app *application) handleJson(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) handleAbout(w http.ResponseWriter, r *http.Request) {
+	loc, redirected := app.resolveHTMLLocale(w, r)
+	if redirected {
+		return
+	}
+
 	app.setCacheControl(w, 24*60*60)
-	writeResponse(w, r, &app.aboutResponse)
+	if response, ok := app.aboutResponses[loc.Code]; ok {
+		writeResponse(w, r, &response)
+		return
+	}
+
+	http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 }
 
 func (app *application) setCacheControl(w http.ResponseWriter, seconds int) {
@@ -245,6 +276,7 @@ func (app *application) ensureCaches() {
 	if app.indexResponse == nil {
 		app.indexResponse = newPreRenderedIndex()
 	}
+	app.ensureLocales()
 }
 
 func (app *application) readNotice(now time.Time) (Notice, error) {
@@ -252,18 +284,25 @@ func (app *application) readNotice(now time.Time) (Notice, error) {
 	return app.noticeCache.read(app.config.NoticeFile, now)
 }
 
-func (app *application) renderAbout() error {
-	var buf bytes.Buffer
-	if err := app.templates.about.Execute(&buf, AboutData{Config: app.config}); err != nil {
-		return err
-	}
+func (app *application) renderAboutResponses() error {
+	app.ensureLocales()
+	app.aboutResponses = make(map[string]cachedResponse, len(app.locales.languages))
 
-	app.aboutResponse = cachedResponse{
-		statusCode:  http.StatusOK,
-		contentType: "text/html; charset=utf-8",
-		body:        append([]byte(nil), buf.Bytes()...),
+	for _, info := range app.locales.languages {
+		loc, _ := app.locales.localeForCode(info.Code, nil)
+		var buf bytes.Buffer
+		if err := app.templates.about.Execute(&buf, AboutData{Config: app.config, Locale: loc}); err != nil {
+			return err
+		}
+
+		response := cachedResponse{
+			statusCode:  http.StatusOK,
+			contentType: "text/html; charset=utf-8",
+			body:        append([]byte(nil), buf.Bytes()...),
+		}
+		response.gzipBody = gzipBytes(response.body)
+		app.aboutResponses[info.Code] = response
 	}
-	app.aboutResponse.gzipBody = gzipBytes(app.aboutResponse.body)
 	return nil
 }
 

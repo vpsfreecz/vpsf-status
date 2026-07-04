@@ -1,15 +1,27 @@
-{{ define "title" }}{{ .Entity.Label }} - vpsFree.cz Status{{ end }}
+{{ define "title" }}{{ .Entity.Label }} - {{ .Locale.T "app.title" }}{{ end }}
 
 {{ define "content" }}
 <nav class="navbar bg-light">
 	<div class="container-fluid">
 		<div class="navbar-brand clearfix">
-			<a class="float-start" href="/">
+			<a class="float-start" href="{{ .Locale.URL "/" }}">
 				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
 			</a>
-			<h1 class="navbar-text float-start">Status</h1>
+			<h1 class="navbar-text float-start">{{ .Locale.T "nav.status" }}</h1>
 		</div>
-		<a class="navbar-link" href="/">Back to Status</a>
+		<div class="d-flex align-items-center gap-3">
+			<a class="navbar-link" href="{{ .Locale.URL "/" }}">{{ .Locale.T "nav.back_to_status" }}</a>
+			<div class="dropdown">
+				<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .Locale.T "language.label" }}">
+					{{ .Locale.Name }}
+				</button>
+				<ul class="dropdown-menu dropdown-menu-end">
+					{{ range .Locale.SwitchLinks }}
+					<li><a class="dropdown-item{{ if .Active }} active{{ end }}" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a></li>
+					{{ end }}
+				</ul>
+			</div>
+		</div>
 	</div>
 </nav>
 
@@ -27,15 +39,15 @@
 {{ if .Entity.HasAvailability }}
 <div class="row mt-4">
 	<div class="col">
-		<h2>Availability</h2>
+		<h2>{{ .Locale.T "section.availability" }}</h2>
 		<table class="table table-sm w-auto">
 			<thead>
 				<tr>
-					<th>Period</th>
+					<th>{{ .Locale.T "table.period" }}</th>
 					{{ if .Entity.ShowReportedAvailability }}
-					<th class="text-end">Reported</th>
+					<th class="text-end">{{ .Locale.T "table.reported" }}</th>
 					{{ end }}
-					<th class="text-end">Probe</th>
+					<th class="text-end">{{ .Locale.T "table.probe" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -56,19 +68,19 @@
 
 <div class="row mt-4">
 	<div class="col">
-		<h2>Probe log</h2>
+		<h2>{{ .Locale.T "section.probe_log" }}</h2>
 		{{ if .Entity.HasEvents }}
 		<table class="table table-sm">
 			<thead>
 				<tr>
-					<th>Time</th>
+					<th>{{ .Locale.T "table.time" }}</th>
 					{{ if .Entity.ShowEventEntity }}
-					<th>Entity</th>
+					<th>{{ .Locale.T "table.entity" }}</th>
 					{{ end }}
-					<th>Method</th>
-					<th>Status</th>
-					<th>Message</th>
-					<th>Covered by</th>
+					<th>{{ .Locale.T "table.method" }}</th>
+					<th>{{ .Locale.T "table.status" }}</th>
+					<th>{{ .Locale.T "table.message" }}</th>
+					<th>{{ .Locale.T "table.covered_by" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -98,13 +110,13 @@
 		</table>
 		{{ with .Entity.EventPagination }}
 		{{ if .HasPages }}
-		<nav aria-label="Probe log pages">
+		<nav aria-label="{{ $.Locale.T "probe_log.pages" }}">
 			<ul class="pagination pagination-sm">
 				<li class="page-item{{ if not .HasPrevious }} disabled{{ end }}">
 					{{ if .HasPrevious }}
-					<a class="page-link" href="{{ .PreviousURL }}">Previous</a>
+					<a class="page-link" href="{{ .PreviousURL }}">{{ $.Locale.T "probe_log.previous" }}</a>
 					{{ else }}
-					<span class="page-link">Previous</span>
+					<span class="page-link">{{ $.Locale.T "probe_log.previous" }}</span>
 					{{ end }}
 				</li>
 				{{ range $link := .Links }}
@@ -120,9 +132,9 @@
 				{{ end }}
 				<li class="page-item{{ if not .HasNext }} disabled{{ end }}">
 					{{ if .HasNext }}
-					<a class="page-link" href="{{ .NextURL }}">Next</a>
+					<a class="page-link" href="{{ .NextURL }}">{{ $.Locale.T "probe_log.next" }}</a>
 					{{ else }}
-					<span class="page-link">Next</span>
+					<span class="page-link">{{ $.Locale.T "probe_log.next" }}</span>
 					{{ end }}
 				</li>
 			</ul>
@@ -130,7 +142,7 @@
 		{{ end }}
 		{{ end }}
 		{{ else }}
-		<div class="alert alert-secondary">No probe changes recorded.</div>
+		<div class="alert alert-secondary">{{ .Locale.T "probe_log.no_changes" }}</div>
 		{{ end }}
 	</div>
 </div>

@@ -3,6 +3,7 @@ package main
 import "time"
 
 type StatusView struct {
+	Lang               string
 	VpsAdmin           VpsAdminView
 	Locations          []LocationView
 	Services           ServicesView
@@ -64,11 +65,20 @@ type ServicesView struct {
 }
 
 func createStatusView(st *Status, now time.Time) StatusView {
-	return createStatusViewWithData(st, now, newHistoryData(st, now))
+	return createStatusViewForLocale(st, now, defaultPageLocale())
+}
+
+func createStatusViewForLocale(st *Status, now time.Time, loc *pageLocale) StatusView {
+	return createStatusViewWithDataForLocale(st, now, newHistoryData(st, now), loc)
 }
 
 func createStatusViewWithData(st *Status, now time.Time, data *historyData) StatusView {
+	return createStatusViewWithDataForLocale(st, now, data, defaultPageLocale())
+}
+
+func createStatusViewWithDataForLocale(st *Status, now time.Time, data *historyData, loc *pageLocale) StatusView {
 	ret := StatusView{
+		Lang:               loc.codeOrDefault(),
 		VpsAdmin:           createVpsAdminView(st.VpsAdmin),
 		Locations:          createLocationView(st.LocationList),
 		Services:           createServicesView(st.Services),
@@ -76,7 +86,7 @@ func createStatusViewWithData(st *Status, now time.Time, data *historyData) Stat
 		SecurityAdvisories: st.SecurityAdvisories,
 	}
 
-	groups, history := createHistoryViewsWithData(st, now, data)
+	groups, history := createHistoryViewsWithDataForLocale(st, now, data, loc)
 	ret.History = history
 	ret.VpsAdmin.History = groups.VpsAdmin
 	for i := range ret.Locations {

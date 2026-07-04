@@ -3,11 +3,14 @@ module github.com/vpsfreecz/vpsf-status
 go 1.25.0
 
 require (
+	github.com/BurntSushi/toml v1.6.0
 	github.com/go-ping/ping v1.2.0
+	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.67.5
 	github.com/vpsfreecz/vpsadmin-go-client v0.0.0-20260604065514-1d9240f3d27b
+	golang.org/x/text v0.37.0
 	modernc.org/sqlite v1.50.1
 )
 

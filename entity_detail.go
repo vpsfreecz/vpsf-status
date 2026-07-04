@@ -14,6 +14,7 @@ const (
 )
 
 type EntityDetailView struct {
+	Lang                     string
 	Kind                     string
 	ID                       string
 	Label                    string
@@ -96,11 +97,16 @@ func (p ProbeLogPaginationView) HasNext() bool {
 }
 
 func createEntityDetailView(st *Status, kind string, id string, now time.Time, probePage int) (EntityDetailView, bool) {
+	return createEntityDetailViewForLocale(st, kind, id, now, probePage, defaultPageLocale())
+}
+
+func createEntityDetailViewForLocale(st *Status, kind string, id string, now time.Time, probePage int, loc *pageLocale) (EntityDetailView, bool) {
 	if st == nil || kind == "" || id == "" {
 		return EntityDetailView{}, false
 	}
 
 	ret := EntityDetailView{
+		Lang:                     loc.codeOrDefault(),
 		Kind:                     kind,
 		ID:                       id,
 		ShowReportedAvailability: availabilityReportedOutageSupported(kind),
@@ -113,54 +119,54 @@ func createEntityDetailView(st *Status, kind string, id string, now time.Time, p
 			return EntityDetailView{}, false
 		}
 		ret.Label = node.Name
-		ret.Group = "Node"
-		ret.StatusText, ret.StatusClass = nodeStatusText(node)
+		ret.Group = loc.T("entity.group.node")
+		ret.StatusText, ret.StatusClass = nodeStatusText(node, loc)
 	case historyEntityVpsAdmin:
 		ws := vpsAdminServiceByID(st, id)
 		if ws == nil {
 			return EntityDetailView{}, false
 		}
-		ret.Label = vpsAdminServiceLabel(id)
-		ret.Group = "vpsAdmin"
-		ret.StatusText, ret.StatusClass = webServiceStatusText(ws)
+		ret.Label = vpsAdminServiceLabelForLocale(id, loc)
+		ret.Group = loc.T("entity.group.vpsadmin")
+		ret.StatusText, ret.StatusClass = webServiceStatusText(ws, loc)
 	case historyEntityDnsResolver:
 		resolver := findDnsResolver(st, id)
 		if resolver == nil {
 			return EntityDetailView{}, false
 		}
 		ret.Label = resolver.Name
-		ret.Group = "DNS Resolver"
-		ret.StatusText, ret.StatusClass = dnsResolverStatusText(resolver)
+		ret.Group = loc.T("entity.group.dns_resolver")
+		ret.StatusText, ret.StatusClass = dnsResolverStatusText(resolver, loc)
 	case historyEntityWebService:
 		ws := findWebService(st, id)
 		if ws == nil {
 			return EntityDetailView{}, false
 		}
 		ret.Label = ws.Label
-		ret.Group = "Web Service"
-		ret.StatusText, ret.StatusClass = webServiceStatusText(ws)
+		ret.Group = loc.T("entity.group.web_service")
+		ret.StatusText, ret.StatusClass = webServiceStatusText(ws, loc)
 	case historyEntityNameServer:
 		resolver := findNameServer(st, id)
 		if resolver == nil {
 			return EntityDetailView{}, false
 		}
 		ret.Label = resolver.Name
-		ret.Group = "Name Server"
-		ret.StatusText, ret.StatusClass = dnsResolverStatusText(resolver)
+		ret.Group = loc.T("entity.group.name_server")
+		ret.StatusText, ret.StatusClass = dnsResolverStatusText(resolver, loc)
 	default:
 		return EntityDetailView{}, false
 	}
 
 	data := newHistoryData(st, now)
-	ret.History = createEntityHistoryView(st, now, kind, id, ret.Label, data)
-	ret.Availability = availabilityDetailViews(entityAvailabilityWithData(st, kind, id, now, data))
+	ret.History = createEntityHistoryViewForLocale(st, now, kind, id, ret.Label, data, loc)
+	ret.Availability = availabilityDetailViews(entityAvailabilityWithDataForLocale(st, kind, id, now, data, loc), loc)
 
 	if st.History != nil {
 		logPage, page := paginatedProbeLog(probePage, func(limit int, offset int) ProbeLogPage {
 			return st.History.ProbeLogFor(kind, id, now, historyDaysForStatus(st), limit, offset)
 		})
-		ret.Events = probeLogEventDetailViews(st, logPage.Events, now, data)
-		ret.EventPagination = newProbeLogPaginationView("/entity", kind, id, page, logPage.Total)
+		ret.Events = probeLogEventDetailViewsForLocale(st, logPage.Events, now, data, loc)
+		ret.EventPagination = newProbeLogPaginationView("/entity", kind, id, page, logPage.Total, loc.codeOrDefault())
 	}
 
 	return ret, true
@@ -195,7 +201,7 @@ func probeLogTotalPages(total int) int {
 	return (total + probeLogPageSize - 1) / probeLogPageSize
 }
 
-func newProbeLogPaginationView(path string, kind string, id string, page int, total int) ProbeLogPaginationView {
+func newProbeLogPaginationView(path string, kind string, id string, page int, total int, lang string) ProbeLogPaginationView {
 	totalPages := probeLogTotalPages(total)
 	page = normalizeProbeLogPage(page)
 	if totalPages > 0 && page > totalPages {
@@ -212,16 +218,16 @@ func newProbeLogPaginationView(path string, kind string, id string, page int, to
 	}
 
 	if page > 1 {
-		ret.PreviousURL = probeLogPageURL(path, kind, id, page-1)
+		ret.PreviousURL = probeLogPageURL(path, kind, id, page-1, lang)
 	}
 	if page < totalPages {
-		ret.NextURL = probeLogPageURL(path, kind, id, page+1)
+		ret.NextURL = probeLogPageURL(path, kind, id, page+1, lang)
 	}
-	ret.Links = probeLogPageLinks(path, kind, id, page, totalPages)
+	ret.Links = probeLogPageLinks(path, kind, id, page, totalPages, lang)
 	return ret
 }
 
-func probeLogPageLinks(path string, kind string, id string, page int, totalPages int) []ProbeLogPageLinkView {
+func probeLogPageLinks(path string, kind string, id string, page int, totalPages int, lang string) []ProbeLogPageLinkView {
 	if totalPages <= 1 {
 		return nil
 	}
@@ -237,7 +243,7 @@ func probeLogPageLinks(path string, kind string, id string, page int, totalPages
 		}
 		ret = append(ret, ProbeLogPageLinkView{
 			Label:   strconv.Itoa(n),
-			URL:     probeLogPageURL(path, kind, id, n),
+			URL:     probeLogPageURL(path, kind, id, n, lang),
 			Current: n == page,
 		})
 		lastAdded = n
@@ -254,7 +260,7 @@ func probeLogPageLinks(path string, kind string, id string, page int, totalPages
 	return ret
 }
 
-func probeLogPageURL(path string, kind string, id string, page int) string {
+func probeLogPageURL(path string, kind string, id string, page int, lang string) string {
 	q := url.Values{}
 	q.Set("kind", kind)
 	if id != "" {
@@ -263,16 +269,16 @@ func probeLogPageURL(path string, kind string, id string, page int) string {
 	if page > 1 {
 		q.Set(probeLogPageParam, strconv.Itoa(page))
 	}
-	return path + "?" + q.Encode()
+	return localizedURL(path, lang, q)
 }
 
-func availabilityDetailViews(stats []availabilityResult) []AvailabilityView {
+func availabilityDetailViews(stats []availabilityResult, loc *pageLocale) []AvailabilityView {
 	ret := make([]AvailabilityView, 0, len(stats))
 	for _, stat := range stats {
 		view := AvailabilityView{
 			Label:    stat.Label,
-			Reported: "n/a",
-			Probe:    "n/a",
+			Reported: loc.T("status.not_available"),
+			Probe:    loc.T("status.not_available"),
 		}
 		if stat.Reported.Available {
 			view.ReportedAvailable = true
@@ -288,13 +294,17 @@ func availabilityDetailViews(stats []availabilityResult) []AvailabilityView {
 }
 
 func probeLogEventDetailViews(st *Status, events []ProbeLogEvent, now time.Time, data *historyData) []ProbeEventView {
+	return probeLogEventDetailViewsForLocale(st, events, now, data, defaultPageLocale())
+}
+
+func probeLogEventDetailViewsForLocale(st *Status, events []ProbeLogEvent, now time.Time, data *historyData, loc *pageLocale) []ProbeEventView {
 	data = ensureHistoryData(st, now, data)
 
 	ret := make([]ProbeEventView, 0, len(events))
 	for _, event := range events {
-		view := probeEventDetailView(event.ProbeEvent)
+		view := probeEventDetailViewForLocale(event.ProbeEvent, loc)
 		if report := probeEventResponsibleReport(event, data.reports, data.mapping, now); report != nil {
-			view.CoveredBy = probeEventCoverageView(st, report)
+			view.CoveredBy = probeEventCoverageView(st, report, loc)
 		}
 		ret = append(ret, view)
 	}
@@ -312,11 +322,15 @@ func probeEventDetailViews(events []ProbeEvent) []ProbeEventView {
 }
 
 func probeEventDetailView(event ProbeEvent) ProbeEventView {
+	return probeEventDetailViewForLocale(event, defaultPageLocale())
+}
+
+func probeEventDetailViewForLocale(event ProbeEvent, loc *pageLocale) ProbeEventView {
 	return ProbeEventView{
 		ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
 		Entity:      probeEventEntityLabel(event),
 		Method:      event.Method,
-		Status:      statusTitle(event.Status),
+		Status:      statusTitleForLocale(event.Status, loc),
 		StatusClass: probeStatusClass(event.Status),
 		Message:     event.Message,
 	}
@@ -367,7 +381,7 @@ func probeEventResponsibleReport(event ProbeLogEvent, reports []*OutageReport, m
 	return best
 }
 
-func probeEventCoverageView(st *Status, report *OutageReport) ProbeEventCoverageView {
+func probeEventCoverageView(st *Status, report *OutageReport, loc *pageLocale) ProbeEventCoverageView {
 	if report == nil {
 		return ProbeEventCoverageView{}
 	}
@@ -379,8 +393,8 @@ func probeEventCoverageView(st *Status, report *OutageReport) ProbeEventCoverage
 
 	return ProbeEventCoverageView{
 		ID:    report.Id,
-		Label: outageSummary(report),
-		URL:   outageHistoryIncident(st, report).URL,
+		Label: outageSummaryForLocale(report, loc),
+		URL:   outageHistoryIncidentForLocale(st, report, loc).URL,
 		Class: class,
 	}
 }
@@ -448,37 +462,37 @@ func findNameServer(st *Status, id string) *DnsResolver {
 	return nil
 }
 
-func nodeStatusText(node *Node) (string, string) {
+func nodeStatusText(node *Node, loc *pageLocale) (string, string) {
 	if node.IsOperational() {
-		return "Operational", "success"
+		return loc.T("status.operational"), "success"
 	}
 	if node.IsDegraded() {
-		return "Degraded", "warning"
+		return loc.T("status.degraded"), "warning"
 	}
-	return "Down", "danger"
+	return loc.T("status.down"), "danger"
 }
 
-func dnsResolverStatusText(resolver *DnsResolver) (string, string) {
+func dnsResolverStatusText(resolver *DnsResolver, loc *pageLocale) (string, string) {
 	if resolver.IsOperational() {
-		return "Operational", "success"
+		return loc.T("status.operational"), "success"
 	}
 	if resolver.IsDegraded() {
-		return "Degraded", "warning"
+		return loc.T("status.degraded"), "warning"
 	}
-	return "Down", "danger"
+	return loc.T("status.down"), "danger"
 }
 
-func webServiceStatusText(ws *WebService) (string, string) {
+func webServiceStatusText(ws *WebService, loc *pageLocale) (string, string) {
 	switch ws.StatusString() {
 	case "operational":
-		return "Operational", "success"
+		return loc.T("status.operational"), "success"
 	case "maintenance":
-		return "Under maintenance", "warning"
+		return loc.T("status.under_maintenance"), "warning"
 	default:
 		if ws.StatusCode != 0 {
 			return http.StatusText(ws.StatusCode), "danger"
 		}
-		return "Down", "danger"
+		return loc.T("status.down"), "danger"
 	}
 }
 
@@ -494,8 +508,25 @@ func probeStatusClass(status string) string {
 }
 
 func statusTitle(status string) string {
+	return statusTitleForLocale(status, defaultPageLocale())
+}
+
+func statusTitleForLocale(status string, loc *pageLocale) string {
 	if status == "" {
-		return "Unknown"
+		return loc.T("status.unknown")
+	}
+
+	switch status {
+	case historyProbeStateOperational:
+		return loc.T("status.probe.operational")
+	case historyProbeStateMaintenance:
+		return loc.T("status.probe.maintenance")
+	case historyProbeStateDegraded:
+		return loc.T("status.probe.degraded")
+	case historyProbeStateDown:
+		return loc.T("status.probe.down")
+	case historyProbeStateError:
+		return loc.T("status.probe.error")
 	}
 
 	parts := strings.Split(status, "_")

@@ -4,3 +4,5 @@ pre-commit:
       glob: "*.go"
       run: gofmt -w {staged_files}
       stage_fixed: true
+    i18n:
+      run: make i18n-health

@@ -75,6 +75,9 @@ func refreshSecurityAdvisoriesOnce(st *Status, api securityAdvisoriesClient, now
 			Id:                advisory.Id,
 			State:             advisory.State,
 			Name:              advisory.Name,
+			CsSummary:         advisory.CsSummary,
+			CsDescription:     advisory.CsDescription,
+			CsResponse:        advisory.CsResponse,
 			EnSummary:         advisory.EnSummary,
 			EnDescription:     advisory.EnDescription,
 			EnResponse:        advisory.EnResponse,
@@ -181,4 +184,22 @@ func (a *SecurityAdvisory) CveLabel() string {
 		return label
 	}
 	return a.Name
+}
+
+func (a *SecurityAdvisory) SummaryForLocale(loc *pageLocale) string {
+	if a == nil {
+		return ""
+	}
+
+	summary := a.EnSummary
+	if loc != nil && loc.Code == "cs" {
+		summary = a.CsSummary
+	}
+	if summary == "" {
+		summary = a.EnSummary
+	}
+	if summary == "" {
+		summary = a.CsSummary
+	}
+	return summary
 }

@@ -37,11 +37,15 @@ type availabilityProbeSegment struct {
 }
 
 func availabilityWindows(now time.Time) []availabilityWindow {
+	return availabilityWindowsForLocale(now, defaultPageLocale())
+}
+
+func availabilityWindowsForLocale(now time.Time, loc *pageLocale) []availabilityWindow {
 	return []availabilityWindow{
-		{Label: "30 days", Start: now.AddDate(0, 0, -30), End: now},
-		{Label: "90 days", Start: now.AddDate(0, 0, -90), End: now},
-		{Label: "180 days", Start: now.AddDate(0, 0, -180), End: now},
-		{Label: "1 year", Start: now.AddDate(-1, 0, 0), End: now},
+		{Label: loc.T("availability.30_days"), Start: now.AddDate(0, 0, -30), End: now},
+		{Label: loc.T("availability.90_days"), Start: now.AddDate(0, 0, -90), End: now},
+		{Label: loc.T("availability.180_days"), Start: now.AddDate(0, 0, -180), End: now},
+		{Label: loc.T("availability.1_year"), Start: now.AddDate(-1, 0, 0), End: now},
 	}
 }
 
@@ -56,10 +60,14 @@ func availabilityFetchStart(now time.Time, historyDays int) time.Time {
 }
 
 func entityAvailability(st *Status, kind string, id string, now time.Time) []availabilityResult {
-	return entityAvailabilityWithData(st, kind, id, now, newHistoryData(st, now))
+	return entityAvailabilityWithDataForLocale(st, kind, id, now, newHistoryData(st, now), defaultPageLocale())
 }
 
 func entityAvailabilityWithData(st *Status, kind string, id string, now time.Time, data *historyData) []availabilityResult {
+	return entityAvailabilityWithDataForLocale(st, kind, id, now, data, defaultPageLocale())
+}
+
+func entityAvailabilityWithDataForLocale(st *Status, kind string, id string, now time.Time, data *historyData, loc *pageLocale) []availabilityResult {
 	if _, ok := availabilityProbeMethod(kind); !ok {
 		return nil
 	}
@@ -73,7 +81,7 @@ func entityAvailabilityWithData(st *Status, kind string, id string, now time.Tim
 		mapping = data.mapping
 		reportsAvailable = availabilityOutageReportsAvailable(st, reports)
 	}
-	windows := availabilityWindows(now)
+	windows := availabilityWindowsForLocale(now, loc)
 	ret := make([]availabilityResult, 0, len(windows))
 	eventsByTarget := availabilityProbeEventsByTarget(st, []historyEntityInfo{{Kind: kind, ID: id}}, windows)
 

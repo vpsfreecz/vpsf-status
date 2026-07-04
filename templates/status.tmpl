@@ -1,6 +1,6 @@
-{{ define "title" }}vpsFree.cz Status{{ end }}
+{{ define "title" }}{{ .Locale.T "app.title" }}{{ end }}
 
-{{ define "status_counts" }}<span class="status-counts ms-1" aria-label="{{ .Operational }} operational, {{ .Degraded }} degraded or under maintenance, {{ .Down }} down, {{ .Total }} total"><span class="text-success" title="Operational">{{ .Operational }}</span>{{ if gt .Degraded 0 }}/<span class="text-warning" title="Degraded or under maintenance">{{ .Degraded }}</span>{{ end }}{{ if gt .Down 0 }}/<span class="text-danger" title="Down">{{ .Down }}</span>{{ end }}/<span class="text-body" title="Total">{{ .Total }}</span></span>{{ end }}
+{{ define "status_counts" }}<span class="status-counts ms-1" aria-label="{{ .Locale.TD "status_counts.aria" (dict "Operational" .Counts.Operational "Degraded" .Counts.Degraded "Down" .Counts.Down "Total" .Counts.Total) }}"><span class="text-success" title="{{ .Locale.T "status.operational" }}">{{ .Counts.Operational }}</span>{{ if gt .Counts.Degraded 0 }}/<span class="text-warning" title="{{ .Locale.T "status.degraded_or_maintenance" }}">{{ .Counts.Degraded }}</span>{{ end }}{{ if gt .Counts.Down 0 }}/<span class="text-danger" title="{{ .Locale.T "status.down" }}">{{ .Counts.Down }}</span>{{ end }}/<span class="text-body" title="{{ .Locale.T "status.total" }}">{{ .Counts.Total }}</span></span>{{ end }}
 
 {{ define "content" }}
 {{ template "index_header" . }}
@@ -14,7 +14,7 @@
 		<div class="alert alert-primary" role="alert">
 			{{ .Notice.Html }}
 			<hr>
-			<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
+			<p>{{ .Locale.TD "notice.updated_at" (dict "UpdatedAt" (.Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006")) }}</p>
 		</div>
 	</div>
 </div>
@@ -25,25 +25,25 @@
 	<div class="col">
 		{{ if .Status.OutageReports.AnyActive }}
 		<h2>
-			Reported
+			{{ .Locale.T "outages.reported" }}
 			{{ if and .Status.OutageReports.AnyActivePlanned .Status.OutageReports.AnyActiveUnplanned }}
-			Planned and Unplanned Outages
+			{{ .Locale.T "outages.planned_and_unplanned" }}
 			{{ else if .Status.OutageReports.AnyActivePlanned }}
-			Planned Outages
+			{{ .Locale.T "outages.planned" }}
 			{{ else }}
-			Unplanned Outages
+			{{ .Locale.T "outages.unplanned" }}
 			{{ end }}
 		</h2>
 		<table class="table table-sm">
 			<thead>
 				<tr>
-					<th>Date</th>
-					<th>Duration</th>
-					<th>Type</th>
-					<th>Systems</th>
-					<th>Impact</th>
-					<th>Reason</th>
-					<th>Link</th>
+					<th>{{ .Locale.T "table.date" }}</th>
+					<th>{{ .Locale.T "table.duration" }}</th>
+					<th>{{ .Locale.T "table.type" }}</th>
+					<th>{{ .Locale.T "table.systems" }}</th>
+					<th>{{ .Locale.T "table.impact" }}</th>
+					<th>{{ .Locale.T "table.reason" }}</th>
+					<th>{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -54,18 +54,18 @@
 					<td>{{ $outage.Duration }}</td>
 					<td>
 						{{ if $outage.IsPlannedOutage }}
-						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
+						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ else }}
-						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
+						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ end }}
 					</td>
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.ImpactLabel }}</td>
-					<td>{{ $outage.EnSummary }}</td>
+					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
+					<td>{{ $outage.SummaryForLocale $.Locale }}</td>
 					<td>
-						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
+						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
 					</td>
 				</tr>
 				{{ end }}
@@ -74,25 +74,25 @@
 		{{ end }}
 		{{ if .Status.OutageReports.AnyRecent }}
 		<h2>
-			Resolved
+			{{ .Locale.T "outages.resolved" }}
 			{{ if and .Status.OutageReports.AnyRecentPlanned .Status.OutageReports.AnyRecentUnplanned }}
-			Planned and Unplanned Outages
+			{{ .Locale.T "outages.planned_and_unplanned" }}
 			{{ else if .Status.OutageReports.AnyRecentPlanned }}
-			Planned Outages
+			{{ .Locale.T "outages.planned" }}
 			{{ else }}
-			Unplanned Outages
+			{{ .Locale.T "outages.unplanned" }}
 			{{ end }}
 		</h2>
 		<table class="table table-sm">
 			<thead>
 				<tr>
-					<th>Date</th>
-					<th>Duration</th>
-					<th>Type</th>
-					<th>Systems</th>
-					<th>Impact</th>
-					<th>Reason</th>
-					<th>Link</th>
+					<th>{{ .Locale.T "table.date" }}</th>
+					<th>{{ .Locale.T "table.duration" }}</th>
+					<th>{{ .Locale.T "table.type" }}</th>
+					<th>{{ .Locale.T "table.systems" }}</th>
+					<th>{{ .Locale.T "table.impact" }}</th>
+					<th>{{ .Locale.T "table.reason" }}</th>
+					<th>{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -103,18 +103,18 @@
 					<td>{{ $outage.Duration }}</td>
 					<td>
 						{{ if $outage.IsPlannedOutage }}
-						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
+						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ else }}
-						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabel }}" title="{{ $outage.TypeLabel }}"></i>
+						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ end }}
 					</td>
 					<td>
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
 					</td>
-					<td>{{ $outage.ImpactLabel }}</td>
-					<td>{{ $outage.EnSummary }}</td>
+					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
+					<td>{{ $outage.SummaryForLocale $.Locale }}</td>
 					<td>
-						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">More information</a>
+						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
 					</td>
 				</tr>
 				{{ end }}
@@ -124,24 +124,24 @@
 		{{ if and (.Status.OutageReports.Status) (not .Status.OutageReports.AnyActive) (not .Status.OutageReports.AnyRecent) }}
 			{{ if not .Notice.Any }}
 			<div class="alert alert-success">
-				No issues reported. See <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">history</a>.
+				{{ .Locale.T "outages.no_issues" }} <a href="{{ $webuiUrl }}/?page=outage&action=list" target="_blank">{{ .Locale.T "outages.history" }}</a>.
 			</div>
 			{{ end }}
 		{{ end }}
 		{{ if not .Status.OutageReports.Status }}
 		<div class="alert alert-danger" role="alert">
-			Unable to fetch outage reports from vpsAdmin.
+			{{ .Locale.T "outages.unable_fetch" }}
 		</div>
 		{{ end }}
 		{{ if .Status.SecurityAdvisories.AnyRecent }}
-		<h2>Recent Security Advisories</h2>
+		<h2>{{ .Locale.T "security.recent" }}</h2>
 		<table class="table table-sm">
 			<thead>
 				<tr>
-					<th>Published</th>
-					<th>CVE</th>
-					<th>Summary</th>
-					<th>Link</th>
+					<th>{{ .Locale.T "table.published" }}</th>
+					<th>{{ .Locale.T "table.cve" }}</th>
+					<th>{{ .Locale.T "table.summary" }}</th>
+					<th>{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -149,9 +149,9 @@
 				<tr class="table-info">
 					<td>{{ $advisory.PublishedAt.Local.Format "2006-01-02 15:04 MST" }}</td>
 					<td>{{ $advisory.CveLabel }}</td>
-					<td>{{ $advisory.EnSummary }}</td>
+					<td>{{ $advisory.SummaryForLocale $.Locale }}</td>
 					<td>
-						<a href="{{ $webuiUrl }}/?page=security_advisory&action=show&id={{ $advisory.Id }}" target="_blank">More information</a>
+						<a href="{{ $webuiUrl }}/?page=security_advisory&action=show&id={{ $advisory.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
 					</td>
 				</tr>
 				{{ end }}
@@ -160,7 +160,7 @@
 		{{ end }}
 		{{ if not .Status.SecurityAdvisories.Status }}
 		<div class="alert alert-danger" role="alert">
-			Unable to fetch security advisories from vpsAdmin.
+			{{ .Locale.T "security.unable_fetch" }}
 		</div>
 		{{ end }}
 	</div>
@@ -169,7 +169,7 @@
 <div class="row">
 	<div class="col">
 		<h2>
-			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ template "status_counts" .Status.VpsAdmin.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "vpsadmin" "" }}">vpsAdmin {{ template "status_counts" (dict "Counts" .Status.VpsAdmin.Counts "Locale" .Locale) }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.VpsAdmin.History }}
@@ -179,7 +179,7 @@
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-vpsadmin">
 					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-vpsadmin" aria-expanded="true" aria-controls="collapse-vpsadmin">
-						Web Services {{ template "status_counts" .Status.VpsAdmin.Counts }}
+						{{ .Locale.T "section.web_services" }} {{ template "status_counts" (dict "Counts" .Status.VpsAdmin.Counts "Locale" .Locale) }}
 					</button>
 				</h3>
 				<div id="collapse-vpsadmin" class="accordion-collapse collapse" aria-labelledby="heading-vpsadmin">
@@ -187,22 +187,22 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Service</th>
-									<th>Description</th>
-									<th>Status</th>
+									<th>{{ $.Locale.T "table.service" }}</th>
+									<th>{{ $.Locale.T "table.description" }}</th>
+									<th>{{ $.Locale.T "table.status" }}</th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr class="table-{{ if .Status.VpsAdmin.Webui.Status }}success{{ else if .Status.VpsAdmin.Webui.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ .Status.DetailURL "vpsadmin" "webui" }}">vpsadmin.vpsfree.cz</a></td>
-									<td>Main web interface for vpsAdmin</td>
+									<td>{{ $.Locale.T "service.vpsadmin.webui.description" }}</td>
 									<td>
 										{{ if .Status.VpsAdmin.Webui.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 										{{ else if .Status.VpsAdmin.Webui.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -211,14 +211,14 @@
 								</tr>
 								<tr class="table-{{ if .Status.VpsAdmin.Api.Status }}success{{ else if .Status.VpsAdmin.Api.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ .Status.DetailURL "vpsadmin" "api" }}">api.vpsfree.cz</a></td>
-									<td>HTTP API server</td>
+									<td>{{ $.Locale.T "service.vpsadmin.api.description" }}</td>
 									<td>
 										{{ if .Status.VpsAdmin.Api.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 										{{ else if .Status.VpsAdmin.Api.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -226,15 +226,15 @@
 									<td colspan="3">{{ template "history_bar" (.Status.HistoryFor "vpsadmin" "api") }}</td>
 								</tr>
 								<tr class="table-{{ if .Status.VpsAdmin.Console.Status }}success{{ else if .Status.VpsAdmin.Console.Maintenance }}warning{{ else }}danger{{ end }}">
-									<td><a href="{{ .Status.DetailURL "vpsadmin" "console" }}">Remote Console</a></td>
-									<td>Interface for VPS remote console</td>
+									<td><a href="{{ .Status.DetailURL "vpsadmin" "console" }}">{{ $.Locale.T "service.vpsadmin.console" }}</a></td>
+									<td>{{ $.Locale.T "service.vpsadmin.console.description" }}</td>
 									<td>
 										{{ if .Status.VpsAdmin.Console.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 										{{ else if .Status.VpsAdmin.Console.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -254,7 +254,7 @@
 <div class="row mt-4 mb-4">
 	<div class="column">
 		<h2>
-			<a class="text-body text-decoration-none group-detail-link" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ template "status_counts" $loc.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ $.Status.GroupDetailURL "location" $loc.Id }}">{{ $loc.Label }} {{ template "status_counts" (dict "Counts" $loc.Counts "Locale" $.Locale) }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" $loc.History }}
@@ -264,7 +264,7 @@
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nodes-{{ $loc.Id }}">
 					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nodes-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-nodes-{{ $loc.Id }}">
-						Nodes {{ template "status_counts" $loc.NodeCounts }}
+						{{ $.Locale.T "section.nodes" }} {{ template "status_counts" (dict "Counts" $loc.NodeCounts "Locale" $.Locale) }}
 					</button>
 				</h3>
 				<div id="collapse-nodes-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-nodes-{{ $loc.Id }}">
@@ -272,10 +272,10 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Node</th>
+									<th>{{ $.Locale.T "table.node" }}</th>
 									<th>vpsAdmin</th>
-									<th>Storage</th>
-									<th>Ping</th>
+									<th>{{ $.Locale.T "table.storage" }}</th>
+									<th>{{ $.Locale.T "table.ping" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -285,48 +285,48 @@
 									<td>
 										{{ if $node.ApiStatus }}
 											{{ if $node.ApiMaintenance }}
-											<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+											<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 											{{ else }}
-											<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+											<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 											{{ end }}
 										{{ else }}
-											<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+											<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 									<td>
 										{{ if not $node.IsStorageSupported }}
-										<i class="bi bi-dash-lg text-muted" aria-label="Not supported" title="Storage check is not supported on OpenVZ Legacy nodes"></i>
+										<i class="bi bi-dash-lg text-muted" aria-label="{{ $.Locale.T "status.not_supported" }}" title="{{ $.Locale.T "status.not_supported" }}"></i>
 										{{ else if $node.ApiMaintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 										{{ else if $node.IsStorageOperational }}
-										<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.online" }}" title="{{ $.Locale.T "status.online" }}"></i>
 										{{ else if $node.IsStorageHardFailure }}
-										<i class="bi bi-device-hdd-fill text-danger" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+										<i class="bi bi-device-hdd-fill text-danger" aria-label="{{ $node.GetStorageStateMessageForLocale $.Locale }}" title="{{ $node.GetStorageStateMessageForLocale $.Locale }}"></i>
 										{{ else if $node.IsStorageStateIssue }}
-										<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+										<i class="bi bi-device-hdd-fill text-warning" aria-label="{{ $node.GetStorageStateMessageForLocale $.Locale }}" title="{{ $node.GetStorageStateMessageForLocale $.Locale }}"></i>
 										{{ else if $node.IsStorageScanIssue }}
-										<i class="bi bi-exclamation-circle text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+										<i class="bi bi-exclamation-circle text-warning" aria-label="{{ $node.GetStorageScanMessageForLocale $.Locale }}" title="{{ $node.GetStorageScanMessageForLocale $.Locale }}"></i>
 										{{ else if $node.PoolStatus }}
-										<i class="bi bi-check-lg text-success" aria-label="Online" title="Online"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.online" }}" title="{{ $.Locale.T "status.online" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-warning" aria-label="{{ $node.GetStorageStateMessage }}" title="{{ $node.GetStorageStateMessage }}"></i>
+										<i class="bi bi-exclamation-circle text-warning" aria-label="{{ $node.GetStorageStateMessageForLocale $.Locale }}" title="{{ $node.GetStorageStateMessageForLocale $.Locale }}"></i>
 										{{ end }}
 
 										{{ if not $node.ApiMaintenance }}
 											{{ if $node.IsStorageScrubIssue }}
-											<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+											<i class="bi bi-search text-muted" aria-label="{{ $node.GetStorageScanMessageForLocale $.Locale }}" title="{{ $node.GetStorageScanMessageForLocale $.Locale }}"></i>
 											{{ else if $node.IsStorageResilverIssue }}
-											<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessage }}" title="{{ $node.GetStorageScanMessage }}"></i>
+											<i class="bi bi-search text-warning" aria-label="{{ $node.GetStorageScanMessageForLocale $.Locale }}" title="{{ $node.GetStorageScanMessageForLocale $.Locale }}"></i>
 											{{ end }}
 										{{ end }}
 									</td>
 									<td>
 										{{ if $node.Ping.IsUp }}
-										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.responding" }}" title="{{ $.Locale.T "status.responding" }}"></i>
 										{{ else if $node.Ping.IsWarning }}
-										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
+										<i class="bi bi-question-circle text-warning" aria-label="{{ $.Locale.T "status.degraded" }}" title="{{ $.Locale.T "status.degraded" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -344,7 +344,7 @@
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-dns-{{ $loc.Id }}">
 					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-dns-{{ $loc.Id }}" aria-expanded="true" aria-controls="collapse-dns-{{ $loc.Id }}">
-						DNS Resolvers {{ template "status_counts" $loc.DnsResolverCounts }}
+						{{ $.Locale.T "section.dns_resolvers" }} {{ template "status_counts" (dict "Counts" $loc.DnsResolverCounts "Locale" $.Locale) }}
 					</button>
 				</h3>
 				<div id="collapse-dns-{{ $loc.Id }}" class="accordion-collapse collapse" aria-labelledby="heading-dns-{{ $loc.Id }}">
@@ -352,9 +352,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Name</th>
-									<th>Ping</th>
-									<th>Lookup</th>
+									<th>{{ $.Locale.T "table.name" }}</th>
+									<th>{{ $.Locale.T "table.ping" }}</th>
+									<th>{{ $.Locale.T "table.lookup" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -363,18 +363,18 @@
 									<td><a href="{{ $.Status.DetailURL "dns_resolver" $dns.Name }}">{{ $dns.Name }}</a></td>
 									<td>
 										{{ if $dns.Ping.IsUp }}
-										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.responding" }}" title="{{ $.Locale.T "status.responding" }}"></i>
 										{{ else if $dns.Ping.IsWarning }}
-										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
+										<i class="bi bi-question-circle text-warning" aria-label="{{ $.Locale.T "status.degraded" }}" title="{{ $.Locale.T "status.degraded" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 									<td>
 										{{ if $dns.ResolveStatus }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.error" }}" title="{{ $.Locale.T "status.error" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -397,7 +397,7 @@
 <div class="row">
 	<div class="col">
 		<h2>
-			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "services" "" }}">Services {{ template "status_counts" .Status.Services.Counts }}</a>
+			<a class="text-body text-decoration-none group-detail-link" href="{{ .Status.GroupDetailURL "services" "" }}">{{ .Locale.T "section.services" }} {{ template "status_counts" (dict "Counts" .Status.Services.Counts "Locale" .Locale) }}</a>
 		</h2>
 		<div class="mb-3">
 			{{ template "history_bar" .Status.Services.History }}
@@ -407,7 +407,7 @@
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-webservices">
 					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-webservices" aria-expanded="true" aria-controls="collapse-webservices">
-						Web Services {{ template "status_counts" .Status.Services.WebCounts }}
+						{{ .Locale.T "section.web_services" }} {{ template "status_counts" (dict "Counts" .Status.Services.WebCounts "Locale" .Locale) }}
 					</button>
 				</h3>
 				<div id="collapse-webservices" class="accordion-collapse collapse" aria-labelledby="heading-webservices">
@@ -415,9 +415,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Service</th>
-									<th>Description</th>
-									<th>Status</th>
+									<th>{{ $.Locale.T "table.service" }}</th>
+									<th>{{ $.Locale.T "table.description" }}</th>
+									<th>{{ $.Locale.T "table.status" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -427,11 +427,11 @@
 									<td>{{ $ws.Description }}</td>
 									<td>
 										{{ if $ws.Status }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else if $ws.Maintenance }}
-										<i class="bi bi-cone-striped text-muted" aria-label="Under maintenance" title="Under maintenance"></i>
+										<i class="bi bi-cone-striped text-muted" aria-label="{{ $.Locale.T "status.under_maintenance" }}" title="{{ $.Locale.T "status.under_maintenance" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 								</tr>
@@ -448,7 +448,7 @@
 			<div class="accordion-item">
 				<h3 class="accordion-header" id="heading-nameservers">
 					<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-nameservers" aria-expanded="true" aria-controls="collapse-nameservers">
-						Name Servers {{ template "status_counts" .Status.Services.NameServerCounts }}
+						{{ .Locale.T "section.name_servers" }} {{ template "status_counts" (dict "Counts" .Status.Services.NameServerCounts "Locale" .Locale) }}
 					</button>
 				</h3>
 				<div id="collapse-nameservers" class="accordion-collapse collapse" aria-labelledby="heading-nameservers">
@@ -456,9 +456,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>Service</th>
-									<th>Ping</th>
-									<th>Lookup</th>
+									<th>{{ $.Locale.T "table.service" }}</th>
+									<th>{{ $.Locale.T "table.ping" }}</th>
+									<th>{{ $.Locale.T "table.lookup" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -467,18 +467,18 @@
 									<td><a href="{{ $.Status.DetailURL "nameserver" $ns.Name }}">{{ $ns.Name }}</a></td>
 									<td>
 										{{ if $ns.Ping.IsUp }}
-										<i class="bi bi-check-lg text-success" aria-label="Responding" title="Responding"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.responding" }}" title="{{ $.Locale.T "status.responding" }}"></i>
 										{{ else if $ns.Ping.IsWarning }}
-										<i class="bi bi-question-circle text-warning" aria-label="Degraded" title="Degraded"></i>
+										<i class="bi bi-question-circle text-warning" aria-label="{{ $.Locale.T "status.degraded" }}" title="{{ $.Locale.T "status.degraded" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Down" title="Down"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.down" }}" title="{{ $.Locale.T "status.down" }}"></i>
 										{{ end }}
 									</td>
 									<td>
 										{{ if $ns.ResolveStatus }}
-										<i class="bi bi-check-lg text-success" aria-label="Operational" title="Operational"></i>
+										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>
 										{{ else }}
-										<i class="bi bi-exclamation-circle text-danger" aria-label="Error" title="Error"></i>
+										<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $.Locale.T "status.error" }}" title="{{ $.Locale.T "status.error" }}"></i>
 										{{ end }}
 									</td>
 								</tr>

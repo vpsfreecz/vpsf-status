@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -345,11 +346,37 @@ func writeNotice(t *testing.T, cfg *config.Config, text string) {
 
 func getThroughRoutes(t *testing.T, app *application, target string) *httptest.ResponseRecorder {
 	t.Helper()
+	return getThroughRoutesRaw(t, app, canonicalTestTarget(t, target))
+}
 
+func getThroughRoutesRaw(t *testing.T, app *application, target string) *httptest.ResponseRecorder {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, target, nil)
 	rr := httptest.NewRecorder()
 	app.routes().ServeHTTP(rr, req)
 	return rr
+}
+
+func canonicalTestTarget(t *testing.T, target string) string {
+	t.Helper()
+
+	u, err := url.Parse(target)
+	if err != nil {
+		t.Fatalf("parse test target %q: %v", target, err)
+	}
+
+	switch u.Path {
+	case "/", "/entity", "/group", "/about":
+	default:
+		return target
+	}
+
+	q := u.Query()
+	if q.Get(langQueryParam) == "" {
+		q.Set(langQueryParam, defaultLang)
+		u.RawQuery = q.Encode()
+	}
+	return u.String()
 }
 
 func requireStatus(t *testing.T, rr *httptest.ResponseRecorder, code int) {
@@ -378,6 +405,15 @@ func requireNotContains(t *testing.T, body string, substrings ...string) {
 			t.Fatalf("expected body not to contain %q\nbody:\n%s", s, body)
 		}
 	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 func requireBefore(t *testing.T, body string, before string, after string) {

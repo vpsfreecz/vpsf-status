@@ -9,18 +9,21 @@ import (
 )
 
 type HistoryBarView struct {
-	Label string
-	Days  []HistoryDayView
-	Lanes []HistoryLaneView
+	Label     string
+	AriaLabel string
+	Days      []HistoryDayView
+	Lanes     []HistoryLaneView
 }
 
 type HistoryDayView struct {
-	Date      string
-	Label     string
-	State     string
-	StartsAt  time.Time
-	Incidents []HistoryIncidentView
-	Lanes     []HistoryLaneView
+	Date             string
+	Label            string
+	State            string
+	StartsAt         time.Time
+	Incidents        []HistoryIncidentView
+	Lanes            []HistoryLaneView
+	NoIncidentsLabel string
+	Locale           *pageLocale
 }
 
 type HistoryIncidentView struct {
@@ -105,16 +108,20 @@ func (sv *StatusView) HistoryFor(kind string, id string) HistoryBarView {
 }
 
 func (sv *StatusView) DetailURL(kind string, id string) string {
-	return "/entity?kind=" + url.QueryEscape(kind) + "&id=" + url.QueryEscape(id)
+	q := url.Values{}
+	q.Set("kind", kind)
+	q.Set("id", id)
+	return localizedURL("/entity", sv.Lang, q)
 }
 
 func (sv *StatusView) GroupDetailURL(kind string, id any) string {
-	ret := "/group?kind=" + url.QueryEscape(kind)
+	q := url.Values{}
+	q.Set("kind", kind)
 	idString := fmt.Sprint(id)
 	if idString != "" {
-		ret += "&id=" + url.QueryEscape(idString)
+		q.Set("id", idString)
 	}
-	return ret
+	return localizedURL("/group", sv.Lang, q)
 }
 
 func (d HistoryDayView) Class() string {
@@ -169,7 +176,9 @@ func (d HistoryDayView) HasIncidents() bool {
 
 func (d HistoryDayView) SummaryLabel() string {
 	if len(d.Incidents) == 0 {
-		return d.Label + ": no incidents"
+		return d.Locale.TD("history.day_summary.empty", map[string]any{
+			"Date": d.Label,
+		})
 	}
 
 	summaries := make([]string, len(d.Incidents))
@@ -177,21 +186,32 @@ func (d HistoryDayView) SummaryLabel() string {
 		summaries[i] = incident.Summary()
 	}
 
-	return d.Label + ": " + strings.Join(summaries, "; ")
+	return d.Locale.TD("history.day_summary.incidents", map[string]any{
+		"Date":    d.Label,
+		"Summary": strings.Join(summaries, "; "),
+	})
 }
 
 func createHistoryViews(st *Status, now time.Time) (historyGroupViews, map[string]HistoryBarView) {
-	return createHistoryViewsWithData(st, now, newHistoryData(st, now))
+	return createHistoryViewsForLocale(st, now, defaultPageLocale())
+}
+
+func createHistoryViewsForLocale(st *Status, now time.Time, loc *pageLocale) (historyGroupViews, map[string]HistoryBarView) {
+	return createHistoryViewsWithDataForLocale(st, now, newHistoryData(st, now), loc)
 }
 
 func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (historyGroupViews, map[string]HistoryBarView) {
+	return createHistoryViewsWithDataForLocale(st, now, data, defaultPageLocale())
+}
+
+func createHistoryViewsWithDataForLocale(st *Status, now time.Time, data *historyData, loc *pageLocale) (historyGroupViews, map[string]HistoryBarView) {
 	data = ensureHistoryData(st, now, data)
 	days := data.days
 	entities := configuredHistoryEntities(st)
 	bars := make(map[string]HistoryBarView, len(entities))
 
 	for _, entity := range entities {
-		bars[historyKey(entity.Kind, entity.ID)] = newHistoryBar(now, entity.Label, days)
+		bars[historyKey(entity.Kind, entity.ID)] = newHistoryBar(now, entity.Label, days, loc)
 	}
 
 	mapping := data.mapping
@@ -199,7 +219,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 	probeIncidents := visibleHistoryProbeIncidents(data, now)
 	archivedNodes := mapping.archivedNodesForHistoryWindow(reports, probeIncidents, now, days)
 
-	groups := newHistoryGroupViews(st, now, days, archivedNodesByGroup(archivedNodes))
+	groups := newHistoryGroupViews(st, now, days, archivedNodesByGroup(archivedNodes), loc)
 	entityGroups := configuredHistoryEntityGroups(st, archivedNodes)
 
 	for _, report := range reports {
@@ -208,7 +228,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 			severity = historySeverityMaintenance
 		}
 
-		incident := outageHistoryIncident(st, report)
+		incident := outageHistoryIncidentForLocale(st, report, loc)
 
 		for key := range mapping.outageHistoryKeys(report) {
 			bar, ok := bars[key]
@@ -217,7 +237,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 				bars[key] = bar
 			}
 
-			applyHistoryIncidentToGroups(&groups, entityGroups[key], key, report.BeginsAt, outageEndsAt(report), severity, incident)
+			applyHistoryIncidentToGroups(&groups, entityGroups[key], key, report.BeginsAt, outageEndsAt(report), severity, incident, loc)
 		}
 	}
 
@@ -228,7 +248,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 				endsAt = *incident.EndsAt
 			}
 
-			viewIncident := probeHistoryIncident(incident, now)
+			viewIncident := probeHistoryIncidentForLocale(incident, now, loc)
 
 			key := historyKey(incident.EntityKind, incident.EntityID)
 			bar, ok := bars[key]
@@ -237,7 +257,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 				bars[key] = bar
 			}
 
-			applyHistoryIncidentToGroups(&groups, entityGroups[key], key, incident.StartsAt, endsAt, historySeverityMaintenance, viewIncident)
+			applyHistoryIncidentToGroups(&groups, entityGroups[key], key, incident.StartsAt, endsAt, historySeverityMaintenance, viewIncident, loc)
 		}
 	}
 
@@ -245,8 +265,12 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 }
 
 func createEntityHistoryView(st *Status, now time.Time, kind string, id string, label string, data *historyData) HistoryBarView {
+	return createEntityHistoryViewForLocale(st, now, kind, id, label, data, defaultPageLocale())
+}
+
+func createEntityHistoryViewForLocale(st *Status, now time.Time, kind string, id string, label string, data *historyData, loc *pageLocale) HistoryBarView {
 	data = ensureHistoryData(st, now, data)
-	bar := newHistoryBar(now, label, data.days)
+	bar := newHistoryBar(now, label, data.days, loc)
 	key := historyKey(kind, id)
 	probeIncidents := visibleHistoryProbeIncidents(data, now)
 
@@ -259,7 +283,7 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 		if report.IsPlannedOutage() {
 			severity = historySeverityMaintenance
 		}
-		applyHistoryIncident(&bar, report.BeginsAt, outageEndsAt(report), severity, outageHistoryIncident(st, report))
+		applyHistoryIncident(&bar, report.BeginsAt, outageEndsAt(report), severity, outageHistoryIncidentForLocale(st, report, loc))
 	}
 
 	for _, incident := range probeIncidents {
@@ -271,13 +295,17 @@ func createEntityHistoryView(st *Status, now time.Time, kind string, id string, 
 		if incident.EndsAt != nil {
 			endsAt = *incident.EndsAt
 		}
-		applyHistoryIncident(&bar, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncident(incident, now))
+		applyHistoryIncident(&bar, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncidentForLocale(incident, now, loc))
 	}
 
 	return bar
 }
 
 func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget, label string, data *historyData) HistoryBarView {
+	return createGroupHistoryViewForLocale(st, now, target, label, data, defaultPageLocale())
+}
+
+func createGroupHistoryViewForLocale(st *Status, now time.Time, target historyGroupTarget, label string, data *historyData, pageLoc *pageLocale) HistoryBarView {
 	data = ensureHistoryData(st, now, data)
 
 	probeIncidents := visibleHistoryProbeIncidents(data, now)
@@ -287,10 +315,10 @@ func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget
 	var lanes []HistoryLaneView
 	switch target.Kind {
 	case historyGroupVpsAdmin:
-		lanes = vpsAdminHistoryLanes()
+		lanes = vpsAdminHistoryLanes(pageLoc)
 	case historyGroupLocation:
-		if loc := findLocationByID(st, target.LocationID); loc != nil {
-			lanes = locationHistoryLanes(loc, archivedNodesByGroup(archivedNodes)[target.LocationID])
+		if location := findLocationByID(st, target.LocationID); location != nil {
+			lanes = locationHistoryLanes(location, archivedNodesByGroup(archivedNodes)[target.LocationID], pageLoc)
 		}
 	case historyGroupServices:
 		if st != nil {
@@ -298,20 +326,20 @@ func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget
 		}
 	}
 
-	bar := newHistoryBarWithLanes(now, label, lanes, data.days)
+	bar := newHistoryBarWithLanes(now, label, lanes, data.days, pageLoc)
 
 	for _, report := range data.reports {
 		severity := historySeverityOutage
 		if report.IsPlannedOutage() {
 			severity = historySeverityMaintenance
 		}
-		incident := outageHistoryIncident(st, report)
+		incident := outageHistoryIncidentForLocale(st, report, pageLoc)
 
 		for key := range data.mapping.outageHistoryKeys(report) {
 			if !historyTargetsInclude(entityGroups[key], target) {
 				continue
 			}
-			applyHistoryIncidentToLane(&bar, key, report.BeginsAt, outageEndsAt(report), severity, incident)
+			applyHistoryIncidentToLane(&bar, key, report.BeginsAt, outageEndsAt(report), severity, incident, pageLoc)
 		}
 	}
 
@@ -325,7 +353,7 @@ func createGroupHistoryView(st *Status, now time.Time, target historyGroupTarget
 		if incident.EndsAt != nil {
 			endsAt = *incident.EndsAt
 		}
-		applyHistoryIncidentToLane(&bar, key, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncident(incident, now))
+		applyHistoryIncidentToLane(&bar, key, incident.StartsAt, endsAt, historySeverityMaintenance, probeHistoryIncidentForLocale(incident, now, pageLoc), pageLoc)
 	}
 
 	return bar
@@ -392,49 +420,50 @@ func configuredHistoryEntities(st *Status) []historyEntityInfo {
 	return ret
 }
 
-func newHistoryGroupViews(st *Status, now time.Time, days int, archivedByGroup map[int][]historyArchivedNode) historyGroupViews {
+func newHistoryGroupViews(st *Status, now time.Time, days int, archivedByGroup map[int][]historyArchivedNode, loc *pageLocale) historyGroupViews {
 	ret := historyGroupViews{
-		VpsAdmin:  newHistoryBarWithLanes(now, "vpsAdmin", vpsAdminHistoryLanes(), days),
+		VpsAdmin:  newHistoryBarWithLanes(now, "vpsAdmin", vpsAdminHistoryLanes(loc), days, loc),
 		Locations: make(map[int]HistoryBarView),
 	}
 	if st == nil {
-		ret.Services = newHistoryBarWithLanes(now, "Services", nil, days)
+		ret.Services = newHistoryBarWithLanes(now, loc.T("section.services"), nil, days, loc)
 		return ret
 	}
 
-	for _, loc := range st.LocationList {
-		ret.Locations[loc.Id] = newHistoryBarWithLanes(now, loc.Label, locationHistoryLanes(loc, archivedByGroup[loc.Id]), days)
+	for _, location := range st.LocationList {
+		ret.Locations[location.Id] = newHistoryBarWithLanes(now, location.Label, locationHistoryLanes(location, archivedByGroup[location.Id], loc), days, loc)
 	}
-	ret.Services = newHistoryBarWithLanes(now, "Services", servicesHistoryLanes(st.Services), days)
+	ret.Services = newHistoryBarWithLanes(now, loc.T("section.services"), servicesHistoryLanes(st.Services), days, loc)
 
 	return ret
 }
 
-func vpsAdminHistoryLanes() []HistoryLaneView {
+func vpsAdminHistoryLanes(loc *pageLocale) []HistoryLaneView {
 	return []HistoryLaneView{
 		newHistoryLane(historyEntityVpsAdmin, "webui", "vpsAdmin web UI"),
 		newHistoryLane(historyEntityVpsAdmin, "api", "vpsAdmin API"),
-		newHistoryLane(historyEntityVpsAdmin, "console", "Remote Console"),
+		newHistoryLane(historyEntityVpsAdmin, "console", loc.T("service.vpsadmin.console")),
 	}
 }
 
-func locationHistoryLanes(loc *Location, archivedNodes []historyArchivedNode) []HistoryLaneView {
-	if loc == nil {
+func locationHistoryLanes(location *Location, archivedNodes []historyArchivedNode, loc *pageLocale) []HistoryLaneView {
+	if location == nil {
 		return nil
 	}
 
-	ret := make([]HistoryLaneView, 0, len(loc.NodeList)+len(archivedNodes)+len(loc.DnsResolverList))
-	for _, node := range loc.NodeList {
+	ret := make([]HistoryLaneView, 0, len(location.NodeList)+len(archivedNodes)+len(location.DnsResolverList))
+	for _, node := range location.NodeList {
 		ret = append(ret, newHistoryLane(historyEntityNode, node.Name, node.Name))
 	}
 	for _, node := range archivedNodes {
+		label := strings.TrimSuffix(node.Label, " (removed)")
 		ret = append(ret, HistoryLaneView{
 			Key:   node.Key,
-			Label: node.Label,
+			Label: loc.TD("history.removed", map[string]any{"Label": label}),
 			State: historySeverityOperational,
 		})
 	}
-	for _, resolver := range loc.DnsResolverList {
+	for _, resolver := range location.DnsResolverList {
 		ret = append(ret, newHistoryLane(historyEntityDnsResolver, resolver.Name, resolver.Name))
 	}
 	return ret
@@ -502,7 +531,7 @@ func addHistoryGroupTarget(groups map[string][]historyGroupTarget, key string, t
 	groups[key] = append(groups[key], target)
 }
 
-func applyHistoryIncidentToGroups(groups *historyGroupViews, targets []historyGroupTarget, laneKey string, startsAt time.Time, endsAt time.Time, severity string, incident HistoryIncidentView) {
+func applyHistoryIncidentToGroups(groups *historyGroupViews, targets []historyGroupTarget, laneKey string, startsAt time.Time, endsAt time.Time, severity string, incident HistoryIncidentView, loc *pageLocale) {
 	if groups == nil {
 		return
 	}
@@ -511,28 +540,32 @@ func applyHistoryIncidentToGroups(groups *historyGroupViews, targets []historyGr
 		switch target.Kind {
 		case historyGroupVpsAdmin:
 			bar := groups.VpsAdmin
-			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident)
+			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident, loc)
 			groups.VpsAdmin = bar
 		case historyGroupLocation:
 			bar, ok := groups.Locations[target.LocationID]
 			if !ok {
 				continue
 			}
-			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident)
+			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident, loc)
 			groups.Locations[target.LocationID] = bar
 		case historyGroupServices:
 			bar := groups.Services
-			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident)
+			applyHistoryIncidentToLane(&bar, laneKey, startsAt, endsAt, severity, incident, loc)
 			groups.Services = bar
 		}
 	}
 }
 
-func newHistoryBar(now time.Time, label string, days int) HistoryBarView {
-	return newHistoryBarWithLanes(now, label, nil, days)
+func newHistoryBar(now time.Time, label string, days int, loc *pageLocale) HistoryBarView {
+	return newHistoryBarWithLanes(now, label, nil, days, loc)
 }
 
-func newHistoryBarWithLanes(now time.Time, label string, lanes []HistoryLaneView, dayCount int) HistoryBarView {
+func newHistoryBarWithLanes(now time.Time, label string, lanes []HistoryLaneView, dayCount int, loc *pageLocale) HistoryBarView {
+	if loc == nil {
+		loc = defaultPageLocale()
+	}
+
 	dayCount = historyWindowDays(dayCount)
 	start := historyStartDay(now, dayCount)
 	days := make([]HistoryDayView, dayCount)
@@ -541,18 +574,21 @@ func newHistoryBarWithLanes(now time.Time, label string, lanes []HistoryLaneView
 	for i := range days {
 		day := start.AddDate(0, 0, i)
 		days[i] = HistoryDayView{
-			Date:     day.Format("2006-01-02"),
-			Label:    day.Format("Jan _2, 2006"),
-			State:    historySeverityOperational,
-			StartsAt: day,
-			Lanes:    cloneHistoryLanes(cleanLanes),
+			Date:             day.Format("2006-01-02"),
+			Label:            day.Format("Jan _2, 2006"),
+			State:            historySeverityOperational,
+			StartsAt:         day,
+			Lanes:            cloneHistoryLanes(cleanLanes),
+			NoIncidentsLabel: loc.T("history.no_incidents"),
+			Locale:           loc,
 		}
 	}
 
 	return HistoryBarView{
-		Label: label,
-		Days:  days,
-		Lanes: cleanLanes,
+		Label:     label,
+		AriaLabel: loc.TD("history.aria", map[string]any{"Label": label}),
+		Days:      days,
+		Lanes:     cleanLanes,
 	}
 }
 
@@ -586,7 +622,7 @@ func applyHistoryIncident(bar *HistoryBarView, startsAt time.Time, endsAt time.T
 	}
 }
 
-func applyHistoryIncidentToLane(bar *HistoryBarView, laneKey string, startsAt time.Time, endsAt time.Time, severity string, incident HistoryIncidentView) {
+func applyHistoryIncidentToLane(bar *HistoryBarView, laneKey string, startsAt time.Time, endsAt time.Time, severity string, incident HistoryIncidentView, loc *pageLocale) {
 	if bar == nil || laneKey == "" || startsAt.IsZero() || incident.Text == "" {
 		return
 	}
@@ -619,7 +655,7 @@ func applyHistoryIncidentToLane(bar *HistoryBarView, laneKey string, startsAt ti
 			bar.Days[i].State = historySeverityMaintenance
 		}
 
-		laneIncident := historyIncidentWithLaneLabel(incident, laneLabel)
+		laneIncident := historyIncidentWithLaneLabel(incident, laneLabel, loc)
 		if !containsHistoryIncident(bar.Days[i].Incidents, laneIncident) {
 			bar.Days[i].Incidents = append(bar.Days[i].Incidents, laneIncident)
 		}
@@ -643,13 +679,16 @@ func setHistoryLaneSeverity(lanes []HistoryLaneView, laneKey string, severity st
 	return "", false
 }
 
-func historyIncidentWithLaneLabel(incident HistoryIncidentView, label string) HistoryIncidentView {
+func historyIncidentWithLaneLabel(incident HistoryIncidentView, label string, loc *pageLocale) HistoryIncidentView {
 	if label == "" || strings.Contains(normalizeEntityText(incident.Text), normalizeEntityText(label)) {
 		return incident
 	}
 
 	ret := incident
-	ret.Text = label + ": " + ret.Text
+	ret.Text = loc.TD("history.incident.lane", map[string]any{
+		"Label": label,
+		"Text":  ret.Text,
+	})
 	return ret
 }
 
@@ -1246,30 +1285,53 @@ func vpsAdminServiceHistoryKeys(st *Status, entity OutageEntity) []string {
 }
 
 func outageSummary(report *OutageReport) string {
+	return outageSummaryForLocale(report, defaultPageLocale())
+}
+
+func outageSummaryForLocale(report *OutageReport, loc *pageLocale) string {
+	if report == nil {
+		return ""
+	}
+
+	summary := reportSummaryForLocale(report, loc)
+	if summary == "" {
+		summary = loc.TD("outage.summary.fallback", map[string]any{"ID": report.Id})
+	}
+
+	if report.IsPlannedOutage() {
+		return loc.TD("outage.summary.planned", map[string]any{"Summary": summary})
+	}
+
+	return loc.TD("outage.summary.unplanned", map[string]any{"Summary": summary})
+}
+
+func reportSummaryForLocale(report *OutageReport, loc *pageLocale) string {
 	if report == nil {
 		return ""
 	}
 
 	summary := report.EnSummary
-	if summary == "" {
+	if loc != nil && loc.Code == "cs" {
 		summary = report.CsSummary
 	}
 	if summary == "" {
-		summary = fmt.Sprintf("Outage #%d", report.Id)
+		summary = report.EnSummary
 	}
-
-	if report.IsPlannedOutage() {
-		return "Planned outage: " + summary
+	if summary == "" {
+		summary = report.CsSummary
 	}
-
-	return "Unplanned outage: " + summary
+	return summary
 }
 
 func outageHistoryIncident(st *Status, report *OutageReport) HistoryIncidentView {
-	ret := HistoryIncidentView{Text: outageSummary(report)}
+	return outageHistoryIncidentForLocale(st, report, defaultPageLocale())
+}
+
+func outageHistoryIncidentForLocale(st *Status, report *OutageReport, loc *pageLocale) HistoryIncidentView {
+	ret := HistoryIncidentView{Text: outageSummaryForLocale(report, loc)}
 	if report != nil {
-		ret.StartLabel = historyIncidentStartLabel(report.BeginsAt)
-		ret.DurationLabel = historyIncidentDurationLabel("Expected duration", report.Duration, false)
+		ret.StartLabel = historyIncidentStartLabelForLocale(report.BeginsAt, loc)
+		ret.DurationLabel = historyIncidentDurationLabelForLocale(loc.T("history.incident.expected_duration"), report.Duration, false, loc)
 	}
 	if st == nil || report == nil || report.Id == 0 || st.VpsAdmin.Webui == nil || st.VpsAdmin.Webui.Url == "" {
 		return ret
@@ -1284,6 +1346,10 @@ func outageHistoryIncident(st *Status, report *OutageReport) HistoryIncidentView
 }
 
 func probeHistoryIncident(incident ProbeIncident, now time.Time) HistoryIncidentView {
+	return probeHistoryIncidentForLocale(incident, now, defaultPageLocale())
+}
+
+func probeHistoryIncidentForLocale(incident ProbeIncident, now time.Time, loc *pageLocale) HistoryIncidentView {
 	label := incident.EntityLabel
 	if label == "" {
 		label = incident.EntityID
@@ -1309,30 +1375,49 @@ func probeHistoryIncident(incident ProbeIncident, now time.Time) HistoryIncident
 	}
 
 	return HistoryIncidentView{
-		Text:          fmt.Sprintf("Probe: %s %s %s", label, incident.Method, message),
-		StartLabel:    historyIncidentStartLabel(incident.StartsAt),
-		DurationLabel: historyIncidentDurationLabel("Observed duration", endsAt.Sub(incident.StartsAt), open),
+		Text: loc.TD("history.probe_incident", map[string]any{
+			"Label":   label,
+			"Method":  incident.Method,
+			"Message": message,
+		}),
+		StartLabel:    historyIncidentStartLabelForLocale(incident.StartsAt, loc),
+		DurationLabel: historyIncidentDurationLabelForLocale(loc.T("history.incident.observed_duration"), endsAt.Sub(incident.StartsAt), open, loc),
 	}
 }
 
 func historyIncidentStartLabel(t time.Time) string {
+	return historyIncidentStartLabelForLocale(t, defaultPageLocale())
+}
+
+func historyIncidentStartLabelForLocale(t time.Time, loc *pageLocale) string {
 	if t.IsZero() {
 		return ""
 	}
 
-	return "Started: " + t.Local().Format(historyIncidentTimeFormat)
+	return loc.TD("history.incident.started", map[string]any{
+		"Time": t.Local().Format(historyIncidentTimeFormat),
+	})
 }
 
 func historyIncidentDurationLabel(label string, duration time.Duration, soFar bool) string {
+	return historyIncidentDurationLabelForLocale(label, duration, soFar, defaultPageLocale())
+}
+
+func historyIncidentDurationLabelForLocale(label string, duration time.Duration, soFar bool, loc *pageLocale) string {
 	if duration < 0 {
 		duration = 0
 	}
 
-	ret := fmt.Sprintf("%s: %d min", label, int(duration/time.Minute))
 	if soFar {
-		ret += " so far"
+		return loc.TD("history.incident.duration_open", map[string]any{
+			"Label":   label,
+			"Minutes": int(duration / time.Minute),
+		})
 	}
-	return ret
+	return loc.TD("history.incident.duration", map[string]any{
+		"Label":   label,
+		"Minutes": int(duration / time.Minute),
+	})
 }
 
 func localDay(t time.Time) time.Time {

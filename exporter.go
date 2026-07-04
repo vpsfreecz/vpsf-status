@@ -48,31 +48,31 @@ func newExporter() *Exporter {
 		indexLastRender: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_index_last_render_timestamp_seconds",
-				Help: "Unix timestamp of the last successful index page render.",
+				Help: "Unix timestamp of the last successful localized index body render.",
 			},
 		),
 		indexLastAttempt: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_index_last_render_attempt_timestamp_seconds",
-				Help: "Unix timestamp of the last index page render attempt.",
+				Help: "Unix timestamp of the last localized index body render attempt.",
 			},
 		),
 		indexRenderDuration: prometheus.NewGauge(
 			prometheus.GaugeOpts{
 				Name: "vpsfstatus_index_render_duration_seconds",
-				Help: "Duration of the last successful index page render in seconds.",
+				Help: "Duration of the last successful localized index body render in seconds.",
 			},
 		),
 		indexRenderFailures: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "vpsfstatus_index_render_failures_total",
-				Help: "Total number of failed index page render attempts.",
+				Help: "Total number of failed localized index body render attempts.",
 			},
 		),
 		indexRenderSkips: prometheus.NewCounter(
 			prometheus.CounterOpts{
 				Name: "vpsfstatus_index_render_skips_total",
-				Help: "Total number of skipped index page renders because visible content did not change.",
+				Help: "Total number of skipped localized index body renders because visible content did not change.",
 			},
 		),
 		vpsAdminStatus: prometheus.NewGaugeVec(

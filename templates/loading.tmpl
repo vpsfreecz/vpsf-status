@@ -1,4 +1,4 @@
-{{ define "title" }}vpsFree.cz Status{{ end }}
+{{ define "title" }}{{ .Locale.T "app.title" }}{{ end }}
 
 {{ define "content" }}
 {{ template "index_header" . }}
@@ -12,7 +12,7 @@
 		<div class="alert alert-primary" role="alert">
 			{{ .Notice.Html }}
 			<hr>
-			<p>Updated at {{ .Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006" }}</p>
+			<p>{{ .Locale.TD "notice.updated_at" (dict "UpdatedAt" (.Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006")) }}</p>
 		</div>
 	</div>
 </div>
@@ -20,10 +20,9 @@
 
 <div class="row">
 	<div class="col">
-		<h2>Initializing...</h2>
+		<h2>{{ .Locale.T "loading.title" }}</h2>
 		<p>
-			vpsFree.cz Status is initializing and will be ready in a few seconds,
-			please try to refresh the page.
+			{{ .Locale.T "loading.body" }}
 		</p>
 	</div>
 </div>

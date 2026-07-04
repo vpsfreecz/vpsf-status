@@ -21,8 +21,8 @@ func TestRoutesServeIndexResolverDegradedState(t *testing.T) {
 		`aria-label="Degraded"`,
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-dns-3"`, StatusCounts{Degraded: 1, Total: 1})
-	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Degraded: 1, Total: 1})
 }

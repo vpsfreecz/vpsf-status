@@ -2,14 +2,26 @@
 <nav class="navbar bg-light">
 	<div class="container-fluid">
 		<div class="navbar-brand clearfix">
-			<a class="float-start" href="/">
+			<a class="float-start" href="{{ .Locale.URL "/" }}">
 				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
 			</a>
-			<h1 class="navbar-text float-start">Status</h1>
+			<h1 class="navbar-text float-start">{{ .Locale.T "nav.status" }}</h1>
 		</div>
-		<span class="navbar-text">
-			Rendered at: {{ .RenderedAt }}
-		</span>
+		<div class="d-flex align-items-center gap-3">
+			<span class="navbar-text">
+				{{ .Locale.T "nav.rendered_at" }} {{ .RenderedAt }}
+			</span>
+			<div class="dropdown">
+				<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .Locale.T "language.label" }}">
+					{{ .Locale.Name }}
+				</button>
+				<ul class="dropdown-menu dropdown-menu-end">
+					{{ range .Locale.SwitchLinks }}
+					<li><a class="dropdown-item{{ if .Active }} active{{ end }}" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a></li>
+					{{ end }}
+				</ul>
+			</div>
+		</div>
 	</div>
 </nav>
 {{ end }}

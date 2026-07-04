@@ -86,6 +86,9 @@ type SecurityAdvisory struct {
 	State             string
 	Cves              []SecurityAdvisoryCve
 	Name              string
+	CsSummary         string
+	CsDescription     string
+	CsResponse        string
 	EnSummary         string
 	EnDescription     string
 	EnResponse        string
@@ -572,39 +575,51 @@ func (r *OutageReport) NormalizedType() string {
 }
 
 func (r *OutageReport) TypeLabel() string {
+	return r.TypeLabelForLocale(defaultPageLocale())
+}
+
+func (r *OutageReport) TypeLabelForLocale(loc *pageLocale) string {
 	switch r.NormalizedType() {
 	case outageTypePlanned:
-		return "Planned outage"
+		return loc.T("outage.type.planned")
 	case outageTypeUnplanned:
-		return "Unplanned outage"
+		return loc.T("outage.type.unplanned")
 	default:
 		return r.Type
 	}
 }
 
 func (r *OutageReport) ImpactLabel() string {
+	return r.ImpactLabelForLocale(defaultPageLocale())
+}
+
+func (r *OutageReport) ImpactLabelForLocale(loc *pageLocale) string {
 	if r == nil {
 		return ""
 	}
 
 	switch r.Impact {
 	case "tbd":
-		return "TBD"
+		return loc.T("outage.impact.tbd")
 	case "system_restart":
-		return "System restart"
+		return loc.T("outage.impact.system_restart")
 	case "system_reset":
-		return "System reset"
+		return loc.T("outage.impact.system_reset")
 	case "network":
-		return "Network"
+		return loc.T("outage.impact.network")
 	case "performance":
-		return "Performance"
+		return loc.T("outage.impact.performance")
 	case "unavailability":
-		return "Unavailability"
+		return loc.T("outage.impact.unavailability")
 	case "export":
-		return "NFS export"
+		return loc.T("outage.impact.export")
 	default:
 		return r.Impact
 	}
+}
+
+func (r *OutageReport) SummaryForLocale(loc *pageLocale) string {
+	return reportSummaryForLocale(r, loc)
 }
 
 func normalizeOutageType(outageType string) string {
@@ -685,46 +700,54 @@ func (n *Node) IsStorageResilverIssue() bool {
 }
 
 func (n *Node) GetStorageStateMessage() string {
+	return n.GetStorageStateMessageForLocale(defaultPageLocale())
+}
+
+func (n *Node) GetStorageStateMessageForLocale(loc *pageLocale) string {
 	if !n.PoolStatus {
-		return "Unable to determine storage status"
+		return loc.T("storage.unable_status")
 	}
 
 	switch n.PoolState {
 	case "online":
-		return "Storage is online"
+		return loc.T("storage.online")
 	case "degraded":
-		return "One or more disks have failed, storage continues to function"
+		return loc.T("storage.degraded")
 	case "suspended":
-		return "Storage not operational"
+		return loc.T("storage.not_operational")
 	case "faulted":
-		return "Storage not operational"
+		return loc.T("storage.not_operational")
 	case "unknown":
-		return "Unable to determine storage status"
+		return loc.T("storage.unable_status")
 	case "error":
-		return "Storage status check failed"
+		return loc.T("storage.check_failed")
 	default:
-		return "Storage is in a unknown state"
+		return loc.T("storage.unknown_state")
 	}
 }
 
 func (n *Node) GetStorageScanMessage() string {
+	return n.GetStorageScanMessageForLocale(defaultPageLocale())
+}
+
+func (n *Node) GetStorageScanMessageForLocale(loc *pageLocale) string {
 	if !n.PoolStatus {
-		return "Unable to determine storage status"
+		return loc.T("storage.unable_status")
 	}
 
 	switch n.PoolScan {
 	case "none":
-		return "Not running"
+		return loc.T("storage.scan.none")
 	case "scrub":
-		return fmt.Sprintf("Storage is being scrubbed to check data integrity, %.1f %% done", n.PoolScanPercent)
+		return loc.TD("storage.scan.scrub", map[string]any{"Percent": fmt.Sprintf("%.1f", n.PoolScanPercent)})
 	case "resilver":
-		return fmt.Sprintf("Storage is being resilvered to replace disks, %.1f %% done", n.PoolScanPercent)
+		return loc.TD("storage.scan.resilver", map[string]any{"Percent": fmt.Sprintf("%.1f", n.PoolScanPercent)})
 	case "unknown":
-		return "Unable to determine storage scan status"
+		return loc.T("storage.scan.unable")
 	case "error":
-		return "Storage scan status check failed"
+		return loc.T("storage.scan.failed")
 	default:
-		return "Storage scan is in a unknown state"
+		return loc.T("storage.scan.unknown")
 	}
 }
 

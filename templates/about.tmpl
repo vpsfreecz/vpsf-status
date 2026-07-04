@@ -1,40 +1,47 @@
-{{ define "title" }}About vpsFree.cz Status{{ end }}
+{{ define "title" }}{{ .Locale.T "about.title" }}{{ end }}
 
 {{ define "content" }}
 <nav class="navbar bg-light">
 	<div class="container-fluid">
 		<div class="navbar-brand clearfix">
-			<a class="float-start" href="/">
+			<a class="float-start" href="{{ .Locale.URL "/" }}">
 				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
 			</a>
-			<h1 class="navbar-text float-start">Status</h1>
+			<h1 class="navbar-text float-start">{{ .Locale.T "nav.status" }}</h1>
 		</div>
-		<a class="navbar-link" href="/">Back to Status</a>
+		<div class="d-flex align-items-center gap-3">
+			<a class="navbar-link" href="{{ .Locale.URL "/" }}">{{ .Locale.T "nav.back_to_status" }}</a>
+			<div class="dropdown">
+				<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .Locale.T "language.label" }}">
+					{{ .Locale.Name }}
+				</button>
+				<ul class="dropdown-menu dropdown-menu-end">
+					{{ range .Locale.SwitchLinks }}
+					<li><a class="dropdown-item{{ if .Active }} active{{ end }}" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a></li>
+					{{ end }}
+				</ul>
+			</div>
+		</div>
 	</div>
 </nav>
 
 <div class="row">
 	<div class="col">
-		<h2>About vpsFree.cz Status</h2>
+		<h2>{{ .Locale.T "about.title" }}</h2>
 		<p>
-			<i>vpsf-status</i> is an application that monitors the state of vpsFree.cz's
-			infrastructure. It uses an independent network connection and should thus
-			be available in case of issues with our primary connection or other parts
-			of our infrastructure.
+			<i>vpsf-status</i> {{ .Locale.T "about.intro" }}
 		</p>
 		<p>
-			The checks are run automatically every {{ .Config.CheckInterval }} seconds.
-			Verified issues that impact our members are reported through
+			{{ .Locale.TD "about.checks" (dict "Interval" .Config.CheckInterval) }}
+			{{ .Locale.T "about.reports.before_vpsadmin" }}
 			<a href="{{ .Config.VpsAdmin.WebuiUrl }}" target="_blank">vpsAdmin</a>
-			when possible. See the
-			<a href="{{ .Config.VpsAdmin.WebuiUrl }}/?page=outage&action=list" target="_blank">history</a>
-			of such planned and unplanned outages. In case of an outage when vpsAdmin
-			is down, we may use this status page to include information
-			about the issue and expected resolution.
+			{{ .Locale.T "about.reports.before_history" }}
+			<a href="{{ .Config.VpsAdmin.WebuiUrl }}/?page=outage&action=list" target="_blank">{{ .Locale.T "about.history" }}</a>
+			{{ .Locale.T "about.reports.after_history" }}
 		</p>
 		<p>
-			The source code of <i>vpsf-status</i> can be found on
-			<a href="https://github.com/vpsfreecz/vpsf-status" target="_blank">GitHub</a>.
+			{{ .Locale.T "about.source.before_link" }} <i>vpsf-status</i>
+			<a href="https://github.com/vpsfreecz/vpsf-status" target="_blank">{{ .Locale.T "about.source.link" }}</a>
 		</p>
 	</div>
 </div>

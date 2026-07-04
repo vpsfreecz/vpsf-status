@@ -78,6 +78,8 @@ func refreshOutageReportsOnce(st *Status, api outageReportsClient, now time.Time
 			Type:             normalizeOutageType(outage.Type),
 			State:            outage.State,
 			Impact:           outage.Impact,
+			CsSummary:        outage.CsSummary,
+			CsDescription:    outage.CsDescription,
 			EnSummary:        outage.EnSummary,
 			EnDescription:    outage.EnDescription,
 			AffectedEntities: make([]OutageEntity, 0),

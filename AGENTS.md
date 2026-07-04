@@ -51,6 +51,14 @@ the package with `nix build .#vpsf-status`.
 Runtime paths are resolved from `data_dir`, so templates and assets must work
 with both `.` and deployment-specific data directories.
 
+## Localization
+
+English source strings live in `internal/i18n/catalog/messages.go`. Editable
+translations live in `i18n/<lang>.toml`; generated `i18n/*.active.toml` files
+are embedded into the Go binary and must be refreshed with `make i18n-update`.
+Use `make i18n-health` to check that generated files are fresh and translations
+are complete.
+
 ## Commit & Pull Request Guidelines
 
 Git history uses short, imperative subjects, for example `Fix notice presence

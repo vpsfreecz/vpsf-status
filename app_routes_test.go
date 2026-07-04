@@ -38,6 +38,28 @@ func TestRoutesServeIndexLoadingState(t *testing.T) {
 	)
 }
 
+func TestRoutesRedirectHTMLToCanonicalLanguage(t *testing.T) {
+	app, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+
+	rr := getThroughRoutesWithHeadersRaw(t, app, "/", map[string]string{
+		"Accept-Language": "cs-CZ,cs;q=0.9,en;q=0.8",
+	})
+	requireStatus(t, rr, http.StatusFound)
+	if got := rr.Header().Get("Location"); got != "/?lang=en" {
+		t.Fatalf("Location = %q, want /?lang=en", got)
+	}
+	if got := rr.Header().Values("Vary"); !containsString(got, "Accept-Language") {
+		t.Fatalf("Vary = %#v, want Accept-Language", got)
+	}
+
+	rr = getThroughRoutesRaw(t, app, "/entity?kind=node&id=node1.prg&lang=de")
+	requireStatus(t, rr, http.StatusFound)
+	if got := rr.Header().Get("Location"); got != "/entity?id=node1.prg&kind=node&lang=en" {
+		t.Fatalf("Location = %q, want canonical English entity URL", got)
+	}
+}
+
 func TestRoutesServeIndexOperationalState(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
@@ -52,12 +74,12 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		"No issues reported.",
 		"https://vpsadmin.vpsfree.cz/?page=outage&action=list",
 		`.group-detail-link:hover, .group-detail-link:focus-visible { text-decoration: underline !important; }`,
-		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=vpsadmin">vpsAdmin`,
-		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=location&amp;id=3">Praha`,
-		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=location&amp;id=4">Brno`,
-		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=services">Services`,
+		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=vpsadmin&amp;lang=en">vpsAdmin`,
+		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=3&amp;kind=location&amp;lang=en">Praha`,
+		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=4&amp;kind=location&amp;lang=en">Brno`,
+		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=services&amp;lang=en">Services`,
 		"node1.prg",
-		`href="/entity?kind=node&amp;id=node1.prg"`,
+		`href="/entity?id=node1.prg&amp;kind=node&amp;lang=en"`,
 		"node2.prg",
 		"resolver-prg",
 		"vpsfree.cz",
@@ -75,13 +97,13 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		`aria-label="Operational"`,
 		`aria-label="Responding"`,
 	)
-	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-vpsadmin"`, StatusCounts{Operational: 3, Total: 3})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 2, Total: 2})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-dns-3"`, StatusCounts{Operational: 1, Total: 1})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=4"`, StatusCounts{Operational: 1, Total: 1})
-	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=4&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 2, Total: 2})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Operational: 1, Total: 1})
 	requireNotContains(t, body, "Reported Planned Outages", "Recent Security Advisories", "Unable to fetch outage reports", "Unable to fetch security advisories", "Last 90 days", "Overall status history")
@@ -111,7 +133,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"node1.prg",
-		`<a class="navbar-link" href="/">Back to Status</a>`,
+		`<a class="navbar-link" href="/?lang=en">Back to Status</a>`,
 		"Availability",
 		"30 days",
 		"90 days",
@@ -383,13 +405,13 @@ func TestRoutesPaginateGroupProbeLog(t *testing.T) {
 	rr := getThroughRoutes(t, app, "/group?kind=location&id=3")
 	requireStatus(t, rr, http.StatusOK)
 	body := rr.Body.String()
-	requireContains(t, body, "event 50", "probe_page=2", `href="/group?id=3&amp;kind=location&amp;probe_page=2"`)
+	requireContains(t, body, "event 50", "probe_page=2", `href="/group?id=3&amp;kind=location&amp;lang=en&amp;probe_page=2"`)
 	requireNotContains(t, body, "event 00")
 
 	rr = getThroughRoutes(t, app, "/group?kind=location&id=3&probe_page=2")
 	requireStatus(t, rr, http.StatusOK)
 	body = rr.Body.String()
-	requireContains(t, body, "event 00", `href="/group?id=3&amp;kind=location"`)
+	requireContains(t, body, "event 00", `href="/group?id=3&amp;kind=location&amp;lang=en"`)
 	requireNotContains(t, body, "event 50")
 }
 
@@ -406,7 +428,7 @@ func TestRoutesServeServiceGroupDetailHidesReportedAvailability(t *testing.T) {
 		t.Fatalf("record probe status: %v", err)
 	}
 
-	rr := getThroughRoutes(t, app, "/group?kind=services")
+	rr := getThroughRoutes(t, app, "/group?kind=services&amp;lang=en")
 	requireStatus(t, rr, http.StatusOK)
 
 	body := rr.Body.String()
@@ -418,7 +440,7 @@ func TestRoutesServeVpsAdminGroupDetail(t *testing.T) {
 	app, st, _ := newTestApplication(t)
 	setOperationalFixture(st)
 
-	rr := getThroughRoutes(t, app, "/group?kind=vpsadmin")
+	rr := getThroughRoutes(t, app, "/group?kind=vpsadmin&amp;lang=en")
 	requireStatus(t, rr, http.StatusOK)
 
 	requireContains(
@@ -507,9 +529,9 @@ func TestRoutesServeIndexPartialDownState(t *testing.T) {
 		`aria-label="Down"`,
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
-	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
 }
 
@@ -526,8 +548,8 @@ func TestRoutesServeIndexTreatsMissingVpsAdminNodeStatusAsDegradedWhenPingRespon
 
 	body := rr.Body.String()
 	requireContains(t, body, "Unable to determine storage status")
-	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin&amp;lang=en"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
 
@@ -562,8 +584,8 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 		`Storage is being resilvered to replace disks, 42.5 % done`,
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
 
@@ -642,9 +664,9 @@ func TestRoutesServeIndexWebMaintenanceAndStorageBranches(t *testing.T) {
 		"Storage is being scrubbed to check data integrity, 15.0 % done",
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 2, Down: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 1, Down: 1, Total: 2})
-	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 2, Degraded: 1, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 1, Degraded: 1, Total: 2})
 }
 
@@ -664,10 +686,10 @@ func TestRoutesServeIndexTreatsOnlineScrubAsOperational(t *testing.T) {
 		body,
 		"Storage is being scrubbed to check data integrity, 15.0 % done",
 	)
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Operational: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nodes-3"`, StatusCounts{Operational: 2, Total: 2})
 
-	prahaIndex := strings.Index(body, `href="/group?kind=location&amp;id=3"`)
+	prahaIndex := strings.Index(body, `href="/group?id=3&amp;kind=location&amp;lang=en"`)
 	if prahaIndex == -1 {
 		t.Fatalf("Praha heading not found in body")
 	}
@@ -701,7 +723,7 @@ func TestRoutesServeIndexTreatsOnlineScrubAsOperational(t *testing.T) {
 		t.Fatalf("Nodes button tag = %q, should not have state color", nodesButtonTag)
 	}
 
-	nodeIndex := strings.Index(body, `href="/entity?kind=node&amp;id=node2.prg">node2.prg</a>`)
+	nodeIndex := strings.Index(body, `href="/entity?id=node2.prg&amp;kind=node&amp;lang=en">node2.prg</a>`)
 	if nodeIndex == -1 {
 		t.Fatalf("node2.prg row not found in body")
 	}
@@ -830,10 +852,10 @@ func TestRoutesServeIndexAllDownState(t *testing.T) {
 		`aria-label="Error"`,
 	)
 	body := rr.Body.String()
-	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin"`, StatusCounts{Down: 3, Total: 3})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=3"`, StatusCounts{Down: 3, Total: 3})
-	requireStatusCountsAfter(t, body, `href="/group?kind=location&amp;id=4"`, StatusCounts{Down: 1, Total: 1})
-	requireStatusCountsAfter(t, body, `href="/group?kind=services"`, StatusCounts{Down: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin&amp;lang=en"`, StatusCounts{Down: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Down: 3, Total: 3})
+	requireStatusCountsAfter(t, body, `href="/group?id=4&amp;kind=location&amp;lang=en"`, StatusCounts{Down: 1, Total: 1})
+	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Down: 3, Total: 3})
 }
 
 func TestRoutesServeAboutAndStaticAssets(t *testing.T) {
@@ -849,7 +871,7 @@ func TestRoutesServeAboutAndStaticAssets(t *testing.T) {
 		"Back to Status",
 		`href="/json"`,
 		`href="/metrics"`,
-		`href="/about"`,
+		`href="/about?lang=en"`,
 		"https://github.com/vpsfreecz/vpsf-status",
 	)
 
@@ -1204,7 +1226,11 @@ func TestRoutesServeJSONEmptyNoticeAndOutageShape(t *testing.T) {
 
 func getThroughRoutesWithHeaders(t *testing.T, app *application, target string, headers map[string]string) *httptest.ResponseRecorder {
 	t.Helper()
+	return getThroughRoutesWithHeadersRaw(t, app, canonicalTestTarget(t, target), headers)
+}
 
+func getThroughRoutesWithHeadersRaw(t *testing.T, app *application, target string, headers map[string]string) *httptest.ResponseRecorder {
+	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, target, nil)
 	for name, value := range headers {
 		req.Header.Set(name, value)

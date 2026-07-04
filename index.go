@@ -37,19 +37,19 @@ type indexShellResponse struct {
 type preRenderedIndex struct {
 	mu             sync.RWMutex
 	renderMu       sync.Mutex
-	body           preRenderedIndexBody
-	ready          bool
+	bodies         map[string]preRenderedIndexBody
 	lastAttempt    time.Time
 	renderRequests chan struct{}
 }
 
 func newPreRenderedIndex() *preRenderedIndex {
 	return &preRenderedIndex{
+		bodies:         make(map[string]preRenderedIndexBody),
 		renderRequests: make(chan struct{}, 1),
 	}
 }
 
-func (c *preRenderedIndex) get() (preRenderedIndexBody, bool) {
+func (c *preRenderedIndex) get(lang ...string) (preRenderedIndexBody, bool) {
 	if c == nil {
 		return preRenderedIndexBody{}, false
 	}
@@ -57,21 +57,21 @@ func (c *preRenderedIndex) get() (preRenderedIndexBody, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	if !c.ready {
-		return preRenderedIndexBody{}, false
+	code := defaultLang
+	if len(lang) > 0 && lang[0] != "" {
+		code = lang[0]
 	}
-
-	return c.body, true
+	body, ok := c.bodies[code]
+	return body, ok
 }
 
-func (c *preRenderedIndex) set(body preRenderedIndexBody) {
+func (c *preRenderedIndex) set(lang string, body preRenderedIndexBody) {
 	if c == nil {
 		return
 	}
 
 	c.mu.Lock()
-	c.body = body
-	c.ready = true
+	c.bodies[lang] = body
 	c.mu.Unlock()
 }
 
@@ -101,8 +101,8 @@ func (c *preRenderedIndex) nextRenderDelay(now time.Time) time.Duration {
 	return next.Sub(now)
 }
 
-func (c *preRenderedIndex) canSkip(signature string, now time.Time) (preRenderedIndexBody, bool) {
-	body, ok := c.get()
+func (c *preRenderedIndex) canSkip(lang string, signature string, now time.Time) (preRenderedIndexBody, bool) {
+	body, ok := c.get(lang)
 	if !ok {
 		return preRenderedIndexBody{}, false
 	}
@@ -116,20 +116,25 @@ func (c *preRenderedIndex) canSkip(signature string, now time.Time) (preRendered
 }
 
 func (app *application) handleIndex(w http.ResponseWriter, r *http.Request) {
+	loc, redirected := app.resolveHTMLLocale(w, r)
+	if redirected {
+		return
+	}
+
 	app.ensureCaches()
 	now := app.currentTime()
 
-	body, ok := app.indexResponse.get()
+	body, ok := app.indexResponse.get(loc.Code)
 	if !ok {
 		var err error
-		body, _, err = app.refreshIndexBody(now, true)
+		body, _, err = app.refreshIndexBody(now, true, loc)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	shell, err := app.renderIndexShell(now)
+	shell, err := app.renderIndexShell(now, loc)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -144,7 +149,7 @@ func (app *application) startIndexRenderer() {
 		app.status.requestIndexRender = app.requestIndexRender
 	}
 
-	if _, _, err := app.refreshIndexBody(app.currentTime(), true); err != nil {
+	if err := app.refreshIndexBodies(app.currentTime(), true); err != nil {
 		log.Printf("Unable to pre-render index page: %+v", err)
 	}
 
@@ -186,12 +191,13 @@ func (app *application) drainIndexRenderRequests() {
 }
 
 func (app *application) refreshIndexResponse(now time.Time) (cachedResponse, error) {
-	body, _, err := app.refreshIndexBody(now, true)
+	loc := defaultPageLocale()
+	body, _, err := app.refreshIndexBody(now, true, loc)
 	if err != nil {
 		return cachedResponse{}, err
 	}
 
-	shell, err := app.renderIndexShell(now)
+	shell, err := app.renderIndexShell(now, loc)
 	if err != nil {
 		return cachedResponse{}, err
 	}
@@ -199,32 +205,57 @@ func (app *application) refreshIndexResponse(now time.Time) (cachedResponse, err
 }
 
 func (app *application) refreshIndexResponseIfIdle(now time.Time) {
-	if _, _, err := app.refreshIndexBodyIfIdle(now, false); err != nil {
+	if err := app.refreshIndexBodiesIfIdle(now, false); err != nil {
 		log.Printf("Unable to pre-render index page: %+v", err)
 	}
 }
 
-func (app *application) refreshIndexBody(now time.Time, force bool) (preRenderedIndexBody, bool, error) {
+func (app *application) refreshIndexBodies(now time.Time, force bool) error {
 	app.ensureCaches()
 
 	app.indexResponse.renderMu.Lock()
 	defer app.indexResponse.renderMu.Unlock()
 
-	return app.renderIndexBodyLocked(now, force)
+	for _, info := range app.locales.languages {
+		loc, _ := app.locales.localeForCode(info.Code, nil)
+		if _, _, err := app.renderIndexBodyLocked(now, force, loc); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (app *application) refreshIndexBodyIfIdle(now time.Time, force bool) (preRenderedIndexBody, bool, error) {
+func (app *application) refreshIndexBodiesIfIdle(now time.Time, force bool) error {
 	app.ensureCaches()
 
 	if !app.indexResponse.renderMu.TryLock() {
-		return preRenderedIndexBody{}, false, nil
+		return nil
 	}
 	defer app.indexResponse.renderMu.Unlock()
 
-	return app.renderIndexBodyLocked(now, force)
+	for _, info := range app.locales.languages {
+		loc, _ := app.locales.localeForCode(info.Code, nil)
+		if _, _, err := app.renderIndexBodyLocked(now, force, loc); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (app *application) renderIndexBodyLocked(now time.Time, force bool) (preRenderedIndexBody, bool, error) {
+func (app *application) refreshIndexBody(now time.Time, force bool, locales ...*pageLocale) (preRenderedIndexBody, bool, error) {
+	app.ensureCaches()
+	loc := defaultPageLocale()
+	if len(locales) > 0 && locales[0] != nil {
+		loc = locales[0]
+	}
+
+	app.indexResponse.renderMu.Lock()
+	defer app.indexResponse.renderMu.Unlock()
+
+	return app.renderIndexBodyLocked(now, force, loc)
+}
+
+func (app *application) renderIndexBodyLocked(now time.Time, force bool, loc *pageLocale) (preRenderedIndexBody, bool, error) {
 	app.status.Exporter.indexLastAttempt.Set(float64(now.Unix()))
 	app.indexResponse.setLastAttempt(now)
 
@@ -235,14 +266,14 @@ func (app *application) renderIndexBodyLocked(now time.Time, force bool) (preRen
 
 	signature := app.indexRenderSignature(notice)
 	if !force {
-		if body, ok := app.indexResponse.canSkip(signature, now); ok {
+		if body, ok := app.indexResponse.canSkip(loc.Code, signature, now); ok {
 			app.status.Exporter.indexRenderSkips.Inc()
 			return body, false, nil
 		}
 	}
 
 	startedAt := time.Now()
-	body, err := app.buildIndexBody(now, notice)
+	body, err := app.buildIndexBody(now, notice, loc)
 	if err != nil {
 		app.status.Exporter.indexRenderFailures.Inc()
 		return preRenderedIndexBody{}, false, err
@@ -254,15 +285,16 @@ func (app *application) renderIndexBodyLocked(now time.Time, force bool) (preRen
 		signature:  signature,
 		renderedAt: completedAt,
 	}
-	app.indexResponse.set(entry)
+	app.indexResponse.set(loc.Code, entry)
 	app.status.Exporter.indexLastRender.Set(float64(completedAt.Unix()))
 	app.status.Exporter.indexRenderDuration.Set(time.Since(startedAt).Seconds())
 	return entry, true, nil
 }
 
-func (app *application) buildIndexBody(now time.Time, notice Notice) ([]byte, error) {
+func (app *application) buildIndexBody(now time.Time, notice Notice, loc *pageLocale) ([]byte, error) {
 	data := StatusData{
 		Config: app.config,
+		Locale: loc,
 		Notice: notice,
 	}
 
@@ -270,7 +302,7 @@ func (app *application) buildIndexBody(now time.Time, notice Notice) ([]byte, er
 		return app.executeIndexBodyTemplate(app.templates.loading, data)
 	}
 
-	view := createStatusView(app.status, now)
+	view := createStatusViewForLocale(app.status, now, loc)
 	data.Status = &view
 	return app.executeIndexBodyTemplate(app.templates.status, data)
 }
@@ -285,10 +317,11 @@ func (app *application) executeIndexBodyTemplate(tpl *template.Template, data St
 	return buf.Bytes(), nil
 }
 
-func (app *application) renderIndexShell(now time.Time) (indexShellResponse, error) {
+func (app *application) renderIndexShell(now time.Time, loc *pageLocale) (indexShellResponse, error) {
 	var buf bytes.Buffer
 	err := app.templates.indexShell.Execute(&buf, IndexShellData{
 		Config:     app.config,
+		Locale:     loc,
 		RenderedAt: now.Format(time.UnixDate),
 		Body:       template.HTML(indexBodyPlaceholder),
 	})
@@ -470,6 +503,7 @@ func writeOutageReportSignature(h hash.Hash, prefix string, report *OutageReport
 		report.Type,
 		report.State,
 		report.Impact,
+		report.CsSummary,
 		report.EnSummary,
 	)
 	for _, entity := range report.AffectedEntities {
@@ -508,6 +542,7 @@ func writeSecurityAdvisorySignature(h hash.Hash, prefix string, advisory *Securi
 		advisory.UpdatedAt.UnixNano(),
 		advisory.State,
 		advisory.Name,
+		advisory.CsSummary,
 		advisory.EnSummary,
 		advisory.AffectedNodeCount,
 	)

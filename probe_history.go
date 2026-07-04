@@ -120,13 +120,17 @@ func pingProbeStatus(pc *PingCheck) (string, string) {
 }
 
 func vpsAdminServiceLabel(id string) string {
+	return vpsAdminServiceLabelForLocale(id, defaultPageLocale())
+}
+
+func vpsAdminServiceLabelForLocale(id string, loc *pageLocale) string {
 	switch id {
 	case "api":
 		return "vpsAdmin API"
 	case "webui":
 		return "vpsAdmin web UI"
 	case "console":
-		return "Remote Console"
+		return loc.T("service.vpsadmin.console")
 	default:
 		return id
 	}

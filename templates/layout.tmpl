@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ .Locale.HTML }}">
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -47,8 +47,8 @@
 				<div class="col">
 					<p class="text-start">
 						<a href="/json" class="link-secondary">JSON</a>
-						| <a href="/metrics" class="link-secondary">Prometheus metrics</a>
-						| <a href="/about" class="link-secondary">About</a>
+						| <a href="/metrics" class="link-secondary">{{ .Locale.T "footer.prometheus_metrics" }}</a>
+						| <a href="{{ .Locale.URL "/about" }}" class="link-secondary">{{ .Locale.T "footer.about" }}</a>
 					</p>
 				</div>
 				<div class="col">

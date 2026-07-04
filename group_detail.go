@@ -7,14 +7,19 @@ import (
 )
 
 func createGroupDetailView(st *Status, kind string, id string, now time.Time, probePage int) (EntityDetailView, bool) {
+	return createGroupDetailViewForLocale(st, kind, id, now, probePage, defaultPageLocale())
+}
+
+func createGroupDetailViewForLocale(st *Status, kind string, id string, now time.Time, probePage int, loc *pageLocale) (EntityDetailView, bool) {
 	if st == nil || kind == "" {
 		return EntityDetailView{}, false
 	}
 
 	ret := EntityDetailView{
+		Lang:            loc.codeOrDefault(),
 		Kind:            kind,
 		ID:              id,
-		Group:           "Group",
+		Group:           loc.T("entity.group.group"),
 		ShowEventEntity: true,
 	}
 
@@ -26,33 +31,33 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time, pr
 	case historyGroupVpsAdmin:
 		view := createVpsAdminView(st.VpsAdmin)
 		ret.Label = "vpsAdmin"
-		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
+		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded(), loc)
 		ret.ShowReportedAvailability = true
 		groupTarget = historyGroupTarget{Kind: historyGroupVpsAdmin}
-		probeTargets = vpsAdminGroupTargets()
+		probeTargets = vpsAdminGroupTargetsForLocale(loc)
 		reportedTargets = probeTargets
 	case historyGroupLocation:
 		locID, err := strconv.Atoi(id)
 		if err != nil {
 			return EntityDetailView{}, false
 		}
-		loc := findLocationByID(st, locID)
-		if loc == nil {
+		location := findLocationByID(st, locID)
+		if location == nil {
 			return EntityDetailView{}, false
 		}
 
-		view := createLocationView([]*Location{loc})[0]
-		ret.Label = loc.Label
-		ret.Group = "Location"
-		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
+		view := createLocationView([]*Location{location})[0]
+		ret.Label = location.Label
+		ret.Group = loc.T("entity.group.location")
+		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded(), loc)
 		ret.ShowReportedAvailability = true
-		groupTarget = historyGroupTarget{Kind: historyGroupLocation, LocationID: loc.Id}
-		probeTargets = locationGroupTargets(loc)
-		reportedTargets = locationReportedTargets(loc)
+		groupTarget = historyGroupTarget{Kind: historyGroupLocation, LocationID: location.Id}
+		probeTargets = locationGroupTargets(location)
+		reportedTargets = locationReportedTargets(location)
 	case historyGroupServices:
 		view := createServicesView(st.Services)
-		ret.Label = "Services"
-		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded())
+		ret.Label = loc.T("section.services")
+		ret.StatusText, ret.StatusClass = groupStatusText(view.IsOperational(), view.IsDegraded(), loc)
 		groupTarget = historyGroupTarget{Kind: historyGroupServices}
 		probeTargets = servicesGroupTargets(st.Services)
 	default:
@@ -60,24 +65,24 @@ func createGroupDetailView(st *Status, kind string, id string, now time.Time, pr
 	}
 
 	data := newHistoryData(st, now)
-	ret.History = createGroupHistoryView(st, now, groupTarget, ret.Label, data)
-	ret.Availability = availabilityDetailViews(groupAvailabilityWithData(st, probeTargets, reportedTargets, now, data))
+	ret.History = createGroupHistoryViewForLocale(st, now, groupTarget, ret.Label, data, loc)
+	ret.Availability = availabilityDetailViews(groupAvailabilityWithDataForLocale(st, probeTargets, reportedTargets, now, data, loc), loc)
 	logPage, page := paginatedProbeLog(probePage, func(limit int, offset int) ProbeLogPage {
 		return groupProbeLog(st, probeTargets, now, limit, offset)
 	})
-	ret.Events = probeLogEventDetailViews(st, logPage.Events, now, data)
-	ret.EventPagination = newProbeLogPaginationView("/group", kind, id, page, logPage.Total)
+	ret.Events = probeLogEventDetailViewsForLocale(st, logPage.Events, now, data, loc)
+	ret.EventPagination = newProbeLogPaginationView("/group", kind, id, page, logPage.Total, loc.codeOrDefault())
 	return ret, true
 }
 
-func groupStatusText(operational bool, degraded bool) (string, string) {
+func groupStatusText(operational bool, degraded bool, loc *pageLocale) (string, string) {
 	if operational {
-		return "Operational", "success"
+		return loc.T("status.operational"), "success"
 	}
 	if degraded {
-		return "Degraded", "warning"
+		return loc.T("status.degraded"), "warning"
 	}
-	return "Down", "danger"
+	return loc.T("status.down"), "danger"
 }
 
 func findLocationByID(st *Status, id int) *Location {
@@ -93,10 +98,14 @@ func findLocationByID(st *Status, id int) *Location {
 }
 
 func vpsAdminGroupTargets() []historyEntityInfo {
+	return vpsAdminGroupTargetsForLocale(defaultPageLocale())
+}
+
+func vpsAdminGroupTargetsForLocale(loc *pageLocale) []historyEntityInfo {
 	return []historyEntityInfo{
-		{Kind: historyEntityVpsAdmin, ID: "webui", Label: vpsAdminServiceLabel("webui")},
-		{Kind: historyEntityVpsAdmin, ID: "api", Label: vpsAdminServiceLabel("api")},
-		{Kind: historyEntityVpsAdmin, ID: "console", Label: vpsAdminServiceLabel("console")},
+		{Kind: historyEntityVpsAdmin, ID: "webui", Label: vpsAdminServiceLabelForLocale("webui", loc)},
+		{Kind: historyEntityVpsAdmin, ID: "api", Label: vpsAdminServiceLabelForLocale("api", loc)},
+		{Kind: historyEntityVpsAdmin, ID: "console", Label: vpsAdminServiceLabelForLocale("console", loc)},
 	}
 }
 
@@ -157,12 +166,16 @@ func servicesGroupTargets(services *Services) []historyEntityInfo {
 }
 
 func groupAvailability(st *Status, probeTargets []historyEntityInfo, reportedTargets []historyEntityInfo, now time.Time) []availabilityResult {
-	return groupAvailabilityWithData(st, probeTargets, reportedTargets, now, newHistoryData(st, now))
+	return groupAvailabilityWithDataForLocale(st, probeTargets, reportedTargets, now, newHistoryData(st, now), defaultPageLocale())
 }
 
 func groupAvailabilityWithData(st *Status, probeTargets []historyEntityInfo, reportedTargets []historyEntityInfo, now time.Time, data *historyData) []availabilityResult {
+	return groupAvailabilityWithDataForLocale(st, probeTargets, reportedTargets, now, data, defaultPageLocale())
+}
+
+func groupAvailabilityWithDataForLocale(st *Status, probeTargets []historyEntityInfo, reportedTargets []historyEntityInfo, now time.Time, data *historyData, loc *pageLocale) []availabilityResult {
 	data = ensureHistoryData(st, now, data)
-	windows := availabilityWindows(now)
+	windows := availabilityWindowsForLocale(now, loc)
 	ret := make([]availabilityResult, 0, len(windows))
 
 	reports := data.reports
