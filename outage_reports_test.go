@@ -91,6 +91,70 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 	}
 }
 
+func TestOutageReportTitlesForLocale(t *testing.T) {
+	catalog := newLocaleCatalog()
+	cs, ok := catalog.localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale not found")
+	}
+
+	tests := []struct {
+		name   string
+		report OutageReports
+		active string
+		recent string
+	}{
+		{
+			name: "planned",
+			report: OutageReports{
+				AnyActivePlanned: true,
+				AnyRecentPlanned: true,
+			},
+			active: "Nahlášené odstávky",
+			recent: "Nedávno ukončené odstávky",
+		},
+		{
+			name: "unplanned",
+			report: OutageReports{
+				AnyActiveUnplanned: true,
+				AnyRecentUnplanned: true,
+			},
+			active: "Nahlášené výpadky",
+			recent: "Nedávno vyřešené výpadky",
+		},
+		{
+			name: "mixed",
+			report: OutageReports{
+				AnyActivePlanned:   true,
+				AnyActiveUnplanned: true,
+				AnyRecentPlanned:   true,
+				AnyRecentUnplanned: true,
+			},
+			active: "Nahlášené odstávky a výpadky",
+			recent: "Nedávno ukončené odstávky a vyřešené výpadky",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.report.ActiveTitleForLocale(cs); got != tt.active {
+				t.Fatalf("active title = %q, want %q", got, tt.active)
+			}
+			if got := tt.report.RecentTitleForLocale(cs); got != tt.recent {
+				t.Fatalf("recent title = %q, want %q", got, tt.recent)
+			}
+		})
+	}
+
+	if got := cs.T("outages.unable_fetch"); got != "Nepodařilo se načíst hlášení odstávek a výpadků z vpsAdminu." {
+		t.Fatalf("unable fetch text = %q", got)
+	}
+
+	if got := cs.TD("outage.summary.fallback", map[string]any{"ID": 123}); got != "Hlášení #123" {
+		t.Fatalf("fallback summary = %q", got)
+	}
+}
+
 func TestRefreshOutageReportsOnceKeepsOldReportsOnlyInHistory(t *testing.T) {
 	_, st, _ := newTestApplication(t)
 	api := &fakeOutageClient{

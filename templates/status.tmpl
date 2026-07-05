@@ -24,16 +24,7 @@
 <div class="row">
 	<div class="col">
 		{{ if .Status.OutageReports.AnyActive }}
-		<h2>
-			{{ .Locale.T "outages.reported" }}
-			{{ if and .Status.OutageReports.AnyActivePlanned .Status.OutageReports.AnyActiveUnplanned }}
-			{{ .Locale.T "outages.planned_and_unplanned" }}
-			{{ else if .Status.OutageReports.AnyActivePlanned }}
-			{{ .Locale.T "outages.planned" }}
-			{{ else }}
-			{{ .Locale.T "outages.unplanned" }}
-			{{ end }}
-		</h2>
+		<h2>{{ .Status.OutageReports.ActiveTitleForLocale .Locale }}</h2>
 		<table class="table table-sm">
 			<thead>
 				<tr>
@@ -73,16 +64,7 @@
 		</table>
 		{{ end }}
 		{{ if .Status.OutageReports.AnyRecent }}
-		<h2>
-			{{ .Locale.T "outages.resolved" }}
-			{{ if and .Status.OutageReports.AnyRecentPlanned .Status.OutageReports.AnyRecentUnplanned }}
-			{{ .Locale.T "outages.planned_and_unplanned" }}
-			{{ else if .Status.OutageReports.AnyRecentPlanned }}
-			{{ .Locale.T "outages.planned" }}
-			{{ else }}
-			{{ .Locale.T "outages.unplanned" }}
-			{{ end }}
-		</h2>
+		<h2>{{ .Status.OutageReports.RecentTitleForLocale .Locale }}</h2>
 		<table class="table table-sm">
 			<thead>
 				<tr>

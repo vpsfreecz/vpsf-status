@@ -52,6 +52,53 @@ type OutageReports struct {
 	AnyRecentUnplanned bool
 }
 
+func (r *OutageReports) ActiveTitleForLocale(loc *pageLocale) string {
+	if r == nil {
+		return ""
+	}
+
+	return outageReportsTitleForLocale(
+		loc,
+		r.AnyActivePlanned,
+		r.AnyActiveUnplanned,
+		"outages.reported.planned",
+		"outages.reported.unplanned",
+		"outages.reported.planned_and_unplanned",
+	)
+}
+
+func (r *OutageReports) RecentTitleForLocale(loc *pageLocale) string {
+	if r == nil {
+		return ""
+	}
+
+	return outageReportsTitleForLocale(
+		loc,
+		r.AnyRecentPlanned,
+		r.AnyRecentUnplanned,
+		"outages.recent.planned",
+		"outages.recent.unplanned",
+		"outages.recent.planned_and_unplanned",
+	)
+}
+
+func outageReportsTitleForLocale(
+	loc *pageLocale,
+	planned bool,
+	unplanned bool,
+	plannedKey string,
+	unplannedKey string,
+	bothKey string,
+) string {
+	if planned && !unplanned {
+		return loc.T(plannedKey)
+	} else if unplanned && !planned {
+		return loc.T(unplannedKey)
+	}
+
+	return loc.T(bothKey)
+}
+
 type OutageReport struct {
 	Id               int64
 	BeginsAt         time.Time

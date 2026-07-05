@@ -125,25 +125,29 @@ other = "Down"
 hash = "sha1-5c539dde2e21f6a85bc4ae8d2908ef669d2a76fc"
 other = "Error"
 
-["outages.reported"]
-hash = "sha1-2c1721181711e3379b4e53caa088535975399de7"
-other = "Reported"
+["outages.reported.planned"]
+hash = "sha1-b7d836f6186ad4c71142474ba14ec546dc1d7898"
+other = "Reported planned outages"
 
-["outages.resolved"]
-hash = "sha1-b53f73060cc15f939fb5d8d549959398f46d750c"
-other = "Resolved"
+["outages.reported.unplanned"]
+hash = "sha1-7ef95e6df4452f9c43f41bced57612be3002026a"
+other = "Reported outages"
 
-["outages.planned"]
-hash = "sha1-59b760ed4afd44e61c4705294236917c361d5d52"
-other = "Planned Outages"
+["outages.reported.planned_and_unplanned"]
+hash = "sha1-e18908f0cf13f1d4ebda7f4bbab2776ec1c54817"
+other = "Reported planned and unplanned outages"
 
-["outages.unplanned"]
-hash = "sha1-6ae4cf9c9e7d208b0c7c769f0b86a2c17ef47aa3"
-other = "Unplanned Outages"
+["outages.recent.planned"]
+hash = "sha1-4a75ca7584cf24363d9a15da3485b40f3a4ea612"
+other = "Recently completed planned outages"
 
-["outages.planned_and_unplanned"]
-hash = "sha1-718a507444cbf3092ba2b9a9f9cd29609df6b0e3"
-other = "Planned and Unplanned Outages"
+["outages.recent.unplanned"]
+hash = "sha1-7f525dbfa1c644a74a2c561ff092b9a8b67fbaab"
+other = "Recently resolved outages"
+
+["outages.recent.planned_and_unplanned"]
+hash = "sha1-e32cdbf1e99e3b3998a0880920d2d81af0f1cb93"
+other = "Recently resolved planned and unplanned outages"
 
 ["outages.no_issues"]
 hash = "sha1-09bdcae845feec74ab78c53107bcaff895f0b480"

@@ -126,25 +126,29 @@ other = "Mimo provoz"
 hash = "sha1-5c539dde2e21f6a85bc4ae8d2908ef669d2a76fc"
 other = "Chyba"
 
-["outages.reported"]
-hash = "sha1-2c1721181711e3379b4e53caa088535975399de7"
-other = "Nahlášené"
+["outages.reported.planned"]
+hash = "sha1-b7d836f6186ad4c71142474ba14ec546dc1d7898"
+other = "Nahlášené odstávky"
 
-["outages.resolved"]
-hash = "sha1-b53f73060cc15f939fb5d8d549959398f46d750c"
-other = "Vyřešené"
+["outages.reported.unplanned"]
+hash = "sha1-7ef95e6df4452f9c43f41bced57612be3002026a"
+other = "Nahlášené výpadky"
 
-["outages.planned"]
-hash = "sha1-59b760ed4afd44e61c4705294236917c361d5d52"
-other = "Plánované odstávky"
+["outages.reported.planned_and_unplanned"]
+hash = "sha1-e18908f0cf13f1d4ebda7f4bbab2776ec1c54817"
+other = "Nahlášené odstávky a výpadky"
 
-["outages.unplanned"]
-hash = "sha1-6ae4cf9c9e7d208b0c7c769f0b86a2c17ef47aa3"
-other = "Neplánované výpadky"
+["outages.recent.planned"]
+hash = "sha1-4a75ca7584cf24363d9a15da3485b40f3a4ea612"
+other = "Nedávno ukončené odstávky"
 
-["outages.planned_and_unplanned"]
-hash = "sha1-718a507444cbf3092ba2b9a9f9cd29609df6b0e3"
-other = "Plánované odstávky a neplánované výpadky"
+["outages.recent.unplanned"]
+hash = "sha1-7f525dbfa1c644a74a2c561ff092b9a8b67fbaab"
+other = "Nedávno vyřešené výpadky"
+
+["outages.recent.planned_and_unplanned"]
+hash = "sha1-e32cdbf1e99e3b3998a0880920d2d81af0f1cb93"
+other = "Nedávno ukončené odstávky a vyřešené výpadky"
 
 ["outages.no_issues"]
 hash = "sha1-09bdcae845feec74ab78c53107bcaff895f0b480"
@@ -156,7 +160,7 @@ other = "historie"
 
 ["outages.unable_fetch"]
 hash = "sha1-7443d05737f1a164622cb198929c75bb089918af"
-other = "Nepodařilo se načíst hlášení výpadků z vpsAdminu."
+other = "Nepodařilo se načíst hlášení odstávek a výpadků z vpsAdminu."
 
 ["outage.type.planned"]
 hash = "sha1-f3e480220764ebf3004028021d5a0135fc1a1e3c"
@@ -168,7 +172,7 @@ other = "Výpadek"
 
 ["outage.summary.fallback"]
 hash = "sha1-cd712663f47bbfd07b354e54d14cb4c6f24fe950"
-other = "Výpadek #{{.ID}}"
+other = "Hlášení #{{.ID}}"
 
 ["outage.summary.planned"]
 hash = "sha1-2de8605566b84d0a2376a7404b5196046fde3271"
@@ -548,7 +552,7 @@ other = "historii"
 
 ["about.reports.after_history"]
 hash = "sha1-c77754729e02d6bb43b12a8f075df7838d70853c"
-other = "takových plánovaných odstávek a neplánovaných výpadků. Pokud při výpadku nefunguje vpsAdmin, můžeme na této stránce zveřejnit informace o problému a očekávaném vyřešení."
+other = "takových odstávek a výpadků. Pokud při výpadku nefunguje vpsAdmin, můžeme na této stránce zveřejnit informace o problému a očekávaném vyřešení."
 
 ["about.source.before_link"]
 hash = "sha1-f32976db3f1750a7df4dd6762a3af4acacc1bff7"

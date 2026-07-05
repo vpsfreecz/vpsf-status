@@ -79,10 +79,8 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		body,
 		`<html lang="cs">`,
 		"Vygenerováno:",
-		"Nahlášené",
-		"Plánované odstávky",
-		"Vyřešené",
-		"Neplánované výpadky",
+		"Nahlášené odstávky",
+		"Nedávno vyřešené výpadky",
 		`class="dropdown-item" href="/?lang=en"`,
 		`class="dropdown-item active" href="/?lang=cs"`,
 		">English</a>",
@@ -98,7 +96,7 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		`href="/?lang=en"`,
 		`href="/?lang=cs"`,
 	)
-	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Planned Outages")
+	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported planned outages")
 }
 
 func TestRoutesServeIndexOperationalState(t *testing.T) {
@@ -147,7 +145,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 2, Total: 2})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Operational: 1, Total: 1})
-	requireNotContains(t, body, "Reported Planned Outages", "Recent Security Advisories", "Unable to fetch outage reports", "Unable to fetch security advisories", "Last 90 days", "Overall status history")
+	requireNotContains(t, body, "Reported planned outages", "Recent Security Advisories", "Unable to fetch outage reports", "Unable to fetch security advisories", "Last 90 days", "Overall status history")
 }
 
 func TestRoutesServeEntityDetail(t *testing.T) {
@@ -649,10 +647,8 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"Maintenance notice",
-		"Reported",
-		"Planned Outages",
-		"Resolved",
-		"Unplanned Outages",
+		"Reported planned outages",
+		"Recently resolved outages",
 		"Router replacement",
 		"Power failure",
 		"node1.prg",
@@ -889,9 +885,17 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	body := rr.Body.String()
-	requireContains(t, body, "Reported", "Resolved", "Switch down", "Old maintenance", "System restart", "Unavailability")
+	requireContains(
+		t,
+		body,
+		"Reported planned and unplanned outages",
+		"Recently resolved planned and unplanned outages",
+		"Switch down",
+		"Old maintenance",
+		"System restart",
+		"Unavailability",
+	)
 	requireNotContains(t, body, "system_restart", "unavailability")
-	requireOccurrences(t, body, "Planned and Unplanned Outages", 2)
 }
 
 func TestRoutesServeIndexAllDownState(t *testing.T) {

@@ -24,7 +24,8 @@ in English when Czech would be unnatural.
 - `DNS resolvers` are `DNS resolvery`.
 - `Name servers` are `DNS servery`.
 - A planned outage is `odstávka`; an unplanned outage is `výpadek`.
-  Never use `plánovaný výpadek`.
+  Never use `plánovaný výpadek`, `neplánovaný výpadek`,
+  `plánované výpadky`, or `neplánované výpadky`.
 - `Back` navigation links are `Zpět`.
 - `Event log` is usually `Události`.
 - Language names in the selector are native names, e.g. `English` and

@@ -41,27 +41,28 @@ const (
 	MsgStatusProbeDown        = "status.probe.down"
 	MsgStatusProbeError       = "status.probe.error"
 
-	MsgOutagesReported            = "outages.reported"
-	MsgOutagesResolved            = "outages.resolved"
-	MsgOutagesPlanned             = "outages.planned"
-	MsgOutagesUnplanned           = "outages.unplanned"
-	MsgOutagesPlannedAndUnplanned = "outages.planned_and_unplanned"
-	MsgOutagesNoIssues            = "outages.no_issues"
-	MsgOutagesHistory             = "outages.history"
-	MsgOutagesUnableFetch         = "outages.unable_fetch"
-	MsgOutageTypePlanned          = "outage.type.planned"
-	MsgOutageTypeUnplanned        = "outage.type.unplanned"
-	MsgOutageSummaryFallback      = "outage.summary.fallback"
-	MsgOutageSummaryPlanned       = "outage.summary.planned"
-	MsgOutageSummaryUnplanned     = "outage.summary.unplanned"
-	MsgOutageImpactTBD            = "outage.impact.tbd"
-	MsgOutageImpactSystemRestart  = "outage.impact.system_restart"
-	MsgOutageImpactSystemReset    = "outage.impact.system_reset"
-	MsgOutageImpactNetwork        = "outage.impact.network"
-	MsgOutageImpactPerformance    = "outage.impact.performance"
-	MsgOutageImpactUnavailability = "outage.impact.unavailability"
-	MsgOutageImpactExport         = "outage.impact.export"
-	MsgOutageMoreInformation      = "outage.more_information"
+	MsgOutagesReportedPlanned             = "outages.reported.planned"
+	MsgOutagesReportedUnplanned           = "outages.reported.unplanned"
+	MsgOutagesReportedPlannedAndUnplanned = "outages.reported.planned_and_unplanned"
+	MsgOutagesRecentPlanned               = "outages.recent.planned"
+	MsgOutagesRecentUnplanned             = "outages.recent.unplanned"
+	MsgOutagesRecentPlannedAndUnplanned   = "outages.recent.planned_and_unplanned"
+	MsgOutagesNoIssues                    = "outages.no_issues"
+	MsgOutagesHistory                     = "outages.history"
+	MsgOutagesUnableFetch                 = "outages.unable_fetch"
+	MsgOutageTypePlanned                  = "outage.type.planned"
+	MsgOutageTypeUnplanned                = "outage.type.unplanned"
+	MsgOutageSummaryFallback              = "outage.summary.fallback"
+	MsgOutageSummaryPlanned               = "outage.summary.planned"
+	MsgOutageSummaryUnplanned             = "outage.summary.unplanned"
+	MsgOutageImpactTBD                    = "outage.impact.tbd"
+	MsgOutageImpactSystemRestart          = "outage.impact.system_restart"
+	MsgOutageImpactSystemReset            = "outage.impact.system_reset"
+	MsgOutageImpactNetwork                = "outage.impact.network"
+	MsgOutageImpactPerformance            = "outage.impact.performance"
+	MsgOutageImpactUnavailability         = "outage.impact.unavailability"
+	MsgOutageImpactExport                 = "outage.impact.export"
+	MsgOutageMoreInformation              = "outage.more_information"
 
 	MsgSecurityRecent      = "security.recent"
 	MsgSecurityUnableFetch = "security.unable_fetch"
@@ -194,11 +195,12 @@ func Messages() []*i18n.Message {
 		{ID: MsgStatusProbeDegraded, Other: "Degraded"},
 		{ID: MsgStatusProbeDown, Other: "Down"},
 		{ID: MsgStatusProbeError, Other: "Error"},
-		{ID: MsgOutagesReported, Other: "Reported"},
-		{ID: MsgOutagesResolved, Other: "Resolved"},
-		{ID: MsgOutagesPlanned, Other: "Planned Outages"},
-		{ID: MsgOutagesUnplanned, Other: "Unplanned Outages"},
-		{ID: MsgOutagesPlannedAndUnplanned, Other: "Planned and Unplanned Outages"},
+		{ID: MsgOutagesReportedPlanned, Other: "Reported planned outages"},
+		{ID: MsgOutagesReportedUnplanned, Other: "Reported outages"},
+		{ID: MsgOutagesReportedPlannedAndUnplanned, Other: "Reported planned and unplanned outages"},
+		{ID: MsgOutagesRecentPlanned, Other: "Recently completed planned outages"},
+		{ID: MsgOutagesRecentUnplanned, Other: "Recently resolved outages"},
+		{ID: MsgOutagesRecentPlannedAndUnplanned, Other: "Recently resolved planned and unplanned outages"},
 		{ID: MsgOutagesNoIssues, Other: "No issues reported. See"},
 		{ID: MsgOutagesHistory, Other: "history"},
 		{ID: MsgOutagesUnableFetch, Other: "Unable to fetch outage reports from vpsAdmin."},

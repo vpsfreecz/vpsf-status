@@ -91,20 +91,23 @@ other = "Mimo provoz"
 ["status.probe.error"]
 other = "Chyba"
 
-["outages.reported"]
-other = "Nahlášené"
+["outages.reported.planned"]
+other = "Nahlášené odstávky"
 
-["outages.resolved"]
-other = "Vyřešené"
+["outages.reported.unplanned"]
+other = "Nahlášené výpadky"
 
-["outages.planned"]
-other = "Plánované odstávky"
+["outages.reported.planned_and_unplanned"]
+other = "Nahlášené odstávky a výpadky"
 
-["outages.unplanned"]
-other = "Neplánované výpadky"
+["outages.recent.planned"]
+other = "Nedávno ukončené odstávky"
 
-["outages.planned_and_unplanned"]
-other = "Plánované odstávky a neplánované výpadky"
+["outages.recent.unplanned"]
+other = "Nedávno vyřešené výpadky"
+
+["outages.recent.planned_and_unplanned"]
+other = "Nedávno ukončené odstávky a vyřešené výpadky"
 
 ["outages.no_issues"]
 other = "Nejsou hlášeny žádné problémy. Viz"
@@ -113,7 +116,7 @@ other = "Nejsou hlášeny žádné problémy. Viz"
 other = "historie"
 
 ["outages.unable_fetch"]
-other = "Nepodařilo se načíst hlášení výpadků z vpsAdminu."
+other = "Nepodařilo se načíst hlášení odstávek a výpadků z vpsAdminu."
 
 ["outage.type.planned"]
 other = "Odstávka"
@@ -122,7 +125,7 @@ other = "Odstávka"
 other = "Výpadek"
 
 ["outage.summary.fallback"]
-other = "Výpadek #{{.ID}}"
+other = "Hlášení #{{.ID}}"
 
 ["outage.summary.planned"]
 other = "Odstávka: {{.Summary}}"
@@ -407,7 +410,7 @@ other = ". Viz"
 other = "historii"
 
 ["about.reports.after_history"]
-other = "takových plánovaných odstávek a neplánovaných výpadků. Pokud při výpadku nefunguje vpsAdmin, můžeme na této stránce zveřejnit informace o problému a očekávaném vyřešení."
+other = "takových odstávek a výpadků. Pokud při výpadku nefunguje vpsAdmin, můžeme na této stránce zveřejnit informace o problému a očekávaném vyřešení."
 
 ["about.source.before_link"]
 other = "Zdrojový kód aplikace"
