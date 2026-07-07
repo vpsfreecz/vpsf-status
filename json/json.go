@@ -50,9 +50,10 @@ type OutageReport struct {
 }
 
 type OutageEntity struct {
-	Name  string `json:"name"`
-	Id    int64  `json:"id"`
-	Label string `json:"label"`
+	Name       string `json:"name"`
+	EntityType string `json:"entity_type"`
+	Id         int64  `json:"id"`
+	Label      string `json:"label"`
 }
 
 type SecurityAdvisories struct {

@@ -507,7 +507,14 @@ func writeOutageReportSignature(h hash.Hash, prefix string, report *OutageReport
 		report.EnSummary,
 	)
 	for _, entity := range report.AffectedEntities {
-		writeIndexSignature(h, prefix+"_entity", entity.Name, entity.Id, entity.Label)
+		writeIndexSignature(
+			h,
+			prefix+"_entity",
+			entity.Name,
+			entity.EffectiveType(),
+			entity.Id,
+			entity.DisplayLabel(),
+		)
 	}
 }
 

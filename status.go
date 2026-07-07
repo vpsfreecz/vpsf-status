@@ -115,9 +115,10 @@ type OutageReport struct {
 }
 
 type OutageEntity struct {
-	Name  string
-	Id    int64
-	Label string
+	Name       string
+	EntityType string
+	Id         int64
+	Label      string
 }
 
 type SecurityAdvisories struct {
@@ -492,9 +493,10 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 
 		for iEnt, ent := range outage.AffectedEntities {
 			jsonOutage.Entities[iEnt] = json.OutageEntity{
-				Name:  ent.Name,
-				Id:    ent.Id,
-				Label: ent.Label,
+				Name:       ent.Name,
+				EntityType: ent.EffectiveType(),
+				Id:         ent.Id,
+				Label:      ent.DisplayLabel(),
 			}
 		}
 
@@ -518,9 +520,10 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 
 		for iEnt, ent := range outage.AffectedEntities {
 			jsonOutage.Entities[iEnt] = json.OutageEntity{
-				Name:  ent.Name,
-				Id:    ent.Id,
-				Label: ent.Label,
+				Name:       ent.Name,
+				EntityType: ent.EffectiveType(),
+				Id:         ent.Id,
+				Label:      ent.DisplayLabel(),
 			}
 		}
 

@@ -51,7 +51,7 @@
 						{{ end }}
 					</td>
 					<td>
-						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
+						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.DisplayLabel }}{{ end }}
 					</td>
 					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
 					<td>{{ $outage.SummaryForLocale $.Locale }}</td>
@@ -91,7 +91,7 @@
 						{{ end }}
 					</td>
 					<td>
-						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.Label }}{{ end }}
+						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.DisplayLabel }}{{ end }}
 					</td>
 					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
 					<td>{{ $outage.SummaryForLocale $.Locale }}</td>

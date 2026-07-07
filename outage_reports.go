@@ -175,9 +175,10 @@ func fetchOutageEntities(api outageReportsClient, report *OutageReport) error {
 
 	for _, entity := range resp.Output {
 		report.AffectedEntities = append(report.AffectedEntities, OutageEntity{
-			Name:  entity.Name,
-			Id:    entity.EntityId,
-			Label: entity.Label,
+			Name:       entity.Name,
+			EntityType: normalizeOutageEntityType(entity.Name),
+			Id:         entity.EntityId,
+			Label:      entity.Label,
 		})
 	}
 

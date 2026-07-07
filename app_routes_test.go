@@ -1188,10 +1188,10 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	if !body.OutageReports.Status || len(body.OutageReports.Announced) != 1 || len(body.OutageReports.Recent) != 1 {
 		t.Fatalf("outage_reports = %+v", body.OutageReports)
 	}
-	if got := body.OutageReports.Announced[0]; got.Id != 1001 || got.Type != "planned_outage" || got.State != "announced" || got.Entities[0].Label != "node1.prg" {
+	if got := body.OutageReports.Announced[0]; got.Id != 1001 || got.Type != "planned_outage" || got.State != "announced" || got.Entities[0].EntityType != "node" || got.Entities[0].Label != "node1.prg" {
 		t.Fatalf("announced outage = %+v", got)
 	}
-	if got := body.OutageReports.Recent[0]; got.Id != 1002 || got.Type != "unplanned_outage" || got.State != "resolved" || got.Entities[0].Label != "Praha" {
+	if got := body.OutageReports.Recent[0]; got.Id != 1002 || got.Type != "unplanned_outage" || got.State != "resolved" || got.Entities[0].EntityType != "location" || got.Entities[0].Label != "Praha" {
 		t.Fatalf("recent outage = %+v", got)
 	}
 	rawOutages := requireMapValue(t, raw, "outage_reports")
@@ -1412,7 +1412,7 @@ func requireOutageJSONKeys(t *testing.T, outage map[string]any) {
 	t.Helper()
 
 	requireMapKeys(t, outage, "begins_at", "cs_description", "cs_summary", "duration", "en_description", "en_summary", "entities", "id", "impact", "state", "type")
-	requireMapKeys(t, requireSliceMap(t, requireSliceValue(t, outage, "entities"), 0), "id", "label", "name")
+	requireMapKeys(t, requireSliceMap(t, requireSliceValue(t, outage, "entities"), 0), "entity_type", "id", "label", "name")
 }
 
 func requireSecurityAdvisoryJSONKeys(t *testing.T, advisory map[string]any) {

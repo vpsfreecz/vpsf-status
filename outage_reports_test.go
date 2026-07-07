@@ -83,11 +83,59 @@ func TestRefreshOutageReportsOnceMapsActiveRecentAndEntities(t *testing.T) {
 	if got := reports.ActiveList[0].AffectedEntities[0]; got.Name != "node" || got.Id != 101 || got.Label != "node1.prg" {
 		t.Fatalf("active outage entity = %+v", got)
 	}
+	if got := reports.ActiveList[0].AffectedEntities[0].EntityType; got != "node" {
+		t.Fatalf("active outage entity type = %q", got)
+	}
 	if got := reports.RecentList[0].AffectedEntities[0]; got.Name != "location" || got.Id != 3 || got.Label != "Praha" {
 		t.Fatalf("recent outage entity = %+v", got)
 	}
+	if got := reports.RecentList[0].AffectedEntities[0].EntityType; got != "location" {
+		t.Fatalf("recent outage entity type = %q", got)
+	}
 	if got := st.VpsAdminLocations[7]; got.Id != 7 || got.Label != "Staging" || got.EnvironmentId != 5 || got.EnvironmentLabel != "Staging" {
 		t.Fatalf("vpsAdmin location metadata = %+v", got)
+	}
+}
+
+func TestOutageEntityDisplayLabel(t *testing.T) {
+	tests := []struct {
+		name   string
+		entity OutageEntity
+		want   string
+	}{
+		{
+			name:   "new API node label",
+			entity: OutageEntity{Name: "Node", EntityType: "node", Label: "node1.prg"},
+			want:   "node1.prg",
+		},
+		{
+			name:   "old API node label",
+			entity: OutageEntity{Name: "Node", Label: "Node node1.prg"},
+			want:   "node1.prg",
+		},
+		{
+			name:   "old API location label",
+			entity: OutageEntity{Name: "Location", Label: "Location Praha"},
+			want:   "Praha",
+		},
+		{
+			name:   "custom label",
+			entity: OutageEntity{Name: "External router", Label: "External router"},
+			want:   "External router",
+		},
+		{
+			name:   "empty label",
+			entity: OutageEntity{Name: "External router"},
+			want:   "External router",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.entity.DisplayLabel(); got != tt.want {
+				t.Fatalf("DisplayLabel() = %q, want %q", got, tt.want)
+			}
+		})
 	}
 }
 
