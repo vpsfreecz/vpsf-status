@@ -127,28 +127,28 @@ hash = "sha1-5c539dde2e21f6a85bc4ae8d2908ef669d2a76fc"
 other = "Chyba"
 
 ["outages.reported.planned"]
-hash = "sha1-b7d836f6186ad4c71142474ba14ec546dc1d7898"
-other = "Nahlášené odstávky"
+hash = "sha1-04f254dd6a7b7dc16d17884d8e868cd42d0a5d77"
+other = "Hlášené odstávky"
 
 ["outages.reported.unplanned"]
 hash = "sha1-7ef95e6df4452f9c43f41bced57612be3002026a"
-other = "Nahlášené výpadky"
+other = "Hlášené výpadky"
 
 ["outages.reported.planned_and_unplanned"]
-hash = "sha1-e18908f0cf13f1d4ebda7f4bbab2776ec1c54817"
-other = "Nahlášené odstávky a výpadky"
+hash = "sha1-53867bf38a943e6b5b6fa677b754189aa4bdf571"
+other = "Hlášené odstávky a výpadky"
 
 ["outages.recent.planned"]
-hash = "sha1-4a75ca7584cf24363d9a15da3485b40f3a4ea612"
-other = "Nedávno ukončené odstávky"
+hash = "sha1-7cb976a268b51f5bedff41a9d88b8d77118f67f8"
+other = "Nedávné odstávky"
 
 ["outages.recent.unplanned"]
-hash = "sha1-7f525dbfa1c644a74a2c561ff092b9a8b67fbaab"
-other = "Nedávno vyřešené výpadky"
+hash = "sha1-613a9530bbf62ddf26f4bb33c54583f3634e470c"
+other = "Nedávné výpadky"
 
 ["outages.recent.planned_and_unplanned"]
-hash = "sha1-e32cdbf1e99e3b3998a0880920d2d81af0f1cb93"
-other = "Nedávno ukončené odstávky a vyřešené výpadky"
+hash = "sha1-f07376369a6593af8a2fcdc46a632ab5bc89f0d6"
+other = "Nedávné odstávky a výpadky"
 
 ["outages.no_issues"]
 hash = "sha1-09bdcae845feec74ab78c53107bcaff895f0b480"

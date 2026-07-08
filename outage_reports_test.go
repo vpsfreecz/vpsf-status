@@ -158,8 +158,8 @@ func TestOutageReportTitlesForLocale(t *testing.T) {
 				AnyActivePlanned: true,
 				AnyRecentPlanned: true,
 			},
-			active: "Nahlášené odstávky",
-			recent: "Nedávno ukončené odstávky",
+			active: "Hlášené odstávky",
+			recent: "Nedávné odstávky",
 		},
 		{
 			name: "unplanned",
@@ -167,8 +167,8 @@ func TestOutageReportTitlesForLocale(t *testing.T) {
 				AnyActiveUnplanned: true,
 				AnyRecentUnplanned: true,
 			},
-			active: "Nahlášené výpadky",
-			recent: "Nedávno vyřešené výpadky",
+			active: "Hlášené výpadky",
+			recent: "Nedávné výpadky",
 		},
 		{
 			name: "mixed",
@@ -178,8 +178,8 @@ func TestOutageReportTitlesForLocale(t *testing.T) {
 				AnyRecentPlanned:   true,
 				AnyRecentUnplanned: true,
 			},
-			active: "Nahlášené odstávky a výpadky",
-			recent: "Nedávno ukončené odstávky a vyřešené výpadky",
+			active: "Hlášené odstávky a výpadky",
+			recent: "Nedávné odstávky a výpadky",
 		},
 	}
 

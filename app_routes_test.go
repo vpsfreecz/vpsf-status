@@ -79,8 +79,8 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		body,
 		`<html lang="cs">`,
 		"Vygenerováno:",
-		"Nahlášené odstávky",
-		"Nedávno vyřešené výpadky",
+		"Hlášené odstávky",
+		"Nedávné výpadky",
 		`class="dropdown-item" href="/?lang=en"`,
 		`class="dropdown-item active" href="/?lang=cs"`,
 		">English</a>",
@@ -96,7 +96,7 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		`href="/?lang=en"`,
 		`href="/?lang=cs"`,
 	)
-	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported planned outages")
+	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported maintenance")
 }
 
 func TestRoutesServeIndexOperationalState(t *testing.T) {
@@ -145,7 +145,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 	requireStatusCountsAfter(t, body, `href="/group?kind=services&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-webservices"`, StatusCounts{Operational: 2, Total: 2})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-nameservers"`, StatusCounts{Operational: 1, Total: 1})
-	requireNotContains(t, body, "Reported planned outages", "Recent Security Advisories", "Unable to fetch outage reports", "Unable to fetch security advisories", "Last 90 days", "Overall status history")
+	requireNotContains(t, body, "Reported maintenance", "Recent Security Advisories", "Unable to fetch outage reports", "Unable to fetch security advisories", "Last 90 days", "Overall status history")
 }
 
 func TestRoutesServeEntityDetail(t *testing.T) {
@@ -647,8 +647,8 @@ func TestRoutesServeIndexMaintenanceAndDegradedState(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"Maintenance notice",
-		"Reported planned outages",
-		"Recently resolved outages",
+		"Reported maintenance",
+		"Recent outages",
 		"Router replacement",
 		"Power failure",
 		"node1.prg",
@@ -888,8 +888,8 @@ func TestRoutesServeIndexMixedOutageHeadings(t *testing.T) {
 	requireContains(
 		t,
 		body,
-		"Reported planned and unplanned outages",
-		"Recently resolved planned and unplanned outages",
+		"Reported maintenance and outages",
+		"Recent maintenance and outages",
 		"Switch down",
 		"Old maintenance",
 		"System restart",

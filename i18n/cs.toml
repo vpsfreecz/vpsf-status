@@ -92,22 +92,22 @@ other = "Mimo provoz"
 other = "Chyba"
 
 ["outages.reported.planned"]
-other = "Nahlášené odstávky"
+other = "Hlášené odstávky"
 
 ["outages.reported.unplanned"]
-other = "Nahlášené výpadky"
+other = "Hlášené výpadky"
 
 ["outages.reported.planned_and_unplanned"]
-other = "Nahlášené odstávky a výpadky"
+other = "Hlášené odstávky a výpadky"
 
 ["outages.recent.planned"]
-other = "Nedávno ukončené odstávky"
+other = "Nedávné odstávky"
 
 ["outages.recent.unplanned"]
-other = "Nedávno vyřešené výpadky"
+other = "Nedávné výpadky"
 
 ["outages.recent.planned_and_unplanned"]
-other = "Nedávno ukončené odstávky a vyřešené výpadky"
+other = "Nedávné odstávky a výpadky"
 
 ["outages.no_issues"]
 other = "Nejsou hlášeny žádné problémy. Viz"
