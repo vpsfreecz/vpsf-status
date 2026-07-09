@@ -207,7 +207,7 @@ func createHistoryViewsWithData(st *Status, now time.Time, data *historyData) (h
 func createHistoryViewsWithDataForLocale(st *Status, now time.Time, data *historyData, loc *pageLocale) (historyGroupViews, map[string]HistoryBarView) {
 	data = ensureHistoryData(st, now, data)
 	days := data.days
-	entities := configuredHistoryEntities(st)
+	entities := configuredHistoryEntitiesForLocale(st, loc)
 	bars := make(map[string]HistoryBarView, len(entities))
 
 	for _, entity := range entities {
@@ -373,6 +373,10 @@ func historyTargetsInclude(targets []historyGroupTarget, want historyGroupTarget
 }
 
 func configuredHistoryEntities(st *Status) []historyEntityInfo {
+	return configuredHistoryEntitiesForLocale(st, defaultPageLocale())
+}
+
+func configuredHistoryEntitiesForLocale(st *Status, loc *pageLocale) []historyEntityInfo {
 	if st == nil {
 		return nil
 	}
@@ -380,7 +384,7 @@ func configuredHistoryEntities(st *Status) []historyEntityInfo {
 	ret := []historyEntityInfo{
 		{Kind: historyEntityVpsAdmin, ID: "webui", Label: "vpsAdmin web UI"},
 		{Kind: historyEntityVpsAdmin, ID: "api", Label: "vpsAdmin API"},
-		{Kind: historyEntityVpsAdmin, ID: "console", Label: "Remote Console"},
+		{Kind: historyEntityVpsAdmin, ID: "console", Label: vpsAdminServiceLabelForLocale("console", loc)},
 	}
 
 	for _, loc := range st.LocationList {
@@ -575,7 +579,7 @@ func newHistoryBarWithLanes(now time.Time, label string, lanes []HistoryLaneView
 		day := start.AddDate(0, 0, i)
 		days[i] = HistoryDayView{
 			Date:             day.Format("2006-01-02"),
-			Label:            day.Format("Jan _2, 2006"),
+			Label:            formatHistoryDay(day, loc),
 			State:            historySeverityOperational,
 			StartsAt:         day,
 			Lanes:            cloneHistoryLanes(cleanLanes),
@@ -680,7 +684,7 @@ func setHistoryLaneSeverity(lanes []HistoryLaneView, laneKey string, severity st
 }
 
 func historyIncidentWithLaneLabel(incident HistoryIncidentView, label string, loc *pageLocale) HistoryIncidentView {
-	if label == "" || strings.Contains(normalizeEntityText(incident.Text), normalizeEntityText(label)) {
+	if label == "" || historyTextContainsLaneLabel(incident.Text, label, loc) {
 		return incident
 	}
 
@@ -690,6 +694,18 @@ func historyIncidentWithLaneLabel(incident HistoryIncidentView, label string, lo
 		"Text":  ret.Text,
 	})
 	return ret
+}
+
+func historyTextContainsLaneLabel(text string, label string, loc *pageLocale) bool {
+	normalizedText := normalizeEntityText(text)
+	normalizedLabel := normalizeEntityText(label)
+	if normalizedLabel == "" || strings.Contains(normalizedText, normalizedLabel) {
+		return true
+	}
+	if loc != nil && loc.codeOrDefault() == "cs" && normalizedLabel == normalizeEntityText(loc.T("service.vpsadmin.console")) {
+		return strings.Contains(normalizedText, normalizeEntityText("Remote Console"))
+	}
+	return false
 }
 
 func cloneHistoryLanes(lanes []HistoryLaneView) []HistoryLaneView {
@@ -1350,10 +1366,7 @@ func probeHistoryIncident(incident ProbeIncident, now time.Time) HistoryIncident
 }
 
 func probeHistoryIncidentForLocale(incident ProbeIncident, now time.Time, loc *pageLocale) HistoryIncidentView {
-	label := incident.EntityLabel
-	if label == "" {
-		label = incident.EntityID
-	}
+	label := probeEntityLabelForLocale(incident.EntityKind, incident.EntityID, incident.EntityLabel, loc)
 
 	status := incident.Status
 	if status == "" {
@@ -1364,6 +1377,7 @@ func probeHistoryIncidentForLocale(incident ProbeIncident, now time.Time, loc *p
 	if message == "" {
 		message = status
 	}
+	message = probeStatusDescriptionForLocale(incident.Method, message, loc)
 
 	endsAt := now
 	open := incident.EndsAt == nil
@@ -1377,7 +1391,6 @@ func probeHistoryIncidentForLocale(incident ProbeIncident, now time.Time, loc *p
 	return HistoryIncidentView{
 		Text: loc.TD("history.probe_incident", map[string]any{
 			"Label":   label,
-			"Method":  incident.Method,
 			"Message": message,
 		}),
 		StartLabel:    historyIncidentStartLabelForLocale(incident.StartsAt, loc),

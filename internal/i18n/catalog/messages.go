@@ -125,6 +125,22 @@ const (
 	MsgProbeLogNext      = "probe_log.next"
 	MsgProbeLogNoChanges = "probe_log.no_changes"
 
+	MsgProbeMethodHTTP     = "probe.method.http"
+	MsgProbeMethodPing     = "probe.method.ping"
+	MsgProbeMethodLookup   = "probe.method.lookup"
+	MsgProbeMethodStorage  = "probe.method.storage"
+	MsgProbeMethodVpsAdmin = "probe.method.vpsadmin"
+
+	MsgProbeMessageCheckFailed     = "probe.message.check_failed"
+	MsgProbeMessageLookupFailed    = "probe.message.lookup_failed"
+	MsgProbeMessageLookupSucceeded = "probe.message.lookup_succeeded"
+	MsgProbeMessageNotReporting    = "probe.message.not_reporting"
+	MsgProbeMessageUnderMaint      = "probe.message.under_maintenance"
+	MsgProbeMessageReporting       = "probe.message.reporting"
+	MsgProbeMessageResponding      = "probe.message.responding"
+	MsgProbeMessageNotResponding   = "probe.message.not_responding"
+	MsgProbeMessagePacketLoss      = "probe.message.packet_loss"
+
 	MsgHistoryAria                 = "history.aria"
 	MsgHistoryNoIncidents          = "history.no_incidents"
 	MsgHistoryDaySummaryEmpty      = "history.day_summary.empty"
@@ -176,7 +192,7 @@ func Messages() []*i18n.Message {
 		{ID: MsgFooterAbout, Other: "About"},
 		{ID: MsgNoticeUpdatedAt, Other: "Updated at {{.UpdatedAt}}"},
 		{ID: MsgLoadingTitle, Other: "Initializing..."},
-		{ID: MsgLoadingBody, Other: "vpsFree.cz Status is initializing and will be ready in a few seconds, please try to refresh the page."},
+		{ID: MsgLoadingBody, Other: "vpsFree.cz Status is initializing and should be ready in a few seconds. Please refresh the page."},
 		{ID: MsgStatusCountsAria, Other: "{{.Operational}} operational, {{.Degraded}} degraded or under maintenance, {{.Down}} down, {{.Total}} total"},
 		{ID: MsgStatusOperational, Other: "Operational"},
 		{ID: MsgStatusDegraded, Other: "Degraded"},
@@ -217,7 +233,7 @@ func Messages() []*i18n.Message {
 		{ID: MsgOutageImpactUnavailability, Other: "Unavailability"},
 		{ID: MsgOutageImpactExport, Other: "NFS export"},
 		{ID: MsgOutageMoreInformation, Other: "More information"},
-		{ID: MsgSecurityRecent, Other: "Recent Security Advisories"},
+		{ID: MsgSecurityRecent, Other: "Recent security advisories"},
 		{ID: MsgSecurityUnableFetch, Other: "Unable to fetch security advisories from vpsAdmin."},
 		{ID: MsgTableDate, Other: "Date"},
 		{ID: MsgTableDuration, Other: "Duration"},
@@ -271,6 +287,20 @@ func Messages() []*i18n.Message {
 		{ID: MsgProbeLogPrevious, Other: "Previous"},
 		{ID: MsgProbeLogNext, Other: "Next"},
 		{ID: MsgProbeLogNoChanges, Other: "No probe changes recorded."},
+		{ID: MsgProbeMethodHTTP, Other: "HTTP"},
+		{ID: MsgProbeMethodPing, Other: "Ping"},
+		{ID: MsgProbeMethodLookup, Other: "DNS lookup"},
+		{ID: MsgProbeMethodStorage, Other: "Storage"},
+		{ID: MsgProbeMethodVpsAdmin, Other: "vpsAdmin"},
+		{ID: MsgProbeMessageCheckFailed, Other: "check failed"},
+		{ID: MsgProbeMessageLookupFailed, Other: "lookup failed"},
+		{ID: MsgProbeMessageLookupSucceeded, Other: "lookup succeeded"},
+		{ID: MsgProbeMessageNotReporting, Other: "not reporting"},
+		{ID: MsgProbeMessageUnderMaint, Other: "under maintenance"},
+		{ID: MsgProbeMessageReporting, Other: "reporting"},
+		{ID: MsgProbeMessageResponding, Other: "responding"},
+		{ID: MsgProbeMessageNotResponding, Other: "not responding"},
+		{ID: MsgProbeMessagePacketLoss, Other: "{{.Percent}}% packet loss"},
 		{ID: MsgHistoryAria, Other: "{{.Label}} history"},
 		{ID: MsgHistoryNoIncidents, Other: "No incidents"},
 		{ID: MsgHistoryDaySummaryEmpty, Other: "{{.Date}}: no incidents"},
@@ -282,19 +312,19 @@ func Messages() []*i18n.Message {
 		{ID: MsgHistoryIncidentObserved, Other: "Observed duration"},
 		{ID: MsgHistoryIncidentDuration, Other: "{{.Label}}: {{.Minutes}} min"},
 		{ID: MsgHistoryIncidentDurationOpen, Other: "{{.Label}}: {{.Minutes}} min so far"},
-		{ID: MsgHistoryProbeIncident, Other: "Probe: {{.Label}} {{.Method}} {{.Message}}"},
+		{ID: MsgHistoryProbeIncident, Other: "{{.Label}}: {{.Message}}"},
 		{ID: MsgStorageUnableStatus, Other: "Unable to determine storage status"},
 		{ID: MsgStorageOnline, Other: "Storage is online"},
 		{ID: MsgStorageDegraded, Other: "One or more disks have failed, storage continues to function"},
 		{ID: MsgStorageNotOperational, Other: "Storage not operational"},
 		{ID: MsgStorageCheckFailed, Other: "Storage status check failed"},
-		{ID: MsgStorageUnknownState, Other: "Storage is in a unknown state"},
+		{ID: MsgStorageUnknownState, Other: "Storage is in an unknown state"},
 		{ID: MsgStorageScanNone, Other: "Not running"},
 		{ID: MsgStorageScanScrub, Other: "Storage is being scrubbed to check data integrity, {{.Percent}} % done"},
 		{ID: MsgStorageScanResilver, Other: "Storage is being resilvered to replace disks, {{.Percent}} % done"},
 		{ID: MsgStorageScanUnable, Other: "Unable to determine storage scan status"},
 		{ID: MsgStorageScanFailed, Other: "Storage scan status check failed"},
-		{ID: MsgStorageScanUnknown, Other: "Storage scan is in a unknown state"},
+		{ID: MsgStorageScanUnknown, Other: "Storage scan is in an unknown state"},
 		{ID: MsgAboutTitle, Other: "About vpsFree.cz Status"},
 		{ID: MsgAboutIntro, Other: "is an application that monitors the state of vpsFree.cz's infrastructure. It uses an independent network connection and should thus be available in case of issues with our primary connection or other parts of our infrastructure."},
 		{ID: MsgAboutChecks, Other: "The checks are run automatically every {{.Interval}} seconds."},

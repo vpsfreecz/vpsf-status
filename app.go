@@ -36,11 +36,12 @@ type htmlTemplate struct {
 }
 
 type StatusData struct {
-	Config     *config.Config
-	Locale     *pageLocale
-	Status     *StatusView
-	RenderedAt string
-	Notice     Notice
+	Config          *config.Config
+	Locale          *pageLocale
+	Status          *StatusView
+	RenderedAt      string
+	Notice          Notice
+	NoticeUpdatedAt string
 }
 
 type IndexShellData struct {
@@ -131,7 +132,7 @@ func (app *application) handleEntity(w http.ResponseWriter, r *http.Request) {
 			Config:     app.config,
 			Locale:     loc,
 			Entity:     entity,
-			RenderedAt: now.Format(time.UnixDate),
+			RenderedAt: formatGeneratedAt(now, loc),
 		})
 		if err != nil {
 			log.Printf("Template error: %+v", err)
@@ -165,7 +166,7 @@ func (app *application) handleGroup(w http.ResponseWriter, r *http.Request) {
 			Config:     app.config,
 			Locale:     loc,
 			Entity:     group,
-			RenderedAt: now.Format(time.UnixDate),
+			RenderedAt: formatGeneratedAt(now, loc),
 		})
 		if err != nil {
 			log.Printf("Template error: %+v", err)

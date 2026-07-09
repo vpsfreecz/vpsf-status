@@ -74,11 +74,23 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	body := rr.Body.String()
+	localNow := fixedNow.Local()
+	zone, _ := localNow.Zone()
+	expectedGeneratedAt := fmt.Sprintf(
+		"Vygenerováno: %d. %d. %04d %02d:%02d:%02d %s",
+		localNow.Day(),
+		int(localNow.Month()),
+		localNow.Year(),
+		localNow.Hour(),
+		localNow.Minute(),
+		localNow.Second(),
+		zone,
+	)
 	requireContains(
 		t,
 		body,
 		`<html lang="cs">`,
-		"Vygenerováno:",
+		expectedGeneratedAt,
 		"Hlášené odstávky",
 		"Nedávné výpadky",
 		`class="dropdown-item" href="/?lang=en"`,
@@ -89,14 +101,14 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		"Výpadek napájení",
 		"Restart systému",
 		"Nedostupnost",
-		"Nedávná bezpečnostní oznámení",
+		"Nedávná bezpečnostní upozornění",
 		"Zranitelnost jádra byla opravena na všech dotčených nodech.",
 		`href="/group?kind=vpsadmin&amp;lang=cs"`,
 		`href="/entity?id=node1.prg&amp;kind=node&amp;lang=cs"`,
 		`href="/?lang=en"`,
 		`href="/?lang=cs"`,
 	)
-	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported maintenance")
+	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported maintenance", "Sat May")
 }
 
 func TestRoutesServeIndexOperationalState(t *testing.T) {
@@ -186,7 +198,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		"Ping",
 		"Down",
 		"not responding",
-		"Probe: node1.prg Ping not responding",
+		"node1.prg: Ping not responding",
 		"history-day-maintenance",
 	)
 
@@ -227,12 +239,12 @@ func TestRoutesServeEntityDetailCzechLocale(t *testing.T) {
 		"Dostupnost",
 		"30 dní",
 		"Hlášené",
-		"Probe",
+		"Měření",
 		"Události",
 		"Mimo provoz",
-		"Probe: node1.prg Ping not responding",
+		"node1.prg: Ping neodpovídá",
 	)
-	requireNotContains(t, body, "Back to Status", "Availability", "Probe log")
+	requireNotContains(t, body, "Back to Status", "Availability", "Probe log", "Probe:", "not responding")
 }
 
 func TestRoutesServeEntityDetailProbeLogCoverage(t *testing.T) {
@@ -688,7 +700,7 @@ func TestRoutesServeIndexSecurityAdvisories(t *testing.T) {
 	requireContains(
 		t,
 		body,
-		"Recent Security Advisories",
+		"Recent security advisories",
 		"2026-05-02",
 		"CVE-2026-2001 (Dirty Pipe)",
 		"Kernel vulnerability was mitigated on all affected nodes.",
@@ -696,7 +708,7 @@ func TestRoutesServeIndexSecurityAdvisories(t *testing.T) {
 		"No issues reported.",
 	)
 	requireNotContains(t, body, "Affected nodes")
-	requireBefore(t, body, "No issues reported.", "Recent Security Advisories")
+	requireBefore(t, body, "No issues reported.", "Recent security advisories")
 }
 
 func TestRoutesServeIndexSecurityAdvisoryFetchFailureDoesNotSuppressNoIssues(t *testing.T) {

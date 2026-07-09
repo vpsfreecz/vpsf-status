@@ -11,7 +11,7 @@ other = "English"
 other = "Česky"
 
 ["language.switch_to"]
-other = "Přepnout jazyk: {{.Language}}"
+other = "Přepnout na {{.Language}}"
 
 ["nav.status"]
 other = "Status"
@@ -32,13 +32,13 @@ other = "O aplikaci"
 other = "Aktualizováno {{.UpdatedAt}}"
 
 ["loading.title"]
-other = "Inicializace..."
+other = "Probíhá inicializace..."
 
 ["loading.body"]
-other = "vpsFree.cz Status se inicializuje a bude připraven za několik sekund, zkuste prosím stránku obnovit."
+other = "vpsFree.cz Status se inicializuje a za několik sekund by měl být připraven. Obnovte prosím stránku."
 
 ["status_counts.aria"]
-other = "{{.Operational}} v provozu, {{.Degraded}} degradováno nebo v údržbě, {{.Down}} mimo provoz, {{.Total}} celkem"
+other = "V provozu: {{.Operational}}, degradováno nebo v údržbě: {{.Degraded}}, mimo provoz: {{.Down}}, celkem: {{.Total}}"
 
 ["status.operational"]
 other = "V provozu"
@@ -158,10 +158,10 @@ other = "NFS export"
 other = "Více informací"
 
 ["security.recent"]
-other = "Nedávná bezpečnostní oznámení"
+other = "Nedávná bezpečnostní upozornění"
 
 ["security.unable_fetch"]
-other = "Nepodařilo se načíst bezpečnostní oznámení z vpsAdminu."
+other = "Nepodařilo se načíst bezpečnostní upozornění z vpsAdminu."
 
 ["table.date"]
 other = "Datum"
@@ -215,7 +215,7 @@ other = "Ping"
 other = "Název"
 
 ["table.lookup"]
-other = "Lookup"
+other = "DNS dotaz"
 
 ["table.time"]
 other = "Čas"
@@ -230,7 +230,7 @@ other = "Metoda"
 other = "Zpráva"
 
 ["table.covered_by"]
-other = "Pokryto"
+other = "Pokryto hlášením"
 
 ["table.period"]
 other = "Období"
@@ -239,7 +239,7 @@ other = "Období"
 other = "Hlášené"
 
 ["table.probe"]
-other = "Probe"
+other = "Měření"
 
 ["section.web_services"]
 other = "Webové služby"
@@ -287,7 +287,7 @@ other = "DNS resolver"
 other = "Webová služba"
 
 ["entity.group.name_server"]
-other = "Nameserver"
+other = "DNS server"
 
 ["entity.group.group"]
 other = "Skupina"
@@ -320,7 +320,7 @@ other = "Další"
 other = "Nejsou zaznamenány žádné události."
 
 ["history.aria"]
-other = "Historie {{.Label}}"
+other = "Historie pro {{.Label}}"
 
 ["history.no_incidents"]
 other = "Žádné incidenty"
@@ -350,10 +350,52 @@ other = "Naměřené trvání"
 other = "{{.Label}}: {{.Minutes}} min"
 
 ["history.incident.duration_open"]
-other = "{{.Label}}: {{.Minutes}} min zatím"
+other = "{{.Label}}: zatím {{.Minutes}} min"
 
 ["history.probe_incident"]
-other = "Probe: {{.Label}} {{.Method}} {{.Message}}"
+other = "{{.Label}}: {{.Message}}"
+
+["probe.method.http"]
+other = "HTTP"
+
+["probe.method.ping"]
+other = "Ping"
+
+["probe.method.lookup"]
+other = "DNS dotaz"
+
+["probe.method.storage"]
+other = "Úložiště"
+
+["probe.method.vpsadmin"]
+other = "vpsAdmin"
+
+["probe.message.check_failed"]
+other = "kontrola selhala"
+
+["probe.message.lookup_failed"]
+other = "DNS dotaz selhal"
+
+["probe.message.lookup_succeeded"]
+other = "DNS dotaz proběhl úspěšně"
+
+["probe.message.not_reporting"]
+other = "nehlásí stav"
+
+["probe.message.under_maintenance"]
+other = "v údržbě"
+
+["probe.message.reporting"]
+other = "hlásí stav"
+
+["probe.message.responding"]
+other = "odpovídá"
+
+["probe.message.not_responding"]
+other = "neodpovídá"
+
+["probe.message.packet_loss"]
+other = "ztráta paketů {{.Percent}} %"
 
 ["storage.unable_status"]
 other = "Nepodařilo se zjistit status úložiště"

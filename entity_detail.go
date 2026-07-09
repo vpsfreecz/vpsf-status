@@ -328,11 +328,11 @@ func probeEventDetailView(event ProbeEvent) ProbeEventView {
 func probeEventDetailViewForLocale(event ProbeEvent, loc *pageLocale) ProbeEventView {
 	return ProbeEventView{
 		ChangedAt:   event.ChangedAt.Local().Format("2006-01-02 15:04 MST"),
-		Entity:      probeEventEntityLabel(event),
-		Method:      event.Method,
+		Entity:      probeEventEntityLabelForLocale(event, loc),
+		Method:      probeMethodLabelForLocale(event.Method, loc),
 		Status:      statusTitleForLocale(event.Status, loc),
 		StatusClass: probeStatusClass(event.Status),
-		Message:     event.Message,
+		Message:     probeMessageForLocale(event.Message, loc),
 	}
 }
 
@@ -414,6 +414,14 @@ func sameProbeEventCoverage(a ProbeEventView, b ProbeEventView) bool {
 }
 
 func probeEventEntityLabel(event ProbeEvent) string {
+	return probeEventEntityLabelForLocale(event, defaultPageLocale())
+}
+
+func probeEventEntityLabelForLocale(event ProbeEvent, loc *pageLocale) string {
+	return probeEntityLabelForLocale(event.EntityKind, event.EntityID, event.EntityLabel, loc)
+}
+
+func probeEventEntityRawLabel(event ProbeEvent) string {
 	if event.EntityLabel != "" {
 		return event.EntityLabel
 	}

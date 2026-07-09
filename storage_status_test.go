@@ -55,7 +55,7 @@ func TestNodeStorageStateMessages(t *testing.T) {
 			name:       "unexpected",
 			poolStatus: true,
 			poolState:  "mystery",
-			want:       "Storage is in a unknown state",
+			want:       "Storage is in an unknown state",
 		},
 	}
 
@@ -119,7 +119,7 @@ func TestNodeStorageScanMessages(t *testing.T) {
 			name:       "unexpected",
 			poolStatus: true,
 			poolScan:   "mystery",
-			want:       "Storage scan is in a unknown state",
+			want:       "Storage scan is in an unknown state",
 		},
 	}
 

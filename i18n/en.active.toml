@@ -50,8 +50,8 @@ hash = "sha1-82defadf2a0efcee435f20e228f92fb8cd2098ba"
 other = "Initializing..."
 
 ["loading.body"]
-hash = "sha1-06fcacfd70e555333a4da562b44fc74dbb214394"
-other = "vpsFree.cz Status is initializing and will be ready in a few seconds, please try to refresh the page."
+hash = "sha1-0ac06dd1460b3de2d025fe63bd4e4cda493084fa"
+other = "vpsFree.cz Status is initializing and should be ready in a few seconds. Please refresh the page."
 
 ["status_counts.aria"]
 hash = "sha1-7fa2de15fe13039adc3257056e9d55bf3aab22ef"
@@ -214,8 +214,8 @@ hash = "sha1-b5ed4fa3ad714e6748a804ce129faca59f90ddc0"
 other = "More information"
 
 ["security.recent"]
-hash = "sha1-8a5b36666d60163937d337dd7ab36e246034ff7f"
-other = "Recent Security Advisories"
+hash = "sha1-66917fe0c1a59f68259d2ea223a038ef3f6eac83"
+other = "Recent security advisories"
 
 ["security.unable_fetch"]
 hash = "sha1-144aacd438907d8a405c67375bd67487ffa36299"
@@ -429,6 +429,62 @@ other = "Next"
 hash = "sha1-7433567fb4ed6c6d3b0fbfa58b80f3a05ed2f038"
 other = "No probe changes recorded."
 
+["probe.method.http"]
+hash = "sha1-af0c4ebbc93d72ee4fa49892767c3a324fff6756"
+other = "HTTP"
+
+["probe.method.ping"]
+hash = "sha1-a78336b4cf95d05645c354f84bcf52dfad17aca2"
+other = "Ping"
+
+["probe.method.lookup"]
+hash = "sha1-3284f8c830b8e33c939d71127d3958a82f121423"
+other = "DNS lookup"
+
+["probe.method.storage"]
+hash = "sha1-756ef5f7d4c403a6f89ce0c339ece20e0fd84b0f"
+other = "Storage"
+
+["probe.method.vpsadmin"]
+hash = "sha1-66fde6e8a868e742cebd572bddd2f6a335249fe7"
+other = "vpsAdmin"
+
+["probe.message.check_failed"]
+hash = "sha1-f9d59edfc29a5a38ffeed687a2098fb12af8143a"
+other = "check failed"
+
+["probe.message.lookup_failed"]
+hash = "sha1-b96865cfe3f35ea4317369026f566391a0069f49"
+other = "lookup failed"
+
+["probe.message.lookup_succeeded"]
+hash = "sha1-d72c7a038f0f218d324fb4044c67692736734fd4"
+other = "lookup succeeded"
+
+["probe.message.not_reporting"]
+hash = "sha1-c112880439f5da37a90d7e227a315b0ca3fd799c"
+other = "not reporting"
+
+["probe.message.under_maintenance"]
+hash = "sha1-6dafd3bab65a621e03a89bfe08762ec4b2404594"
+other = "under maintenance"
+
+["probe.message.reporting"]
+hash = "sha1-335bb4e6204e10212fb8fadd12076254693b3e4b"
+other = "reporting"
+
+["probe.message.responding"]
+hash = "sha1-073862837302bf654a5957b9c7ff8e6a349d3acd"
+other = "responding"
+
+["probe.message.not_responding"]
+hash = "sha1-05ecb42284f12d6a514f6d2cf8fa2181bf632fc6"
+other = "not responding"
+
+["probe.message.packet_loss"]
+hash = "sha1-69f174bef6262d851447167fc5960d04954e6e41"
+other = "{{.Percent}}% packet loss"
+
 ["history.aria"]
 hash = "sha1-76656bbbdbc6c5febacca7c3d36e65b4ca94419a"
 other = "{{.Label}} history"
@@ -474,8 +530,8 @@ hash = "sha1-b546e31cd0296a7302c45ea44d6561b1f73f22b1"
 other = "{{.Label}}: {{.Minutes}} min so far"
 
 ["history.probe_incident"]
-hash = "sha1-311163aaae24958130581fffe19bf04d452874ac"
-other = "Probe: {{.Label}} {{.Method}} {{.Message}}"
+hash = "sha1-58b3e528d7622cb3a6a4fd3a1a285805037570bc"
+other = "{{.Label}}: {{.Message}}"
 
 ["storage.unable_status"]
 hash = "sha1-6ab7658d56a8c9686699a3166969d36118fe6c6f"
@@ -498,8 +554,8 @@ hash = "sha1-45e173965d1e6d014fb43d618c59030c9e42ec8b"
 other = "Storage status check failed"
 
 ["storage.unknown_state"]
-hash = "sha1-e37291279d127656332462381ef16de3eebb1464"
-other = "Storage is in a unknown state"
+hash = "sha1-87cbdf4ae58ccc883eb3643551be628518d9dff3"
+other = "Storage is in an unknown state"
 
 ["storage.scan.none"]
 hash = "sha1-8610f5c868aea471e872c60a459846e742a3047d"
@@ -522,8 +578,8 @@ hash = "sha1-8940dfbf0efa1a40db5f0ed9a0073600ff8a4cd2"
 other = "Storage scan status check failed"
 
 ["storage.scan.unknown"]
-hash = "sha1-86534856049a085831c78a5dbdaf3f89c950bf67"
-other = "Storage scan is in a unknown state"
+hash = "sha1-9e9388072859d3e8bb297f3cbcacf638721eaf5e"
+other = "Storage scan is in an unknown state"
 
 ["about.title"]
 hash = "sha1-c600fd5e8a6d67f584a7096953565aad69ec3243"

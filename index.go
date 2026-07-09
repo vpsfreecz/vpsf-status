@@ -293,9 +293,10 @@ func (app *application) renderIndexBodyLocked(now time.Time, force bool, loc *pa
 
 func (app *application) buildIndexBody(now time.Time, notice Notice, loc *pageLocale) ([]byte, error) {
 	data := StatusData{
-		Config: app.config,
-		Locale: loc,
-		Notice: notice,
+		Config:          app.config,
+		Locale:          loc,
+		Notice:          notice,
+		NoticeUpdatedAt: formatNoticeTimestamp(notice.UpdatedAt, loc),
 	}
 
 	if !app.status.Initialized {
@@ -322,7 +323,7 @@ func (app *application) renderIndexShell(now time.Time, loc *pageLocale) (indexS
 	err := app.templates.indexShell.Execute(&buf, IndexShellData{
 		Config:     app.config,
 		Locale:     loc,
-		RenderedAt: now.Format(time.UnixDate),
+		RenderedAt: formatGeneratedAt(now, loc),
 		Body:       template.HTML(indexBodyPlaceholder),
 	})
 	if err != nil {

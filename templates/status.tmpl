@@ -14,7 +14,7 @@
 		<div class="alert alert-primary" role="alert">
 			{{ .Notice.Html }}
 			<hr>
-			<p>{{ .Locale.TD "notice.updated_at" (dict "UpdatedAt" (.Notice.UpdatedAt.Format "Mon Jan _2 15:04:05 MST 2006")) }}</p>
+			<p>{{ .Locale.TD "notice.updated_at" (dict "UpdatedAt" .NoticeUpdatedAt) }}</p>
 		</div>
 	</div>
 </div>

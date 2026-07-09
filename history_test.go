@@ -627,7 +627,7 @@ func TestHistoryViewsApplyOutageAndProbeSeverity(t *testing.T) {
 	} else if incident.StartLabel != "Started: "+nodeOutage.BeginsAt.Local().Format(historyIncidentTimeFormat) || incident.DurationLabel != "Expected duration: 30 min" {
 		t.Fatalf("node1 outage incident = %+v, want start and expected duration", incident)
 	}
-	if incident, ok := historyDayIncident(node2, fixedNow, "Probe: node2.prg Ping not responding"); !ok {
+	if incident, ok := historyDayIncident(node2, fixedNow, "node2.prg: Ping not responding"); !ok {
 		t.Fatalf("node2 probe incidents = %+v, want probe incident", historyDayIncidents(node2, fixedNow))
 	} else if incident.StartLabel != "Started: "+fixedNow.Add(-10*time.Minute).Local().Format(historyIncidentTimeFormat) || incident.DurationLabel != "Observed duration: 10 min so far" {
 		t.Fatalf("node2 probe incident = %+v, want start and observed duration", incident)
@@ -740,27 +740,27 @@ func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
 	nameserverHistory := view.HistoryFor(historyEntityNameServer, "ns1.vpsfree.cz")
 	kbHistory := view.HistoryFor(historyEntityWebService, "kb.vpsfree.cz")
 
-	if historyDayHasIncident(nodeHistory, fixedNow, "Probe: node1.prg Ping not responding") {
+	if historyDayHasIncident(nodeHistory, fixedNow, "node1.prg: Ping not responding") {
 		t.Fatalf("covered node probe incidents = %+v, want probe hidden", historyDayIncidents(nodeHistory, fixedNow))
 	}
 	if !historyDayHasIncident(nodeHistory, fixedNow, "Unplanned outage: Node outage") {
 		t.Fatalf("node incidents = %+v, want outage retained", historyDayIncidents(nodeHistory, fixedNow))
 	}
-	if historyDayHasIncident(serviceHistory, fixedNow, "Probe: vpsfree.cz HTTP HTTP 500") {
+	if historyDayHasIncident(serviceHistory, fixedNow, "vpsfree.cz: HTTP 500") {
 		t.Fatalf("grace-covered service probe incidents = %+v, want probe hidden", historyDayIncidents(serviceHistory, fixedNow))
 	}
 	if !historyDayHasIncident(serviceHistory, fixedNow, "Planned outage: Service maintenance") {
 		t.Fatalf("service incidents = %+v, want maintenance retained", historyDayIncidents(serviceHistory, fixedNow))
 	}
-	if !historyDayHasIncident(nameserverHistory, fixedNow, "Probe: ns1.vpsfree.cz DNS lookup failed") {
+	if !historyDayHasIncident(nameserverHistory, fixedNow, "ns1.vpsfree.cz: DNS lookup failed") {
 		t.Fatalf("outside-grace nameserver incidents = %+v, want probe retained", historyDayIncidents(nameserverHistory, fixedNow))
 	}
-	if !historyDayHasIncident(kbHistory, fixedNow, "Probe: kb.vpsfree.cz HTTP HTTP 500") {
+	if !historyDayHasIncident(kbHistory, fixedNow, "kb.vpsfree.cz: HTTP 500") {
 		t.Fatalf("uncovered kb incidents = %+v, want probe retained", historyDayIncidents(kbHistory, fixedNow))
 	}
 
 	praha := view.Locations[0].History
-	if historyDayHasIncident(praha, fixedNow, "Probe: node1.prg Ping not responding") {
+	if historyDayHasIncident(praha, fixedNow, "node1.prg: Ping not responding") {
 		t.Fatalf("Praha incidents = %+v, want covered node probe hidden", historyDayIncidents(praha, fixedNow))
 	}
 	if !historyDayHasIncident(praha, fixedNow, "node1.prg: Unplanned outage: Node outage") {
@@ -768,13 +768,13 @@ func TestHistoryViewsHideProbeIncidentsCoveredByReports(t *testing.T) {
 	}
 
 	services := view.Services.History
-	if historyDayHasIncident(services, fixedNow, "Probe: vpsfree.cz HTTP HTTP 500") {
+	if historyDayHasIncident(services, fixedNow, "vpsfree.cz: HTTP 500") {
 		t.Fatalf("Services incidents = %+v, want grace-covered service probe hidden", historyDayIncidents(services, fixedNow))
 	}
-	if !historyDayHasIncident(services, fixedNow, "Probe: ns1.vpsfree.cz DNS lookup failed") {
+	if !historyDayHasIncident(services, fixedNow, "ns1.vpsfree.cz: DNS lookup failed") {
 		t.Fatalf("Services incidents = %+v, want outside-grace nameserver probe retained", historyDayIncidents(services, fixedNow))
 	}
-	if !historyDayHasIncident(services, fixedNow, "Probe: kb.vpsfree.cz HTTP HTTP 500") {
+	if !historyDayHasIncident(services, fixedNow, "kb.vpsfree.cz: HTTP 500") {
 		t.Fatalf("Services incidents = %+v, want unrelated service probe retained", historyDayIncidents(services, fixedNow))
 	}
 }
@@ -960,8 +960,57 @@ func TestHistoryViewsIncludeRemovedNodeProbeIncidentInGroupLane(t *testing.T) {
 		t.Fatalf("Brno history lanes = %+v, want %+v", got, want)
 	}
 	assertHistoryLaneState(t, brno, fixedNow, historyEntityNode, "node9.brq", historySeverityMaintenance)
-	if !historyDayHasIncident(brno, fixedNow, "node9.brq (removed): Probe: node9.brq Ping not responding") {
+	if !historyDayHasIncident(brno, fixedNow, "node9.brq (removed): node9.brq: Ping not responding") {
 		t.Fatalf("removed node probe incidents = %+v, want removed-node label", historyDayIncidents(brno, fixedNow))
+	}
+}
+
+func TestProbeHistoryIncidentLocalizesCzechProbeText(t *testing.T) {
+	loc, ok := newLocaleCatalog().localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale not found")
+	}
+
+	incident := probeHistoryIncidentForLocale(ProbeIncident{
+		ProbeTarget: ProbeTarget{
+			EntityKind:  historyEntityVpsAdmin,
+			EntityID:    "console",
+			EntityLabel: "Remote Console",
+			Method:      "HTTP",
+		},
+		Status:   historyProbeStateError,
+		Message:  "check failed",
+		StartsAt: fixedNow.Add(-10 * time.Minute),
+	}, fixedNow, loc)
+
+	if incident.Text != "Vzdálená konzole: HTTP kontrola selhala" {
+		t.Fatalf("localized incident text = %q", incident.Text)
+	}
+	if strings.Contains(incident.Text, "Probe:") ||
+		strings.Contains(incident.Text, "Remote Console") ||
+		strings.Contains(incident.Text, "check failed") {
+		t.Fatalf("localized incident text contains untranslated fragments: %q", incident.Text)
+	}
+}
+
+func TestHistoryViewsLocalizeCzechVpsAdminServiceLabels(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	setOperationalFixture(st)
+	loc, ok := newLocaleCatalog().localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale not found")
+	}
+
+	view := createStatusViewForLocale(st, fixedNow, loc)
+	history := view.HistoryFor(historyEntityVpsAdmin, "console")
+
+	if history.Label != "Vzdálená konzole" ||
+		history.AriaLabel != "Historie pro Vzdálená konzole" {
+		t.Fatalf("console history labels = label %q aria %q", history.Label, history.AriaLabel)
+	}
+	if strings.Contains(history.Label, "Remote Console") ||
+		strings.Contains(history.AriaLabel, "Remote Console") {
+		t.Fatalf("console history labels contain raw English: %+v", history)
 	}
 }
 

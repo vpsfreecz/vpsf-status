@@ -123,6 +123,68 @@ func TestProbeLogEventDetailViewsGroupAdjacentCoverage(t *testing.T) {
 	}
 }
 
+func TestProbeEventDetailViewLocalizesCzechProbeText(t *testing.T) {
+	loc, ok := newLocaleCatalog().localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale not found")
+	}
+
+	view := probeEventDetailViewForLocale(ProbeEvent{
+		ProbeTarget: ProbeTarget{
+			EntityKind:  historyEntityVpsAdmin,
+			EntityID:    "console",
+			EntityLabel: "Remote Console",
+			Method:      "HTTP",
+		},
+		Status:    historyProbeStateError,
+		Message:   "check failed",
+		ChangedAt: fixedNow,
+	}, loc)
+
+	if view.Entity != "Vzdálená konzole" ||
+		view.Method != "HTTP" ||
+		view.Message != "kontrola selhala" {
+		t.Fatalf("localized probe event = %+v", view)
+	}
+}
+
+func TestProbeEventDetailViewLocalizesCzechStorageMessages(t *testing.T) {
+	loc, ok := newLocaleCatalog().localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale not found")
+	}
+
+	tests := []struct {
+		message string
+		want    string
+	}{
+		{"Storage not operational", "Úložiště není funkční"},
+		{"Unable to determine storage status", "Nepodařilo se zjistit status úložiště"},
+		{"Storage is being scrubbed to check data integrity, 12.5 % done", "Na úložišti běží scrub pro kontrolu integrity dat, hotovo 12.5 %"},
+		{"Storage is being resilvered to replace disks, 42.5 % done", "Na úložišti běží resilver kvůli náhradě disků, hotovo 42.5 %"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.message, func(t *testing.T) {
+			view := probeEventDetailViewForLocale(ProbeEvent{
+				ProbeTarget: ProbeTarget{
+					EntityKind:  historyEntityNode,
+					EntityID:    "node1.prg",
+					EntityLabel: "node1.prg",
+					Method:      "Storage",
+				},
+				Status:    historyProbeStateError,
+				Message:   tt.message,
+				ChangedAt: fixedNow,
+			}, loc)
+
+			if view.Message != tt.want {
+				t.Fatalf("message = %q, want %q", view.Message, tt.want)
+			}
+		})
+	}
+}
+
 func testProbeLogEvent(target ProbeTarget, status string, startsAt time.Time, endsAt time.Time) ProbeLogEvent {
 	return ProbeLogEvent{
 		ProbeEvent: ProbeEvent{
