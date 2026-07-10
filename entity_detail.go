@@ -332,7 +332,7 @@ func probeEventDetailViewForLocale(event ProbeEvent, loc *pageLocale) ProbeEvent
 		Method:      probeMethodLabelForLocale(event.Method, loc),
 		Status:      statusTitleForLocale(event.Status, loc),
 		StatusClass: probeStatusClass(event.Status),
-		Message:     probeMessageForLocale(event.Message, loc),
+		Message:     probeMessageForMethodForLocale(event.Method, event.Message, loc),
 	}
 }
 

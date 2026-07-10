@@ -971,25 +971,151 @@ func TestProbeHistoryIncidentLocalizesCzechProbeText(t *testing.T) {
 		t.Fatal("Czech locale not found")
 	}
 
-	incident := probeHistoryIncidentForLocale(ProbeIncident{
-		ProbeTarget: ProbeTarget{
-			EntityKind:  historyEntityVpsAdmin,
-			EntityID:    "console",
-			EntityLabel: "Remote Console",
-			Method:      "HTTP",
+	tests := []struct {
+		name       string
+		target     ProbeTarget
+		status     string
+		message    string
+		want       string
+		disallowed []string
+	}{
+		{
+			name: "vpsadmin console HTTP failure",
+			target: ProbeTarget{
+				EntityKind:  historyEntityVpsAdmin,
+				EntityID:    "console",
+				EntityLabel: "Remote Console",
+				Method:      "HTTP",
+			},
+			status:     historyProbeStateError,
+			message:    "check failed",
+			want:       "Vzdálená konzole: HTTP kontrola selhala",
+			disallowed: []string{"Probe:", "Remote Console", "check failed"},
 		},
-		Status:   historyProbeStateError,
-		Message:  "check failed",
-		StartsAt: fixedNow.Add(-10 * time.Minute),
-	}, fixedNow, loc)
-
-	if incident.Text != "Vzdálená konzole: HTTP kontrola selhala" {
-		t.Fatalf("localized incident text = %q", incident.Text)
+		{
+			name: "dns lookup failure",
+			target: ProbeTarget{
+				EntityKind:  historyEntityDnsResolver,
+				EntityID:    "resolver-prg",
+				EntityLabel: "resolver-prg",
+				Method:      "Lookup",
+			},
+			status:     historyProbeStateError,
+			message:    "lookup failed",
+			want:       "resolver-prg: DNS dotaz selhal",
+			disallowed: []string{"Lookup", "lookup failed"},
+		},
+		{
+			name: "ping failure",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "node1.prg",
+				EntityLabel: "node1.prg",
+				Method:      "Ping",
+			},
+			status:     historyProbeStateDown,
+			message:    "not responding",
+			want:       "node1.prg: Ping neodpovídá",
+			disallowed: []string{"not responding"},
+		},
+		{
+			name: "storage unable status",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateError,
+			message:    "Unable to determine storage status",
+			want:       "backuper2.prg: Nepodařilo se zjistit status úložiště",
+			disallowed: []string{"Úložiště Nepodařilo", "Unable to determine storage status"},
+		},
+		{
+			name: "storage hard failure",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateDown,
+			message:    "Storage not operational",
+			want:       "backuper2.prg: Úložiště není funkční",
+			disallowed: []string{"Úložiště Úložiště", "Storage not operational"},
+		},
+		{
+			name: "storage status check failed",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateError,
+			message:    "Storage status check failed",
+			want:       "backuper2.prg: Kontrola statusu úložiště selhala",
+			disallowed: []string{"Úložiště Kontrola", "Storage status check failed"},
+		},
+		{
+			name: "storage scrub",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateDegraded,
+			message:    "Storage is being scrubbed to check data integrity, 12.5 % done",
+			want:       "backuper2.prg: Na úložišti běží scrub pro kontrolu integrity dat, hotovo 12.5 %",
+			disallowed: []string{"Úložiště Na úložišti", "Storage is being scrubbed"},
+		},
+		{
+			name: "storage resilver",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateDegraded,
+			message:    "Storage is being resilvered to replace disks, 42.5 % done",
+			want:       "backuper2.prg: Na úložišti běží resilver kvůli náhradě disků, hotovo 42.5 %",
+			disallowed: []string{"Úložiště Na úložišti", "Storage is being resilvered"},
+		},
+		{
+			name: "storage online",
+			target: ProbeTarget{
+				EntityKind:  historyEntityNode,
+				EntityID:    "backuper2.prg",
+				EntityLabel: "backuper2.prg",
+				Method:      "Storage",
+			},
+			status:     historyProbeStateOperational,
+			message:    "online",
+			want:       "backuper2.prg: Úložiště je online",
+			disallowed: []string{"Úložiště Úložiště", "online online"},
+		},
 	}
-	if strings.Contains(incident.Text, "Probe:") ||
-		strings.Contains(incident.Text, "Remote Console") ||
-		strings.Contains(incident.Text, "check failed") {
-		t.Fatalf("localized incident text contains untranslated fragments: %q", incident.Text)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			incident := probeHistoryIncidentForLocale(ProbeIncident{
+				ProbeTarget: tt.target,
+				Status:      tt.status,
+				Message:     tt.message,
+				StartsAt:    fixedNow.Add(-10 * time.Minute),
+			}, fixedNow, loc)
+
+			if incident.Text != tt.want {
+				t.Fatalf("localized incident text = %q, want %q", incident.Text, tt.want)
+			}
+			for _, fragment := range tt.disallowed {
+				if strings.Contains(incident.Text, fragment) {
+					t.Fatalf("localized incident text contains %q: %q", fragment, incident.Text)
+				}
+			}
+		})
 	}
 }
 

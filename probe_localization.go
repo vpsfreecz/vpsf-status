@@ -35,11 +35,15 @@ func probeMethodLabelForLocale(method string, loc *pageLocale) string {
 }
 
 func probeMessageForLocale(message string, loc *pageLocale) string {
+	return probeMessageForMethodForLocale("", message, loc)
+}
+
+func probeMessageForMethodForLocale(method string, message string, loc *pageLocale) string {
 	if loc == nil {
 		loc = defaultPageLocale()
 	}
 
-	id, data, ok := probeMessageCatalogEntry(message)
+	id, data, ok := probeMessageCatalogEntryForMethod(method, message)
 	if !ok {
 		return message
 	}
@@ -51,7 +55,7 @@ func probeMessageForLocale(message string, loc *pageLocale) string {
 
 func probeStatusDescriptionForLocale(method string, message string, loc *pageLocale) string {
 	methodLabel := probeMethodLabelForLocale(method, loc)
-	messageLabel := probeMessageForLocale(message, loc)
+	messageLabel := probeMessageForMethodForLocale(method, message, loc)
 
 	if isLookupProbeMethod(method) {
 		if loc != nil && loc.codeOrDefault() == "cs" {
@@ -96,6 +100,15 @@ func probeEntityLabelForLocale(kind string, id string, storedLabel string, loc *
 	return id
 }
 
+func probeMessageCatalogEntryForMethod(method string, message string) (string, map[string]any, bool) {
+	if normalizedProbeText(method) == "storage" {
+		if id, data, ok := storageProbeMessageCatalogEntry(message, true); ok {
+			return id, data, true
+		}
+	}
+	return probeMessageCatalogEntry(message)
+}
+
 func probeMessageCatalogEntry(message string) (string, map[string]any, bool) {
 	trimmed := strings.TrimSpace(message)
 	switch normalizedProbeText(trimmed) {
@@ -115,12 +128,28 @@ func probeMessageCatalogEntry(message string) (string, map[string]any, bool) {
 		return catalog.MsgProbeMessageResponding, nil, true
 	case "not responding":
 		return catalog.MsgProbeMessageNotResponding, nil, true
+	}
+
+	if match := probePacketLossRe.FindStringSubmatch(strings.ToLower(trimmed)); match != nil {
+		return catalog.MsgProbeMessagePacketLoss, map[string]any{"Percent": match[1]}, true
+	}
+
+	return storageProbeMessageCatalogEntry(message, false)
+}
+
+func storageProbeMessageCatalogEntry(message string, includeShortOnline bool) (string, map[string]any, bool) {
+	trimmed := strings.TrimSpace(message)
+	switch normalizedProbeText(trimmed) {
 	case "storage status check failed":
 		return catalog.MsgStorageCheckFailed, nil, true
 	case "storage scan status check failed":
 		return catalog.MsgStorageScanFailed, nil, true
 	case "unable to determine storage status":
 		return catalog.MsgStorageUnableStatus, nil, true
+	case "online":
+		if includeShortOnline {
+			return catalog.MsgStorageOnline, nil, true
+		}
 	case "storage is online":
 		return catalog.MsgStorageOnline, nil, true
 	case "one or more disks have failed, storage continues to function":
@@ -137,9 +166,6 @@ func probeMessageCatalogEntry(message string) (string, map[string]any, bool) {
 		return catalog.MsgStorageScanUnknown, nil, true
 	}
 
-	if match := probePacketLossRe.FindStringSubmatch(strings.ToLower(trimmed)); match != nil {
-		return catalog.MsgProbeMessagePacketLoss, map[string]any{"Percent": match[1]}, true
-	}
 	if match := storageScrubRe.FindStringSubmatch(strings.ToLower(trimmed)); match != nil {
 		return catalog.MsgStorageScanScrub, map[string]any{"Percent": match[1]}, true
 	}
@@ -165,8 +191,12 @@ func probeMessageIncludesMethod(method string, methodLabel string, message strin
 	if methodNorm == "http" && strings.HasPrefix(messageNorm, "http ") {
 		return true
 	}
-	if methodNorm == "storage" && strings.HasPrefix(messageNorm, "storage ") {
-		return true
+	if methodNorm == "storage" {
+		if strings.HasPrefix(messageNorm, "storage ") {
+			return true
+		}
+		_, _, ok := storageProbeMessageCatalogEntry(message, true)
+		return ok
 	}
 	if isLookupProbeMethod(method) && loc != nil && loc.codeOrDefault() == "cs" {
 		_, _, ok := probeMessageCatalogEntry(message)

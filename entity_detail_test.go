@@ -158,8 +158,12 @@ func TestProbeEventDetailViewLocalizesCzechStorageMessages(t *testing.T) {
 		message string
 		want    string
 	}{
+		{"online", "Úložiště je online"},
+		{"Storage status check failed", "Kontrola statusu úložiště selhala"},
+		{"Storage scan status check failed", "Kontrola statusu scanu úložiště selhala"},
 		{"Storage not operational", "Úložiště není funkční"},
 		{"Unable to determine storage status", "Nepodařilo se zjistit status úložiště"},
+		{"Unable to determine storage scan status", "Nepodařilo se zjistit status scanu úložiště"},
 		{"Storage is being scrubbed to check data integrity, 12.5 % done", "Na úložišti běží scrub pro kontrolu integrity dat, hotovo 12.5 %"},
 		{"Storage is being resilvered to replace disks, 42.5 % done", "Na úložišti běží resilver kvůli náhradě disků, hotovo 42.5 %"},
 	}
