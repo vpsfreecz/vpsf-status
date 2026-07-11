@@ -32,6 +32,7 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 			{
 				"label": "vpsfree.cz",
 				"description": "Website",
+				"descriptions": {"cs": "Webové stránky"},
 				"url": "https://vpsfree.cz",
 				"check_url": "https://check.vpsfree.cz/",
 				"method": "get"
@@ -68,7 +69,7 @@ func TestParseConfigDefaultsAndFields(t *testing.T) {
 	if cfg.VpsAdmin.ApiUrl != "https://api.vpsfree.cz" || cfg.Locations[0].Nodes[0].Name != "node1.prg" {
 		t.Fatalf("parsed config = %+v", cfg)
 	}
-	if cfg.WebServices[0].CheckUrl != "https://check.vpsfree.cz/" || cfg.WebServices[0].Method != "get" {
+	if cfg.WebServices[0].CheckUrl != "https://check.vpsfree.cz/" || cfg.WebServices[0].Method != "get" || cfg.WebServices[0].Descriptions["cs"] != "Webové stránky" {
 		t.Fatalf("web service = %+v", cfg.WebServices[0])
 	}
 	if cfg.NameServers[0].Name != "ns1.vpsfree.cz" || cfg.NameServers[0].Domain != "vpsfree.cz" {
@@ -96,6 +97,9 @@ func TestParseConfigSample(t *testing.T) {
 	}
 	if len(cfg.Locations[1].DnsResolvers) != 2 || cfg.Locations[1].DnsResolvers[0].Name != "ns1.brq.vpsfree.cz" || cfg.Locations[1].DnsResolvers[0].IpAddress != "37.205.11.200" {
 		t.Fatalf("sample Brno resolvers = %+v", cfg.Locations[1].DnsResolvers)
+	}
+	if got := cfg.WebServices[0].Descriptions["cs"]; got != "Webové stránky v češtině" {
+		t.Fatalf("sample Czech web service description = %q", got)
 	}
 }
 

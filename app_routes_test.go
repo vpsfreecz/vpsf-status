@@ -103,12 +103,14 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		"Nedostupnost",
 		"Nedávná bezpečnostní upozornění",
 		"Zranitelnost jádra byla opravena na všech dotčených nodech.",
+		"Webové stránky v češtině",
+		"Knowledge Base in Czech",
 		`href="/group?kind=vpsadmin&amp;lang=cs"`,
 		`href="/entity?id=node1.prg&amp;kind=node&amp;lang=cs"`,
 		`href="/?lang=en"`,
 		`href="/?lang=cs"`,
 	)
-	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported maintenance", "Sat May")
+	requireNotContains(t, body, "Router replacement", "Power failure", "Recent Security Advisories", "Reported maintenance", "Website in Czech", "Sat May")
 }
 
 func TestRoutesServeIndexOperationalState(t *testing.T) {
@@ -133,6 +135,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		`href="/entity?id=node1.prg&amp;kind=node&amp;lang=en"`,
 		"node2.prg",
 		"resolver-prg",
+		"Website in Czech",
 		"vpsfree.cz",
 		"ns1.vpsfree.cz",
 		"history-day-ok",

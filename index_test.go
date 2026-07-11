@@ -125,6 +125,42 @@ func TestIndexRefreshRendersChangedCzechSummaries(t *testing.T) {
 	requireNotContains(t, string(body.body), "Původní bezpečnostní oznámení.")
 }
 
+func TestIndexRefreshRendersChangedLocalizedDescription(t *testing.T) {
+	now := fixedNow
+	app, st, _ := newTestApplication(t)
+	app.now = func() time.Time {
+		return now
+	}
+	setOperationalFixture(st)
+
+	app.ensureLocales()
+	loc, ok := app.locales.localeForCode("cs", nil)
+	if !ok {
+		t.Fatal("Czech locale is not available")
+	}
+
+	body, rendered, err := app.refreshIndexBody(now, true, loc)
+	if err != nil {
+		t.Fatalf("render Czech index body: %v", err)
+	}
+	if !rendered {
+		t.Fatal("forced Czech index body render was skipped")
+	}
+	requireContains(t, string(body.body), "Webové stránky v češtině")
+
+	st.Services.Web[0].Descriptions["cs"] = "České webové stránky"
+	now = fixedNow.Add(2 * time.Second)
+	body, rendered, err = app.refreshIndexBody(now, false, loc)
+	if err != nil {
+		t.Fatalf("refresh Czech index body after description change: %v", err)
+	}
+	if !rendered {
+		t.Fatal("Czech index body was skipped after localized description changed")
+	}
+	requireContains(t, string(body.body), "České webové stránky")
+	requireNotContains(t, string(body.body), "Webové stránky v češtině")
+}
+
 func TestIndexRefreshKeepaliveRendersUnchangedBody(t *testing.T) {
 	now := fixedNow
 	app, st, _ := newTestApplication(t)

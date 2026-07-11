@@ -63,10 +63,11 @@ func newTestApplication(t testing.TB) (*application, *Status, *config.Config) {
 		},
 		WebServices: []config.WebService{
 			{
-				Label:       "vpsfree.cz",
-				Description: "Website in Czech",
-				Url:         "https://vpsfree.cz",
-				CheckUrl:    "https://check.vpsfree.cz/",
+				Label:        "vpsfree.cz",
+				Description:  "Website in Czech",
+				Descriptions: map[string]string{"cs": "Webové stránky v češtině"},
+				Url:          "https://vpsfree.cz",
+				CheckUrl:     "https://check.vpsfree.cz/",
 			},
 			{
 				Label:       "kb.vpsfree.cz",

@@ -617,6 +617,15 @@ func writeWebServiceSignature(h hash.Hash, prefix string, ws *WebService) {
 		ws.Maintenance,
 		ws.StatusCode,
 	)
+
+	codes := make([]string, 0, len(ws.Descriptions))
+	for code := range ws.Descriptions {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	for _, code := range codes {
+		writeIndexSignature(h, prefix+"_description", code, ws.Descriptions[code])
+	}
 }
 
 func writePingSignature(h hash.Hash, prefix string, ping *PingCheck) {

@@ -27,8 +27,10 @@ func TestOpenConfigRuntimeDefaults(t *testing.T) {
 		},
 		WebServices: []config.WebService{
 			{
-				Label: "defaulted",
-				Url:   "https://defaulted.example",
+				Label:        "defaulted",
+				Description:  "Default description",
+				Descriptions: map[string]string{"cs": "Výchozí popis"},
+				Url:          "https://defaulted.example",
 			},
 			{
 				Label:    "custom",
@@ -54,6 +56,12 @@ func TestOpenConfigRuntimeDefaults(t *testing.T) {
 	}
 	if defaulted.Method != "head" {
 		t.Fatalf("default Method = %q, want head", defaulted.Method)
+	}
+	if got := defaulted.DescriptionForLocale("cs"); got != "Výchozí popis" {
+		t.Fatalf("Czech description = %q, want Výchozí popis", got)
+	}
+	if got := defaulted.DescriptionForLocale("de"); got != "Default description" {
+		t.Fatalf("fallback description = %q, want Default description", got)
 	}
 
 	custom := st.Services.Web[1]

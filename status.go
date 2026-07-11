@@ -200,15 +200,16 @@ type Services struct {
 }
 
 type WebService struct {
-	Label       string
-	Description string
-	Url         string
-	CheckUrl    string
-	Method      string
-	Status      bool
-	Maintenance bool
-	StatusCode  int
-	LastCheck   time.Time
+	Label        string
+	Description  string
+	Descriptions map[string]string
+	Url          string
+	CheckUrl     string
+	Method       string
+	Status       bool
+	Maintenance  bool
+	StatusCode   int
+	LastCheck    time.Time
 }
 
 type PingCheck struct {
@@ -303,11 +304,12 @@ func openConfig(cfg *config.Config) *Status {
 
 	for iWs, cfgWs := range cfg.WebServices {
 		ws := WebService{
-			Label:       cfgWs.Label,
-			Description: cfgWs.Description,
-			Url:         cfgWs.Url,
-			CheckUrl:    cfgWs.CheckUrl,
-			Method:      cfgWs.Method,
+			Label:        cfgWs.Label,
+			Description:  cfgWs.Description,
+			Descriptions: cfgWs.Descriptions,
+			Url:          cfgWs.Url,
+			CheckUrl:     cfgWs.CheckUrl,
+			Method:       cfgWs.Method,
 		}
 
 		if ws.CheckUrl == "" {
@@ -817,6 +819,14 @@ func (ws *WebService) StatusString() string {
 	} else {
 		return "down"
 	}
+}
+
+func (ws *WebService) DescriptionForLocale(code string) string {
+	if description := ws.Descriptions[code]; description != "" {
+		return description
+	}
+
+	return ws.Description
 }
 
 func (pc *PingCheck) IsUp() bool {

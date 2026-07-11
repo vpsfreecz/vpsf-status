@@ -406,7 +406,7 @@
 								{{ range $ws := .Status.Services.Web }}
 								<tr class="table-{{ if $ws.Status }}success{{ else if $ws.Maintenance }}warning{{ else }}danger{{ end }}">
 									<td><a href="{{ $.Status.DetailURL "web_service" $ws.Label }}">{{ $ws.Label }}</a></td>
-									<td>{{ $ws.Description }}</td>
+									<td>{{ $ws.DescriptionForLocale $.Locale.Code }}</td>
 									<td>
 										{{ if $ws.Status }}
 										<i class="bi bi-check-lg text-success" aria-label="{{ $.Locale.T "status.operational" }}" title="{{ $.Locale.T "status.operational" }}"></i>

@@ -50,11 +50,12 @@ type DnsResolver struct {
 }
 
 type WebService struct {
-	Label       string `json:"label"`
-	Description string `json:"description"`
-	Url         string `json:"url"`
-	CheckUrl    string `json:"check_url"`
-	Method      string `json:"method"`
+	Label        string            `json:"label"`
+	Description  string            `json:"description"`
+	Descriptions map[string]string `json:"descriptions"`
+	Url          string            `json:"url"`
+	CheckUrl     string            `json:"check_url"`
+	Method       string            `json:"method"`
 }
 
 type NameServer struct {
