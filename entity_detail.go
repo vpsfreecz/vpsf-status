@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 const (
@@ -332,8 +334,17 @@ func probeEventDetailViewForLocale(event ProbeEvent, loc *pageLocale) ProbeEvent
 		Method:      probeMethodLabelForLocale(event.Method, loc),
 		Status:      statusTitleForLocale(event.Status, loc),
 		StatusClass: probeStatusClass(event.Status),
-		Message:     probeMessageForMethodForLocale(event.Method, event.Message, loc),
+		Message:     capitalizeProbeLogMessage(probeMessageForMethodForLocale(event.Method, event.Message, loc)),
 	}
+}
+
+func capitalizeProbeLogMessage(message string) string {
+	first, size := utf8.DecodeRuneInString(message)
+	if !unicode.IsLower(first) {
+		return message
+	}
+
+	return string(unicode.ToUpper(first)) + message[size:]
 }
 
 func probeEventResponsibleReport(event ProbeLogEvent, reports []*OutageReport, mapping *historyEntityMapping, now time.Time) *OutageReport {

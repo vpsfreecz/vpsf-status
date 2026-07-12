@@ -200,7 +200,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		"Probe log",
 		"Ping",
 		"Down",
-		"not responding",
+		"<td>Not responding</td>",
 		"node1.prg: Ping not responding",
 		"history-day-maintenance",
 	)
@@ -245,6 +245,7 @@ func TestRoutesServeEntityDetailCzechLocale(t *testing.T) {
 		"Měření",
 		"Události",
 		"Mimo provoz",
+		"<td>Neodpovídá</td>",
 		"node1.prg: Ping neodpovídá",
 	)
 	requireNotContains(t, body, "Back to Status", "Availability", "Probe log", "Probe:", "not responding")
@@ -303,14 +304,14 @@ func TestRoutesPaginateEntityProbeLog(t *testing.T) {
 	rr := getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg")
 	requireStatus(t, rr, http.StatusOK)
 	body := rr.Body.String()
-	requireContains(t, body, "event 54", "event 05", "probe_page=2", "Next")
-	requireNotContains(t, body, "event 04")
+	requireContains(t, body, "Event 54", "Event 05", "probe_page=2", "Next")
+	requireNotContains(t, body, "Event 04")
 
 	rr = getThroughRoutes(t, app, "/entity?kind=node&id=node1.prg&probe_page=2")
 	requireStatus(t, rr, http.StatusOK)
 	body = rr.Body.String()
-	requireContains(t, body, "event 04", "event 00", `aria-current="page">2`)
-	requireNotContains(t, body, "event 54")
+	requireContains(t, body, "Event 04", "Event 00", `aria-current="page">2`)
+	requireNotContains(t, body, "Event 54")
 }
 
 func TestRoutesServeEntityDetailReportedAvailabilityWithoutProbeLogRows(t *testing.T) {
@@ -496,14 +497,14 @@ func TestRoutesPaginateGroupProbeLog(t *testing.T) {
 	rr := getThroughRoutes(t, app, "/group?kind=location&id=3")
 	requireStatus(t, rr, http.StatusOK)
 	body := rr.Body.String()
-	requireContains(t, body, "event 50", "probe_page=2", `href="/group?id=3&amp;kind=location&amp;lang=en&amp;probe_page=2"`)
-	requireNotContains(t, body, "event 00")
+	requireContains(t, body, "Event 50", "probe_page=2", `href="/group?id=3&amp;kind=location&amp;lang=en&amp;probe_page=2"`)
+	requireNotContains(t, body, "Event 00")
 
 	rr = getThroughRoutes(t, app, "/group?kind=location&id=3&probe_page=2")
 	requireStatus(t, rr, http.StatusOK)
 	body = rr.Body.String()
-	requireContains(t, body, "event 00", `href="/group?id=3&amp;kind=location&amp;lang=en"`)
-	requireNotContains(t, body, "event 50")
+	requireContains(t, body, "Event 00", `href="/group?id=3&amp;kind=location&amp;lang=en"`)
+	requireNotContains(t, body, "Event 50")
 }
 
 func TestRoutesServeServiceGroupDetailHidesReportedAvailability(t *testing.T) {

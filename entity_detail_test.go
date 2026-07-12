@@ -143,8 +143,30 @@ func TestProbeEventDetailViewLocalizesCzechProbeText(t *testing.T) {
 
 	if view.Entity != "Vzdálená konzole" ||
 		view.Method != "HTTP" ||
-		view.Message != "kontrola selhala" {
+		view.Message != "Kontrola selhala" {
 		t.Fatalf("localized probe event = %+v", view)
+	}
+}
+
+func TestCapitalizeProbeLogMessage(t *testing.T) {
+	tests := []struct {
+		name    string
+		message string
+		want    string
+	}{
+		{"empty", "", ""},
+		{"English", "check failed", "Check failed"},
+		{"Czech", "neodpovídá", "Neodpovídá"},
+		{"acronym", "HTTP 500", "HTTP 500"},
+		{"number", "20% packet loss", "20% packet loss"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := capitalizeProbeLogMessage(tt.message); got != tt.want {
+				t.Fatalf("capitalizeProbeLogMessage(%q) = %q, want %q", tt.message, got, tt.want)
+			}
+		})
 	}
 }
 
