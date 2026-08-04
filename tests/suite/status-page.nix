@@ -363,7 +363,10 @@ import ../make-test.nix (
               mitigated_since: Time.now.utc - 1800
             )
           end
-          advisory.publish!(published_by: admin)
+          advisory.publish!(
+            expected_content_revision: advisory.content_revision,
+            published_by: admin
+          )
           puts JSON.dump(
             id: advisory.id,
             cves: advisory.security_advisory_cves.order(:cve_id).map { |cve|
