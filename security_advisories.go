@@ -10,7 +10,7 @@ import (
 
 const (
 	securityAdvisoryRecentDays  = 30
-	securityAdvisoryRecentLimit = 10
+	securityAdvisoryRecentLimit = 3
 )
 
 type securityAdvisoriesClient interface {
@@ -69,8 +69,13 @@ func refreshSecurityAdvisoriesOnce(st *Status, api securityAdvisoriesClient, now
 		return
 	}
 
-	advisories := make([]*SecurityAdvisory, 0, len(resp.Output))
-	for _, advisory := range resp.Output {
+	recent := resp.Output
+	if len(recent) > securityAdvisoryRecentLimit {
+		recent = recent[:securityAdvisoryRecentLimit]
+	}
+
+	advisories := make([]*SecurityAdvisory, 0, len(recent))
+	for _, advisory := range recent {
 		v := SecurityAdvisory{
 			Id:                advisory.Id,
 			State:             advisory.State,

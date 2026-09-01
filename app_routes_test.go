@@ -103,6 +103,7 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		"Nedostupnost",
 		"Nedávná bezpečnostní upozornění",
 		"Zranitelnost jádra byla opravena na všech dotčených nodech.",
+		"Zobrazit všechna bezpečnostní upozornění",
 		"Webové stránky v češtině",
 		"Knowledge Base in Czech",
 		`href="/group?kind=vpsadmin&amp;lang=cs"`,
@@ -709,6 +710,8 @@ func TestRoutesServeIndexSecurityAdvisories(t *testing.T) {
 		"CVE-2026-2001 (Dirty Pipe)",
 		"Kernel vulnerability was mitigated on all affected nodes.",
 		"https://vpsadmin.vpsfree.cz/?page=security_advisory&action=show&id=2001",
+		"https://vpsadmin.vpsfree.cz/?page=security_advisory&action=list",
+		"View all security advisories",
 		"No issues reported.",
 	)
 	requireNotContains(t, body, "Affected nodes")

@@ -66,6 +66,7 @@ const (
 
 	MsgSecurityRecent      = "security.recent"
 	MsgSecurityUnableFetch = "security.unable_fetch"
+	MsgSecurityViewAll     = "security.view_all"
 
 	MsgTableDate        = "table.date"
 	MsgTableDuration    = "table.duration"
@@ -235,6 +236,7 @@ func Messages() []*i18n.Message {
 		{ID: MsgOutageMoreInformation, Other: "More information"},
 		{ID: MsgSecurityRecent, Other: "Recent security advisories"},
 		{ID: MsgSecurityUnableFetch, Other: "Unable to fetch security advisories from vpsAdmin."},
+		{ID: MsgSecurityViewAll, Other: "View all security advisories"},
 		{ID: MsgTableDate, Other: "Date"},
 		{ID: MsgTableDuration, Other: "Duration"},
 		{ID: MsgTableType, Other: "Type"},

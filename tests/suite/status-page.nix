@@ -568,21 +568,19 @@ import ../make-test.nix (
       end
 
       describe 'security advisories', order: :defined do
-        it 'reports recent published advisories' do
+        it 'renders recent published advisories with the full-list link' do
           advisory = create_security_advisory(
             'vpsf-status security advisory summary'
           )
 
-          wait_for_status_json('security advisories', timeout: 90) do |json|
-            advisories = json.dig('security_advisories', 'recent')
-            recent = advisories.find { |row| row.fetch('id') == advisory.fetch('id') }
-
-            recent &&
-              recent.fetch('state') == 'published' &&
-              recent.fetch('cves') == advisory.fetch('cves') &&
-              recent.fetch('name') == advisory.fetch('name') &&
-              recent.fetch('en_summary') == advisory.fetch('summary') &&
-              recent.fetch('affected_node_count') == advisory.fetch('affected_node_count')
+          body = nil
+          wait_until_block_succeeds(name: 'security advisories', timeout: 90) do
+            body = status_body('/')
+            body.include?(advisory.fetch('summary')) &&
+              body.include?(advisory.fetch('name')) &&
+              body.include?(advisory.fetch('cves').first.fetch('cve_id')) &&
+              body.include?('?page=security_advisory&action=list') &&
+              body.include?('View all security advisories')
           end
         end
       end

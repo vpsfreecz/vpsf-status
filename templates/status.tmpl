@@ -139,6 +139,9 @@
 				{{ end }}
 			</tbody>
 		</table>
+		<p>
+			<a href="{{ $webuiUrl }}/?page=security_advisory&action=list" target="_blank">{{ .Locale.T "security.view_all" }}</a>
+		</p>
 		{{ end }}
 		{{ if not .Status.SecurityAdvisories.Status }}
 		<div class="alert alert-danger" role="alert">

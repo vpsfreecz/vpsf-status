@@ -221,6 +221,10 @@ other = "Recent security advisories"
 hash = "sha1-144aacd438907d8a405c67375bd67487ffa36299"
 other = "Unable to fetch security advisories from vpsAdmin."
 
+["security.view_all"]
+hash = "sha1-c0cdd7a11d13fc192201caf22d3a7bbda5d2ce33"
+other = "View all security advisories"
+
 ["table.date"]
 hash = "sha1-c0008308f85b2263bd2900ad061d5ac745c0ca78"
 other = "Date"

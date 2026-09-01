@@ -163,6 +163,9 @@ other = "Nedávná bezpečnostní upozornění"
 ["security.unable_fetch"]
 other = "Nepodařilo se načíst bezpečnostní upozornění z vpsAdminu."
 
+["security.view_all"]
+other = "Zobrazit všechna bezpečnostní upozornění"
+
 ["table.date"]
 other = "Datum"
 

@@ -89,6 +89,38 @@ func TestRefreshSecurityAdvisoriesOnceMapsRecentAdvisories(t *testing.T) {
 	}
 }
 
+func TestRefreshSecurityAdvisoriesOnceLimitsOverlongResponses(t *testing.T) {
+	_, st, _ := newTestApplication(t)
+	output := make([]*client.ActionSecurityAdvisoryIndexOutput, 0, 4)
+	for i := int64(0); i < 4; i++ {
+		output = append(output, apiSecurityAdvisory(
+			2004-i,
+			"published",
+			"",
+			fixedNow.Add(-time.Duration(i)*time.Hour),
+			"Recent advisory",
+			1,
+		))
+	}
+	api := &fakeSecurityAdvisoriesClient{
+		resp: securityAdvisoryIndexResponse(true, "", output),
+	}
+
+	refreshSecurityAdvisoriesOnce(st, api, fixedNow)
+
+	if len(st.SecurityAdvisories.RecentList) != securityAdvisoryRecentLimit {
+		t.Fatalf("recent security advisories = %+v", st.SecurityAdvisories.RecentList)
+	}
+	if len(api.cveIds) != securityAdvisoryRecentLimit {
+		t.Fatalf("ListSecurityAdvisoryCves called with ids=%v", api.cveIds)
+	}
+	for i, advisory := range st.SecurityAdvisories.RecentList {
+		if advisory.Id != output[i].Id {
+			t.Fatalf("recent security advisory %d = %d, want %d", i, advisory.Id, output[i].Id)
+		}
+	}
+}
+
 func TestRefreshSecurityAdvisoriesOnceHandlesAPIFailure(t *testing.T) {
 	tests := []struct {
 		name string
