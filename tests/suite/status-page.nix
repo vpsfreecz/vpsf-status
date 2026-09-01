@@ -575,7 +575,7 @@ import ../make-test.nix (
 
           body = nil
           wait_until_block_succeeds(name: 'security advisories', timeout: 90) do
-            body = status_body('/')
+            body = status_body('/?lang=en')
             body.include?(advisory.fetch('summary')) &&
               body.include?(advisory.fetch('name')) &&
               body.include?(advisory.fetch('cves').first.fetch('cve_id')) &&
