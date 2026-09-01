@@ -432,7 +432,6 @@ func (st *Status) markIndexHistoryChanged() {
 
 func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 	outages := st.OutageReports
-	advisories := st.SecurityAdvisories
 
 	ret := &json.Status{
 		VpsAdmin: json.VpsAdmin{
@@ -459,13 +458,6 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 			Status:    outages.Status,
 			Announced: make([]json.OutageReport, len(outages.ActiveList)),
 			Recent:    make([]json.OutageReport, len(outages.RecentList)),
-		},
-		SecurityAdvisories: json.SecurityAdvisories{
-			Status: advisories.Status,
-			Recent: make(
-				[]json.SecurityAdvisory,
-				len(advisories.RecentList),
-			),
 		},
 		Locations:   make([]json.Location, len(st.LocationList)),
 		WebServices: make([]json.WebService, len(st.Services.Web)),
@@ -530,30 +522,6 @@ func (st *Status) ToJson(now time.Time, notice Notice) *json.Status {
 		}
 
 		ret.OutageReports.Recent[iOutage] = jsonOutage
-	}
-
-	for iAdvisory, advisory := range advisories.RecentList {
-		cves := make([]json.SecurityAdvisoryCve, len(advisory.Cves))
-		for iCve, cve := range advisory.Cves {
-			cves[iCve] = json.SecurityAdvisoryCve{
-				Id:    cve.Id,
-				CveId: cve.CveId,
-				Url:   cve.Url,
-			}
-		}
-
-		ret.SecurityAdvisories.Recent[iAdvisory] = json.SecurityAdvisory{
-			Id:                advisory.Id,
-			PublishedAt:       advisory.PublishedAt,
-			UpdatedAt:         advisory.UpdatedAt,
-			State:             advisory.State,
-			Cves:              cves,
-			Name:              advisory.Name,
-			EnSummary:         advisory.EnSummary,
-			EnDescription:     advisory.EnDescription,
-			EnResponse:        advisory.EnResponse,
-			AffectedNodeCount: advisory.AffectedNodeCount,
-		}
 	}
 
 	for iLoc, loc := range st.LocationList {

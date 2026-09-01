@@ -1235,26 +1235,6 @@ func TestRoutesServeJSONContract(t *testing.T) {
 	requireJSONString(t, rawRecent, "state", "resolved")
 	requireJSONString(t, rawRecent, "impact", "unavailability")
 
-	if !body.SecurityAdvisories.Status || len(body.SecurityAdvisories.Recent) != 1 {
-		t.Fatalf("security_advisories = %+v", body.SecurityAdvisories)
-	}
-	if got := body.SecurityAdvisories.Recent[0]; got.Id != 2001 || len(got.Cves) != 1 || got.Cves[0].CveId != "CVE-2026-2001" || got.Name != "Dirty Pipe" || got.AffectedNodeCount != 2 {
-		t.Fatalf("recent security advisory = %+v", got)
-	}
-	rawSecurityAdvisories := requireMapValue(t, raw, "security_advisories")
-	rawSecurityAdvisory := requireSliceMap(t, requireSliceValue(t, rawSecurityAdvisories, "recent"), 0)
-	requireJSONNumber(t, rawSecurityAdvisory, "id", 2001)
-	requireJSONString(t, rawSecurityAdvisory, "published_at", "2026-05-02T08:30:00Z")
-	requireJSONString(t, rawSecurityAdvisory, "updated_at", "2026-05-02T09:00:00Z")
-	requireJSONString(t, rawSecurityAdvisory, "state", "published")
-	rawCve := requireSliceMap(t, requireSliceValue(t, rawSecurityAdvisory, "cves"), 0)
-	requireJSONNumber(t, rawCve, "id", 3001)
-	requireJSONString(t, rawCve, "cve_id", "CVE-2026-2001")
-	requireJSONString(t, rawCve, "url", "https://www.cve.org/CVERecord?id=CVE-2026-2001")
-	requireJSONString(t, rawSecurityAdvisory, "name", "Dirty Pipe")
-	requireJSONString(t, rawSecurityAdvisory, "en_summary", "Kernel vulnerability was mitigated on all affected nodes.")
-	requireJSONNumber(t, rawSecurityAdvisory, "affected_node_count", 2)
-
 	if len(body.Locations) != 2 || body.Locations[0].Label != "Praha" || len(body.Locations[0].Nodes) != 2 {
 		t.Fatalf("locations = %+v", body.Locations)
 	}
@@ -1319,10 +1299,6 @@ func TestRoutesServeJSONEmptyNoticeAndOutageShape(t *testing.T) {
 	requireJSONBool(t, outages, "status", true)
 	requireSliceLength(t, requireSliceValue(t, outages, "announced"), 0)
 	requireSliceLength(t, requireSliceValue(t, outages, "recent"), 0)
-
-	advisories := requireMapValue(t, raw, "security_advisories")
-	requireJSONBool(t, advisories, "status", true)
-	requireSliceLength(t, requireSliceValue(t, advisories, "recent"), 0)
 }
 
 func getThroughRoutesWithHeaders(t *testing.T, app *application, target string, headers map[string]string) *httptest.ResponseRecorder {
@@ -1397,7 +1373,10 @@ func headerValuesContain(values []string, want string) bool {
 func requireJSONContractKeys(t *testing.T, raw map[string]any) {
 	t.Helper()
 
-	requireMapKeys(t, raw, "generated_at", "locations", "nameservers", "notice", "outage_reports", "security_advisories", "vpsadmin", "web_services")
+	requireMapKeys(t, raw, "generated_at", "locations", "nameservers", "notice", "outage_reports", "vpsadmin", "web_services")
+	if _, ok := raw["security_advisories"]; ok {
+		t.Fatal("security_advisories must not be present in the public JSON response")
+	}
 
 	notice := requireMapValue(t, raw, "notice")
 	requireMapKeys(t, notice, "any", "text", "updated_at")
@@ -1412,10 +1391,6 @@ func requireJSONContractKeys(t *testing.T, raw map[string]any) {
 	requireMapKeys(t, outages, "announced", "recent", "status")
 	requireOutageJSONKeys(t, requireSliceMap(t, requireSliceValue(t, outages, "announced"), 0))
 	requireOutageJSONKeys(t, requireSliceMap(t, requireSliceValue(t, outages, "recent"), 0))
-
-	advisories := requireMapValue(t, raw, "security_advisories")
-	requireMapKeys(t, advisories, "recent", "status")
-	requireSecurityAdvisoryJSONKeys(t, requireSliceMap(t, requireSliceValue(t, advisories, "recent"), 0))
 
 	locations := requireSliceValue(t, raw, "locations")
 	location := requireSliceMap(t, locations, 0)
@@ -1432,11 +1407,4 @@ func requireOutageJSONKeys(t *testing.T, outage map[string]any) {
 
 	requireMapKeys(t, outage, "begins_at", "cs_description", "cs_summary", "duration", "en_description", "en_summary", "entities", "id", "impact", "state", "type")
 	requireMapKeys(t, requireSliceMap(t, requireSliceValue(t, outage, "entities"), 0), "entity_type", "id", "label", "name")
-}
-
-func requireSecurityAdvisoryJSONKeys(t *testing.T, advisory map[string]any) {
-	t.Helper()
-
-	requireMapKeys(t, advisory, "affected_node_count", "cves", "en_description", "en_response", "en_summary", "id", "name", "published_at", "state", "updated_at")
-	requireMapKeys(t, requireSliceMap(t, requireSliceValue(t, advisory, "cves"), 0), "cve_id", "id", "url")
 }
