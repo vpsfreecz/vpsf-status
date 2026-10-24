@@ -12,18 +12,30 @@ concurrency:
   group: update-dependencies
   cancel-in-progress: false
 
+env:
+  CONFCTL_FLAKE: github:vpsfreecz/confctl/822c0e35dbe2549111912f539116b4225dfd3035#confctl
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   update:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout default branch
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
 
       - name: Install Nix
-        uses: cachix/install-nix-action@v31
+        uses: cachix/install-nix-action@31.11.3
+
+      - name: Restore confctl cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.cache/confctl
+          key: confctl-cache-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            confctl-cache-${{ runner.os }}
 
       - name: Configure Git
         run: |
@@ -33,25 +45,33 @@ jobs:
       - name: Record starting revision
         run: |
           echo "UPDATE_START_REF=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          cp flake.lock "$RUNNER_TEMP/flake-update-baseline.lock"
+          echo "UPDATE_OLD_LOCK=$RUNNER_TEMP/flake-update-baseline.lock" >> "$GITHUB_ENV"
 
       - name: Update flake input
         run: |
           set -euo pipefail
 
-          old_rev="$(jq -r '.nodes.nixpkgs.locked.rev // empty' flake.lock)"
+          old_rev="$(nix shell "$CONFCTL_FLAKE" -c confctl inputs ls --json nixpkgs | jq -er '
+            map(select(.input == "nixpkgs"))
+            | if length == 1 then .[0].rev | select(type == "string" and length > 0) else empty end
+          ')"
           if [ -z "$old_rev" ]; then
             echo "Unable to read nixpkgs revision from flake.lock." >&2
             exit 1
           fi
 
-          nix flake update nixpkgs
+          nix shell "$CONFCTL_FLAKE" -c confctl inputs update --forward-only nixpkgs
 
           if git diff --quiet -- flake.lock; then
             echo "No flake input updates to commit."
             exit 0
           fi
 
-          new_rev="$(jq -r '.nodes.nixpkgs.locked.rev // empty' flake.lock)"
+          new_rev="$(nix shell "$CONFCTL_FLAKE" -c confctl inputs ls --json nixpkgs | jq -er '
+            map(select(.input == "nixpkgs"))
+            | if length == 1 then .[0].rev | select(type == "string" and length > 0) else empty end
+          ')"
           if [ -z "$new_rev" ]; then
             echo "Unable to read updated nixpkgs revision from flake.lock." >&2
             exit 1
@@ -188,4 +208,15 @@ jobs:
             exit 0
           fi
 
+          final_lock="$RUNNER_TEMP/flake-update-final.lock"
+          git show HEAD:flake.lock > "$final_lock"
+          nix shell "$CONFCTL_FLAKE" -c confctl inputs check-update \
+            --old-lock "$UPDATE_OLD_LOCK" --new-lock "$final_lock"
           git push origin "HEAD:${{ github.event.repository.default_branch }}"
+
+      - name: Save confctl cache
+        if: ${{ !cancelled() }}
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/confctl
+          key: confctl-cache-${{ runner.os }}-${{ github.run_id }}
