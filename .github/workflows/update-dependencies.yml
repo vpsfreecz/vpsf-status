@@ -123,7 +123,7 @@ jobs:
             | @tsv
           ' "$old_go_mod" "$new_go_mod" > "$direct_changes"
 
-          perl -0pi -e 's/vendorHash = (?:lib\.fakeHash|"[^"]+");/vendorHash = lib.fakeHash;/' nix/package.nix
+          perl tools/set-vendor-hash.pl --fake nix/package.nix
 
           if nix build .#vpsf-status --no-link 2>"$build_log"; then
             echo "Nix build unexpectedly succeeded with lib.fakeHash." >&2
@@ -139,7 +139,7 @@ jobs:
             exit 1
           fi
 
-          perl -0pi -e "s/vendorHash = lib\\.fakeHash;/vendorHash = \"$vendor_hash\";/" nix/package.nix
+          perl tools/set-vendor-hash.pl "$vendor_hash" nix/package.nix
 
           direct_count="$(wc -l < "$direct_changes" | tr -d ' ')"
           if [ "$direct_count" -eq 0 ]; then

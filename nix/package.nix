@@ -1,6 +1,7 @@
 {
   buildGoModule,
   lib,
+  perl,
   src,
   version,
   vpsadminGoClientSource ? null,
@@ -9,6 +10,8 @@
 buildGoModule {
   pname = "vpsf-status";
   inherit src version;
+
+  nativeCheckInputs = [ perl ];
 
   vendorHash =
     if vpsadminGoClientSource != null then

@@ -115,6 +115,7 @@
               gnumake
               go
               lefthook
+              perl
               stdenv.cc
             ];
 
