@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -1134,8 +1135,17 @@ func TestRoutesDoNotCacheMetrics(t *testing.T) {
 	if got := rr.Header().Get("Cache-Control"); got != "" {
 		t.Fatalf("metrics Cache-Control = %q, want empty", got)
 	}
-	if got := rr.Header().Values("Vary"); headerValuesContain(got, "Accept-Encoding") {
-		t.Fatalf("metrics Vary = %v, should not be set by route cache", got)
+	direct := httptest.NewRecorder()
+	app.status.Exporter.httpHandler().ServeHTTP(direct, httptest.NewRequest(http.MethodGet, "/metrics", nil))
+	if got, want := rr.Header().Values("Vary"), direct.Header().Values("Vary"); !slices.Equal(got, want) {
+		t.Fatalf("metrics Vary = %v, want exporter headers %v without route-cache additions", got, want)
+	}
+
+	// Keep the fixed app clock to detect reuse within the route-cache TTL.
+	for _, up := range []float64{0, 1} {
+		st.Exporter.up.Set(up)
+		family := requireGaugeFamily(t, scrapeMetrics(t, app), "vpsfstatus_up", "1 = operational, 0 = initializing")
+		requireUnlabeledMetricValue(t, family, up)
 	}
 }
 
