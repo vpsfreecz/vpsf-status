@@ -17,7 +17,7 @@ buildGoModule {
     if vpsadminGoClientSource != null then
       "sha256-N6vS4SGVeWkBc23/z8zT1Hbz+MC7BvOsjqJkw+bXcgI="
     else
-      "sha256-Ym3UqovbBhi6S0JaP9VZEL8U43OkJy6jQyBuR/0sDlQ=";
+      "sha256-ylsRtBrlqeMgrATUaAM28yL1MMNYljRgGNLV1SQzHLg=";
 
   postPatch = lib.optionalString (vpsadminGoClientSource != null) ''
     cp -a ${vpsadminGoClientSource} ../vpsadmin-go-client
