@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/common v0.73.1
 	github.com/vpsfreecz/vpsadmin-go-client v0.2.0
 	golang.org/x/text v0.43.0
-	modernc.org/sqlite v1.61.1
+	modernc.org/sqlite v1.62.0
 )
 
 require (
