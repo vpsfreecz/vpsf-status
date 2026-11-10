@@ -23,6 +23,22 @@ do not use Nix, install `lefthook` first.
 ./vpsf-status config-sample.json
 ```
 
+## Sample preview
+
+Preview the real pages with synthetic data, without API credentials, a database
+server or monitoring privileges:
+
+```bash
+nix develop -c go run -tags preview .
+```
+
+Open <http://127.0.0.1:8080/?lang=en> or <http://127.0.0.1:8080/?lang=cs>.
+The preview uses disposable SQLite history and a frozen clock. Existing CDN
+styles, scripts and icons need browser network access.
+See [preview scenarios and options](docs/how-to/sample-preview.md).
+See [themes and responsive layout](docs/reference/appearance.md) for appearance
+controls and supported browser behavior.
+
 ## Automated flake updates
 
 The `update-dependencies.yml` workflow updates the resolved nixpkgs input using

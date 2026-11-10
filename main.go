@@ -1,3 +1,5 @@
+//go:build !preview
+
 package main
 
 import (
