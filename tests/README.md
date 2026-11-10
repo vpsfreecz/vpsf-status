@@ -27,3 +27,9 @@ journals, API/WebUI/console HTTP results, and the WebUI container's nginx/PHP-FP
 journal through the existing machine objects. The capture takes at most six
 commands with eight-second deadlines, runs only once, and preserves the original
 failure. Diagnostic errors do not prevent the remaining test cleanup.
+
+The status VM uses a 15-second HTTP/API probe budget because healthy WebUI
+metadata requests can exceed two seconds in this fixture. The polling interval
+stays at two seconds, and the existing detection/recovery assertions retain
+their 90/120-second deadlines. This fixture budget does not change production
+configuration or the application's default timeout.

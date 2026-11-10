@@ -112,7 +112,8 @@ import ../make-test.nix (
                 package = vpsfStatusPackage;
                 settings = {
                   check_interval = 2;
-                  check_timeout = 2;
+                  # Healthy VM WebUI metadata requests can take several seconds.
+                  check_timeout = 15;
                   history_days = 7;
                   vpsadmin = {
                     api_url = "http://api.vpsadmin.test";
