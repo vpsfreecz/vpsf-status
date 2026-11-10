@@ -41,7 +41,7 @@
 		--info-bg: #1b3658;
 		--history-ok: #86efac;
 		--history-maintenance: #fcd34d;
-		--history-outage: #fca5a5;
+		--history-outage: #ef4444;
 	}
 }
 :root[data-theme="dark"] {
@@ -64,7 +64,7 @@
 	--info-bg: #1b3658;
 	--history-ok: #86efac;
 	--history-maintenance: #fcd34d;
-	--history-outage: #fca5a5;
+	--history-outage: #ef4444;
 }
 body { color: var(--text); background: var(--page); overflow-wrap: anywhere; }
 body > .container { padding-top: 1rem; }
@@ -81,6 +81,9 @@ h2 { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 1rem; }
 .text-warning { color: var(--warning) !important; }
 .text-danger { color: var(--danger) !important; }
 .text-info { color: var(--info) !important; }
+.status-counts > .text-success { color: var(--history-ok) !important; }
+.status-counts > .text-warning { color: var(--history-maintenance) !important; }
+.status-counts > .text-danger { color: var(--history-outage) !important; }
 .group-detail-link:hover, .group-detail-link:focus-visible { text-decoration: underline !important; }
 .site-header { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1rem; margin-bottom: 1.5rem; background: var(--panel); border: 1px solid var(--border); border-radius: .5rem; }
 .site-brand { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; }
@@ -116,8 +119,15 @@ h2 { font-size: 1.5rem; margin-top: 1.5rem; margin-bottom: 1rem; }
 .language-option[aria-current] { background: var(--raised); border: 2px solid var(--link); font-weight: 600; }
 .back-link { padding-block: .65rem; }
 .rendered-at { margin: 0; font-size: .875rem; }
-.table { color: var(--text); border-color: var(--border); background: var(--panel); table-layout: fixed; }
+.table { color: var(--text); border: 1px solid var(--border); background: var(--panel); table-layout: fixed; border-collapse: separate; border-spacing: 0; border-radius: .5rem; }
 .table > :not(caption) > * > * { vertical-align: middle; padding: .5rem; color: var(--text); background-color: var(--row-bg, var(--panel)); box-shadow: none; }
+/* Round exposed cells without clipping focus outlines or history popovers. */
+:where(.table > :first-child > tr:first-child) > :first-child { border-top-left-radius: .5rem; }
+:where(.table > :first-child > tr:first-child) > :last-child { border-top-right-radius: .5rem; }
+:where(.table > :last-child > tr:last-child) > :first-child { border-bottom-left-radius: .5rem; }
+:where(.table > :last-child > tr:last-child) > :last-child { border-bottom-right-radius: .5rem; }
+.table > thead > tr:last-child > * { border-bottom-width: 2px; }
+.table > tbody:last-child > tr:last-child > * { border-bottom: 0; }
 .table-success { --row-bg: var(--success-bg); }
 .table-warning { --row-bg: var(--warning-bg); }
 .table-danger { --row-bg: var(--danger-bg); }
@@ -190,13 +200,14 @@ footer .col:first-child { flex-grow: 3; }
 	.accordion-body { padding: .5rem; }
 	.table > :not(caption) > * > * { padding: .4rem .25rem; }
 	.stacked-table, .stacked-table tbody { display: block; width: 100%; }
+	.stacked-table { background: transparent; border: 0; border-radius: 0; }
 	/* Keep column headers in the accessibility tree when rows become cards. */
 	.stacked-table thead { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-	.stacked-table tbody tr { display: block; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: .3rem; overflow: hidden; }
-	.stacked-table tbody td { display: grid; grid-template-columns: minmax(5rem, 30%) minmax(0, 1fr); align-items: start; gap: .75rem; padding: .55rem .75rem; border: 0; }
+	.stacked-table tbody tr { display: block; margin-bottom: 1rem; border: 1px solid var(--border); border-radius: .5rem; overflow: hidden; }
+	.stacked-table tbody td { display: grid; grid-template-columns: minmax(5rem, 30%) minmax(0, 1fr); align-items: start; gap: .75rem; padding: .55rem .75rem; border: 0; border-radius: 0; }
 	.cell-label { display: block; font-weight: 600; font-size: .875rem; }
-	.probe-covered:not(.probe-covered-end) { margin-bottom: 0; border-bottom: 0; border-radius: .3rem .3rem 0 0; }
-	.probe-covered:not(.probe-covered-start) { border-top: 0; border-radius: 0 0 .3rem .3rem; }
+	.probe-covered:not(.probe-covered-end) { margin-bottom: 0; border-bottom: 0; border-radius: .5rem .5rem 0 0; }
+	.probe-covered:not(.probe-covered-start) { border-top: 0; border-radius: 0 0 .5rem .5rem; }
 	.probe-covered td:first-child { box-shadow: none; }
 	.stacked-table .probe-covered { border-left: .3rem solid var(--probe-covered-color); }
 }

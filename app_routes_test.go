@@ -128,7 +128,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		body,
 		"No issues reported.",
 		"https://vpsadmin.vpsfree.cz/?page=outage&action=list",
-		`href="/static/status.css?v=5"`,
+		`href="/static/status.css?v=10"`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=vpsadmin&amp;lang=en">vpsAdmin`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=3&amp;kind=location&amp;lang=en">Praha`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=4&amp;kind=location&amp;lang=en">Brno`,
@@ -151,7 +151,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		`aria-label="Operational"`,
 		`aria-label="Responding"`,
 	)
-	style := getThroughRoutes(t, app, "/static/status.css?v=5")
+	style := getThroughRoutes(t, app, "/static/status.css?v=10")
 	requireStatus(t, style, http.StatusOK)
 	requireContains(t, style.Body.String(),
 		`.group-detail-link:hover, .group-detail-link:focus-visible { text-decoration: underline !important; }`,

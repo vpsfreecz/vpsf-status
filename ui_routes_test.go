@@ -2,9 +2,51 @@ package main
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 	"testing"
 )
+
+// Counts stay plain text and inherit the same palette token as their history bars.
+// Keep this source invariant separate from browser checks of the actual cascade.
+func TestStatusCountColorsMatchHistoryWithoutBadges(t *testing.T) {
+	app, _, _ := newTestApplication(t)
+	rr := getThroughRoutes(t, app, "/static/status.css")
+	requireStatus(t, rr, http.StatusOK)
+	css := regexp.MustCompile(`(?s)/\*.*?\*/`).ReplaceAllString(rr.Body.String(), "")
+	space := regexp.MustCompile(`[[:space:]]+`)
+	normalize := func(declaration string) string {
+		return strings.TrimSuffix(space.ReplaceAllString(declaration, ""), ";")
+	}
+	rules := make(map[string][]string)
+	for _, match := range regexp.MustCompile(`([^{}]+)\{([^{}]*)\}`).FindAllStringSubmatch(css, -1) {
+		selector := strings.TrimSpace(match[1])
+		rules[selector] = append(rules[selector], strings.TrimSpace(match[2]))
+		if strings.Contains(selector, ".status-counts") && selector != ".status-counts > .text-success" && selector != ".status-counts > .text-warning" && selector != ".status-counts > .text-danger" {
+			t.Errorf("unexpected count override %q: %s", selector, match[2])
+		}
+	}
+	for _, status := range []struct{ count, history string }{
+		{"success", "ok"}, {"warning", "maintenance"}, {"danger", "outage"},
+	} {
+		t.Run(status.count, func(t *testing.T) {
+			token := "var(--history-" + status.history + ")"
+			count := rules[".status-counts > .text-"+status.count]
+			if len(count) != 1 || normalize(count[0]) != "color:"+token+"!important" {
+				t.Fatalf("plain count foreground must use only %s; got %q", token, count)
+			}
+			bar := rules[".history-day-"+status.history]
+			if len(bar) != 1 || normalize(bar[0]) != "background:"+token {
+				t.Fatalf("history background must share %s; got %q", token, bar)
+			}
+			for _, theme := range []string{":root", `:root[data-theme="dark"]`, `:root:not([data-theme="light"])`} {
+				if len(rules[theme]) != 1 || !strings.Contains(rules[theme][0], "--history-"+status.history+":") {
+					t.Errorf("missing shared history token in light/manual-dark/system-dark context %s", theme)
+				}
+			}
+		})
+	}
+}
 
 // Exercise the actual route shells, including the cached overview and about page.
 func TestHTMLRoutesShareLocalizedDisplayControls(t *testing.T) {
@@ -31,7 +73,7 @@ func TestHTMLRoutesShareLocalizedDisplayControls(t *testing.T) {
 						`id="theme-system" title="`+locale.system+`"`,
 						`id="theme-light" title="`+locale.light+`"`,
 						`id="theme-dark" title="`+locale.dark+`"`,
-						`/static/status.css?v=5`, `/static/theme.js?v=4`,
+						`/static/status.css?v=10`, `/static/theme.js?v=4`,
 						`class="language-options" role="group" aria-labelledby="language-label"`,
 					)
 					if got := strings.Count(body, `class="language-option"`); got != 2 {

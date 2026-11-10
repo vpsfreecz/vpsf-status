@@ -33,9 +33,11 @@ contrast together when adjusting it. Bump local asset URL versions in
 for 24 hours.
 
 The light history palette retains the original green `#198754`, yellow
-`#ffc107` and red `#dc3545`, also used for probe coverage stripes. These fills
-are separate from accessible status text colors. Dark history colors remain
-brighter. Missing or unrecognized history states keep the existing default
+`#ffc107` and red `#dc3545`, also used for probe coverage stripes. Status counts
+and history bars use the same green, yellow and red colors in each theme.
+Counts remain plain colored numbers without backgrounds. Other status text
+uses separate foreground colors. Missing or unrecognized history states keep
+the existing default
 operational color; no separate unknown-state style is introduced.
 
 The dark header logo is the official transparent white/orange variant, copied
