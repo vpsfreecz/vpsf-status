@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Checkout vpsf-status
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 1
 
@@ -59,10 +59,10 @@ jobs:
         run: |
           set -o pipefail
           rm -rf /tmp/os-test-runner
-          ./test-runner.sh test -f --jobs auto \
+          ./test-runner.sh test -f --jobs auto --verbose \
             -t ci \
             --state-dir /tmp/os-test-runner \
-            | tee test.log
+            2>&1 | tee test.log
 
       - name: Evaluate test results
         if: always()
@@ -77,11 +77,12 @@ jobs:
           logs-root: /tmp/os-test-runner
 
       - name: Upload full test logs
-        if: failure()
+        if: failure() || cancelled()
         uses: vpsfreecz/vpsadminos/.github/actions/upload-test-logs@staging
         with:
           name: vpsf-status-test-logs-${{ github.run_id }}
           paths: |
+            test.log
             /tmp/os-test-runner/**/*.log
             /tmp/os-test-runner/**/*.txt
 
