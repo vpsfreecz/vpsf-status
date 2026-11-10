@@ -383,6 +383,43 @@ import ../make-test.nix (
         RUBY
       end
 
+      def failure_diagnostic(machine, label, command)
+        return unless machine.can_execute?
+
+        code, output = machine.execute(command, timeout: 8)
+        log "[status failure diagnostics] #{label}: exit=#{code}\n#{output}"
+      rescue StandardError => e
+        warn "[status failure diagnostics] #{label}: #{e.class}"
+      end
+
+      def collect_failure_diagnostics
+        return if @status_failure_diagnostics_collected
+
+        @status_failure_diagnostics_collected = true
+        failure_diagnostic(status, 'status journal',
+          'journalctl -u vpsf-status.service --no-pager -n 60 | cut -c 1-300')
+
+        {
+          'API' => ['http://api.vpsadmin.test/', ""],
+          'WebUI' => ['http://webui.vpsadmin.test/', '--head'],
+          'console' => ['http://console.vpsadmin.test/console.js', '--head']
+        }.each do |name, (url, method)|
+          failure_diagnostic(status, "HTTP #{name}",
+            "curl --silent --show-error --connect-timeout 2 --max-time 4 " \
+            "#{method} --output /dev/null --write-out 'HTTP=%{http_code} remote=%{remote_ip} total=%{time_total}\\n' #{url}")
+        end
+
+        failure_diagnostic(services, 'API and WebUI container services', <<~CMD)
+          systemctl --failed --no-pager --no-legend --type=service | sed -n '1,20p' || true
+          journalctl -u vpsadmin-api.service -u container@webui.service --no-pager -n 60 | cut -c 1-300
+        CMD
+        failure_diagnostic(services, 'WebUI nginx and PHP-FPM', <<~CMD)
+          nixos-container run webui -- sh -c 'systemctl --failed --no-pager --no-legend --type=service | sed -n "1,20p"; journalctl -u nginx.service -u phpfpm-vpsadmin-webui.service --no-pager -n 60 | cut -c 1-300'
+        CMD
+      rescue StandardError => e
+        warn "[status failure diagnostics] capture failed: #{e.class}"
+      end
+
       before(:suite) do
         services.start
         services.wait_for_vpsadmin_api(timeout: 600)
@@ -422,6 +459,9 @@ import ../make-test.nix (
           end
 
           expect(document.dig('locations', 0, 'label')).to eq(${builtins.toJSON location.label})
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
 
         it 'exports expected metrics' do
@@ -440,6 +480,9 @@ import ../make-test.nix (
             expect_metric(metrics, 'vpsfstatus_node_pool_state', { 'node_id' => NODE_ID, 'node_name' => NODE_NAME }, 0)
             expect_metric(metrics, 'vpsfstatus_node_pool_scan', { 'node_id' => NODE_ID, 'node_name' => NODE_NAME }, 0)
           end
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
       end
 
@@ -470,6 +513,9 @@ import ../make-test.nix (
               0
             )
           end
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
 
         it 'detects nodectld reporting loss and recovery' do
@@ -502,6 +548,9 @@ import ../make-test.nix (
             },
             timeout: 120
           )
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
       end
 
@@ -534,6 +583,9 @@ import ../make-test.nix (
               node.fetch('ping') == 'responding' &&
               node.fetch('vpsadmin') == true
           end
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
       end
 
@@ -564,6 +616,9 @@ import ../make-test.nix (
               recent_report.fetch('state') == 'resolved' &&
               recent_report.fetch('en_summary') == recent.fetch('summary')
           end
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
       end
 
@@ -582,6 +637,9 @@ import ../make-test.nix (
               body.include?('?page=security_advisory&action=list') &&
               body.include?('View all security advisories')
           end
+        rescue StandardError, RSpec::Expectations::ExpectationNotMetError
+          collect_failure_diagnostics
+          raise
         end
       end
     '';

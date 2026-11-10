@@ -21,3 +21,9 @@ The test platform follows the nested `vpsadmin/vpsadminos` input. Refresh it wit
 kernel outputs match those published by the selected OS's kernel workflow; the
 same kernel version alone does not establish cache availability. Changes to this
 input still need full integration testing against the pinned vpsAdmin version.
+
+On the first failed example, the status suite captures bounded status and API
+journals, API/WebUI/console HTTP results, and the WebUI container's nginx/PHP-FPM
+journal through the existing machine objects. The capture takes at most six
+commands with eight-second deadlines, runs only once, and preserves the original
+failure. Diagnostic errors do not prevent the remaining test cleanup.
