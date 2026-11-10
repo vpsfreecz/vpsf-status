@@ -462,3 +462,18 @@ other = "Zdrojový kód aplikace"
 
 ["about.source.link"]
 other = "najdete na GitHubu."
+
+["theme.label"]
+other = "Vzhled"
+
+["theme.system"]
+other = "Podle systému"
+
+["theme.light"]
+other = "Světlý"
+
+["theme.dark"]
+other = "Tmavý"
+
+["settings.label"]
+other = "Nastavení"

@@ -94,8 +94,8 @@ func TestRoutesServeIndexCzechLocale(t *testing.T) {
 		expectedGeneratedAt,
 		"Hlášené odstávky",
 		"Nedávné výpadky",
-		`class="dropdown-item" href="/?lang=en"`,
-		`class="dropdown-item active" href="/?lang=cs"`,
+		`href="/?lang=en" title="Přepnout na English"`,
+		`href="/?lang=cs" title="Přepnout na Česky" aria-current="true"`,
 		">English</a>",
 		">Česky</a>",
 		"Výměna routeru",
@@ -128,7 +128,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		body,
 		"No issues reported.",
 		"https://vpsadmin.vpsfree.cz/?page=outage&action=list",
-		`.group-detail-link:hover, .group-detail-link:focus-visible { text-decoration: underline !important; }`,
+		`href="/static/status.css?v=5"`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?kind=vpsadmin&amp;lang=en">vpsAdmin`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=3&amp;kind=location&amp;lang=en">Praha`,
 		`<a class="text-body text-decoration-none group-detail-link" href="/group?id=4&amp;kind=location&amp;lang=en">Brno`,
@@ -141,9 +141,7 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		"vpsfree.cz",
 		"ns1.vpsfree.cz",
 		"history-day-ok",
-		`max-width: min(22rem, calc(100vw - 1rem))`,
-		`max-height: calc(100vh - 1rem)`,
-		`function positionPopover(wrap)`,
+		`src="/static/theme.js?v=4"`,
 		`aria-label="vpsAdmin history"`,
 		`aria-label="Praha history"`,
 		`aria-label="Brno history"`,
@@ -153,6 +151,14 @@ func TestRoutesServeIndexOperationalState(t *testing.T) {
 		`aria-label="Operational"`,
 		`aria-label="Responding"`,
 	)
+	style := getThroughRoutes(t, app, "/static/status.css?v=5")
+	requireStatus(t, style, http.StatusOK)
+	requireContains(t, style.Body.String(),
+		`.group-detail-link:hover, .group-detail-link:focus-visible { text-decoration: underline !important; }`,
+		`max-width: min(22rem, calc(100vw - 1rem))`,
+		`max-height: calc(100dvh - 1rem)`,
+	)
+
 	requireStatusCountsAfter(t, body, `href="/group?kind=vpsadmin&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `data-bs-target="#collapse-vpsadmin"`, StatusCounts{Operational: 3, Total: 3})
 	requireStatusCountsAfter(t, body, `href="/group?id=3&amp;kind=location&amp;lang=en"`, StatusCounts{Operational: 3, Total: 3})
@@ -189,7 +195,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		t,
 		rr.Body.String(),
 		"node1.prg",
-		`<a class="navbar-link" href="/?lang=en">Back to Status</a>`,
+		`<a class="back-link" href="/?lang=en">Back to Status</a>`,
 		"Availability",
 		"30 days",
 		"90 days",
@@ -202,7 +208,7 @@ func TestRoutesServeEntityDetail(t *testing.T) {
 		"Probe log",
 		"Ping",
 		"Down",
-		"<td>Not responding</td>",
+		`class="cell-value">Not responding</div>`,
 		"node1.prg: Ping not responding",
 		"history-day-maintenance",
 	)
@@ -240,14 +246,14 @@ func TestRoutesServeEntityDetailCzechLocale(t *testing.T) {
 		t,
 		body,
 		`<html lang="cs">`,
-		`<a class="navbar-link" href="/?lang=cs">Zpět na Status</a>`,
+		`<a class="back-link" href="/?lang=cs">Zpět na Status</a>`,
 		"Dostupnost",
 		"30 dní",
 		"Hlášené",
 		"Měření",
 		"Události",
 		"Mimo provoz",
-		"<td>Neodpovídá</td>",
+		`class="cell-value">Neodpovídá</div>`,
 		"node1.prg: Ping neodpovídá",
 	)
 	requireNotContains(t, body, "Back to Status", "Availability", "Probe log", "Probe:", "not responding")
@@ -475,8 +481,8 @@ func TestRoutesServeGroupDetailCombinedProbeLog(t *testing.T) {
 	requireStatus(t, rr, http.StatusOK)
 
 	body := rr.Body.String()
-	resolverIndex := strings.Index(body, "<td>resolver-prg</td>")
-	nodeIndex := strings.Index(body, "<td>node1.prg</td>")
+	resolverIndex := strings.Index(body, `class="cell-value">resolver-prg</div>`)
+	nodeIndex := strings.Index(body, `class="cell-value">node1.prg</div>`)
 	if resolverIndex == -1 || nodeIndex == -1 {
 		t.Fatalf("expected resolver and node probe rows in body:\n%s", body)
 	}

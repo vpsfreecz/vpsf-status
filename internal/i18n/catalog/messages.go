@@ -10,6 +10,13 @@ const (
 	MsgLanguageCzech    = "language.cs"
 	MsgLanguageSwitchTo = "language.switch_to"
 
+	MsgSettingsLabel = "settings.label"
+
+	MsgThemeLabel  = "theme.label"
+	MsgThemeSystem = "theme.system"
+	MsgThemeLight  = "theme.light"
+	MsgThemeDark   = "theme.dark"
+
 	MsgNavStatus       = "nav.status"
 	MsgNavBackToStatus = "nav.back_to_status"
 	MsgNavRenderedAt   = "nav.rendered_at"
@@ -186,6 +193,11 @@ func Messages() []*i18n.Message {
 		{ID: MsgLanguageEnglish, Other: "English"},
 		{ID: MsgLanguageCzech, Other: "Czech"},
 		{ID: MsgLanguageSwitchTo, Other: "Switch to {{.Language}}"},
+		{ID: MsgSettingsLabel, Other: "Settings"},
+		{ID: MsgThemeLabel, Other: "Theme"},
+		{ID: MsgThemeSystem, Other: "System"},
+		{ID: MsgThemeLight, Other: "Light"},
+		{ID: MsgThemeDark, Other: "Dark"},
 		{ID: MsgNavStatus, Other: "Status"},
 		{ID: MsgNavBackToStatus, Other: "Back to Status"},
 		{ID: MsgNavRenderedAt, Other: "Rendered at:"},

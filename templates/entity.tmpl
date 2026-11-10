@@ -1,29 +1,7 @@
 {{ define "title" }}{{ .Entity.Label }} - {{ .Locale.T "app.title" }}{{ end }}
 
 {{ define "content" }}
-<nav class="navbar bg-light">
-	<div class="container-fluid">
-		<div class="navbar-brand clearfix">
-			<a class="float-start" href="{{ .Locale.URL "/" }}">
-				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-			</a>
-			<h1 class="navbar-text float-start">{{ .Locale.T "nav.status" }}</h1>
-		</div>
-		<div class="d-flex align-items-center gap-3">
-			<a class="navbar-link" href="{{ .Locale.URL "/" }}">{{ .Locale.T "nav.back_to_status" }}</a>
-			<div class="dropdown">
-				<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .Locale.T "language.label" }}">
-					{{ .Locale.Name }}
-				</button>
-				<ul class="dropdown-menu dropdown-menu-end">
-					{{ range .Locale.SwitchLinks }}
-					<li><a class="dropdown-item{{ if .Active }} active{{ end }}" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a></li>
-					{{ end }}
-				</ul>
-			</div>
-		</div>
-	</div>
-</nav>
+{{ template "site_header" (dict "Locale" .Locale "Back" true) }}
 
 <div class="row">
 	<div class="col">
@@ -43,11 +21,11 @@
 		<table class="table table-sm w-auto">
 			<thead>
 				<tr>
-					<th>{{ .Locale.T "table.period" }}</th>
+					<th scope="col">{{ .Locale.T "table.period" }}</th>
 					{{ if .Entity.ShowReportedAvailability }}
-					<th class="text-end">{{ .Locale.T "table.reported" }}</th>
+					<th scope="col" class="text-end">{{ .Locale.T "table.reported" }}</th>
 					{{ end }}
-					<th class="text-end">{{ .Locale.T "table.probe" }}</th>
+					<th scope="col" class="text-end">{{ .Locale.T "table.probe" }}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -70,30 +48,30 @@
 	<div class="col">
 		<h2>{{ .Locale.T "section.probe_log" }}</h2>
 		{{ if .Entity.HasEvents }}
-		<table class="table table-sm">
-			<thead>
-				<tr>
-					<th>{{ .Locale.T "table.time" }}</th>
+		<table class="table table-sm stacked-table" role="table">
+			<thead role="rowgroup">
+				<tr role="row">
+					<th scope="col" role="columnheader">{{ .Locale.T "table.time" }}</th>
 					{{ if .Entity.ShowEventEntity }}
-					<th>{{ .Locale.T "table.entity" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.entity" }}</th>
 					{{ end }}
-					<th>{{ .Locale.T "table.method" }}</th>
-					<th>{{ .Locale.T "table.status" }}</th>
-					<th>{{ .Locale.T "table.message" }}</th>
-					<th>{{ .Locale.T "table.covered_by" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.method" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.status" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.message" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.covered_by" }}</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody role="rowgroup">
 				{{ range $event := .Entity.Events }}
-				<tr class="table-{{ $event.StatusClass }}{{ if $event.HasCoverage }} probe-covered probe-covered-{{ $event.CoveredBy.Class }}{{ if $event.GroupStart }} probe-covered-start{{ end }}{{ if $event.GroupEnd }} probe-covered-end{{ end }}{{ end }}">
-					<td>{{ $event.ChangedAt }}</td>
+				<tr role="row" class="table-{{ $event.StatusClass }}{{ if $event.HasCoverage }} probe-covered probe-covered-{{ $event.CoveredBy.Class }}{{ if $event.GroupStart }} probe-covered-start{{ end }}{{ if $event.GroupEnd }} probe-covered-end{{ end }}{{ end }}">
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.time" }}</span><div class="cell-value">{{ $event.ChangedAt }}</div></td>
 					{{ if $.Entity.ShowEventEntity }}
-					<td>{{ $event.Entity }}</td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.entity" }}</span><div class="cell-value">{{ $event.Entity }}</div></td>
 					{{ end }}
-					<td>{{ $event.Method }}</td>
-					<td>{{ $event.Status }}</td>
-					<td>{{ $event.Message }}</td>
-					<td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.method" }}</span><div class="cell-value">{{ $event.Method }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.status" }}</span><div class="cell-value">{{ $event.Status }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.message" }}</span><div class="cell-value">{{ $event.Message }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.covered_by" }}</span><div class="cell-value">
 						{{ if $event.HasCoverage }}
 							{{ if $event.CoveredBy.URL }}
 							<a class="badge text-bg-{{ $event.CoveredBy.Class }} text-decoration-none" href="{{ $event.CoveredBy.URL }}" target="_blank" rel="noopener">{{ $event.CoveredBy.Label }}</a>
@@ -103,7 +81,7 @@
 						{{ else }}
 						<span class="text-muted">-</span>
 						{{ end }}
-					</td>
+					</div></td>
 				</tr>
 				{{ end }}
 			</tbody>

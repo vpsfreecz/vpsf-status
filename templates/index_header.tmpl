@@ -1,27 +1,52 @@
 {{ define "index_header" }}
-<nav class="navbar bg-light">
-	<div class="container-fluid">
-		<div class="navbar-brand clearfix">
-			<a class="float-start" href="{{ .Locale.URL "/" }}">
-				<img src="/static/vpsfree.png" alt="vpsFree.cz" width="180">
-			</a>
-			<h1 class="navbar-text float-start">{{ .Locale.T "nav.status" }}</h1>
-		</div>
-		<div class="d-flex align-items-center gap-3">
-			<span class="navbar-text">
-				{{ .Locale.T "nav.rendered_at" }} {{ .RenderedAt }}
-			</span>
-			<div class="dropdown">
-				<button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="{{ .Locale.T "language.label" }}">
-					{{ .Locale.Name }}
-				</button>
-				<ul class="dropdown-menu dropdown-menu-end">
-					{{ range .Locale.SwitchLinks }}
-					<li><a class="dropdown-item{{ if .Active }} active{{ end }}" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a></li>
-					{{ end }}
-				</ul>
-			</div>
-		</div>
+{{ template "site_header" (dict "Locale" .Locale "RenderedAt" .RenderedAt) }}
+{{ end }}
+
+{{ define "site_header" }}
+<header class="site-header">
+	<div class="site-brand">
+		<a href="{{ .Locale.URL "/" }}" aria-label="vpsFree.cz">
+			<img class="brand-logo-light" src="/static/vpsfree.png" alt="" width="180" height="62">
+			<img class="brand-logo-dark" src="/static/vpsfree-dark.png" alt="" width="173" height="50">
+		</a>
+		<h1>{{ .Locale.T "nav.status" }}</h1>
 	</div>
-</nav>
+	<div class="header-actions">
+		{{ if .RenderedAt }}<p class="rendered-at text-muted">{{ .Locale.T "nav.rendered_at" }} {{ .RenderedAt }}</p>{{ end }}
+
+		{{ if .Back }}<a class="back-link" href="{{ .Locale.URL "/" }}">{{ .Locale.T "nav.back_to_status" }}</a>{{ end }}
+		<details class="settings-menu">
+			<summary aria-label="{{ .Locale.T "settings.label" }}"><i class="bi bi-gear" aria-hidden="true"></i></summary>
+			<div class="settings-panel">
+				<div class="settings-enhanced" hidden>
+					<fieldset class="theme-control">
+						<legend>{{ .Locale.T "theme.label" }}</legend>
+						<div class="theme-choices">
+							<div class="theme-option">
+								<input class="theme-input" type="radio" name="theme" id="theme-system" title="{{ .Locale.T "theme.system" }}" value="system" checked>
+								<label for="theme-system" title="{{ .Locale.T "theme.system" }}"><i class="bi bi-display" aria-hidden="true"></i><span class="visually-hidden">{{ .Locale.T "theme.system" }}</span></label>
+							</div>
+							<div class="theme-option">
+								<input class="theme-input" type="radio" name="theme" id="theme-light" title="{{ .Locale.T "theme.light" }}" value="light">
+								<label for="theme-light" title="{{ .Locale.T "theme.light" }}"><i class="bi bi-sun" aria-hidden="true"></i><span class="visually-hidden">{{ .Locale.T "theme.light" }}</span></label>
+							</div>
+							<div class="theme-option">
+								<input class="theme-input" type="radio" name="theme" id="theme-dark" title="{{ .Locale.T "theme.dark" }}" value="dark">
+								<label for="theme-dark" title="{{ .Locale.T "theme.dark" }}"><i class="bi bi-moon" aria-hidden="true"></i><span class="visually-hidden">{{ .Locale.T "theme.dark" }}</span></label>
+							</div>
+						</div>
+					</fieldset>
+				</div>
+				<div class="language-control">
+					<p id="language-label">{{ .Locale.T "language.label" }}</p>
+					<div class="language-options" role="group" aria-labelledby="language-label">
+						{{ range .Locale.SwitchLinks }}
+						<a class="language-option" href="{{ .URL }}" title="{{ .Title }}"{{ if .Active }} aria-current="true"{{ end }}>{{ .Label }}</a>
+						{{ end }}
+					</div>
+				</div>
+			</div>
+		</details>
+	</div>
+</header>
 {{ end }}

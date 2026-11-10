@@ -21,6 +21,26 @@ other = "Czech"
 hash = "sha1-63cb3da6cd8222e7f42429d66c25ce9fae04aca1"
 other = "Switch to {{.Language}}"
 
+["settings.label"]
+hash = "sha1-75840959139032664e76ca6ea28ba52b0e49e871"
+other = "Settings"
+
+["theme.label"]
+hash = "sha1-ee779da8a6eb71c98daa091b2b74b3536c7cccc8"
+other = "Theme"
+
+["theme.system"]
+hash = "sha1-83aef7369f5a2684d88cb7cdf5c15aa17ac1d694"
+other = "System"
+
+["theme.light"]
+hash = "sha1-d418c3cb57833d3348698e74e543a8bd21c3df40"
+other = "Light"
+
+["theme.dark"]
+hash = "sha1-eebbf262b5672b0d40480281c89b0c4837dea954"
+other = "Dark"
+
 ["nav.status"]
 hash = "sha1-49669b0bcf70d36d20ff07106c4d8821a4524300"
 other = "Status"

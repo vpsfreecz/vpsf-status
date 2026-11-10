@@ -25,39 +25,39 @@
 	<div class="col">
 		{{ if .Status.OutageReports.AnyActive }}
 		<h2>{{ .Status.OutageReports.ActiveTitleForLocale .Locale }}</h2>
-		<table class="table table-sm">
-			<thead>
-				<tr>
-					<th>{{ .Locale.T "table.date" }}</th>
-					<th>{{ .Locale.T "table.duration" }}</th>
-					<th>{{ .Locale.T "table.type" }}</th>
-					<th>{{ .Locale.T "table.systems" }}</th>
-					<th>{{ .Locale.T "table.impact" }}</th>
-					<th>{{ .Locale.T "table.reason" }}</th>
-					<th>{{ .Locale.T "table.link" }}</th>
+		<table class="table table-sm stacked-table" role="table">
+			<thead role="rowgroup">
+				<tr role="row">
+					<th scope="col" role="columnheader">{{ .Locale.T "table.date" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.duration" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.type" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.systems" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.impact" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.reason" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody role="rowgroup">
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.ActiveList }}
-				<tr class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
-					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
-					<td>{{ $outage.Duration }}</td>
-					<td>
+				<tr role="row" class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.date" }}</span><div class="cell-value">{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.duration" }}</span><div class="cell-value">{{ $outage.Duration }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.type" }}</span><div class="cell-value">
 						{{ if $outage.IsPlannedOutage }}
 						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ end }}
-					</td>
-					<td>
+					</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.systems" }}</span><div class="cell-value">
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.DisplayLabel }}{{ end }}
-					</td>
-					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
-					<td>{{ $outage.SummaryForLocale $.Locale }}</td>
-					<td>
+					</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.impact" }}</span><div class="cell-value">{{ $outage.ImpactLabelForLocale $.Locale }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.reason" }}</span><div class="cell-value">{{ $outage.SummaryForLocale $.Locale }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.link" }}</span><div class="cell-value">
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
-					</td>
+					</div></td>
 				</tr>
 				{{ end }}
 			</tbody>
@@ -65,39 +65,39 @@
 		{{ end }}
 		{{ if .Status.OutageReports.AnyRecent }}
 		<h2>{{ .Status.OutageReports.RecentTitleForLocale .Locale }}</h2>
-		<table class="table table-sm">
-			<thead>
-				<tr>
-					<th>{{ .Locale.T "table.date" }}</th>
-					<th>{{ .Locale.T "table.duration" }}</th>
-					<th>{{ .Locale.T "table.type" }}</th>
-					<th>{{ .Locale.T "table.systems" }}</th>
-					<th>{{ .Locale.T "table.impact" }}</th>
-					<th>{{ .Locale.T "table.reason" }}</th>
-					<th>{{ .Locale.T "table.link" }}</th>
+		<table class="table table-sm stacked-table" role="table">
+			<thead role="rowgroup">
+				<tr role="row">
+					<th scope="col" role="columnheader">{{ .Locale.T "table.date" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.duration" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.type" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.systems" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.impact" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.reason" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody role="rowgroup">
 				{{ $status := .Status }}
 				{{ range $outage := .Status.OutageReports.RecentList }}
-				<tr class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
-					<td>{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</td>
-					<td>{{ $outage.Duration }}</td>
-					<td>
+				<tr role="row" class="table-{{ if $outage.IsPlannedOutage }}warning{{ else }}danger{{ end }}">
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.date" }}</span><div class="cell-value">{{ $outage.BeginsAt.Local.Format "2006-01-02 15:04 MST" }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.duration" }}</span><div class="cell-value">{{ $outage.Duration }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.type" }}</span><div class="cell-value">
 						{{ if $outage.IsPlannedOutage }}
 						<i class="bi bi-clipboard2-check text-success" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ else }}
 						<i class="bi bi-exclamation-circle text-danger" aria-label="{{ $outage.TypeLabelForLocale $.Locale }}" title="{{ $outage.TypeLabelForLocale $.Locale }}"></i>
 						{{ end }}
-					</td>
-					<td>
+					</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.systems" }}</span><div class="cell-value">
 						{{ range $i, $entity := $outage.AffectedEntities }}{{ if $i }}, {{ end }}{{ $entity.DisplayLabel }}{{ end }}
-					</td>
-					<td>{{ $outage.ImpactLabelForLocale $.Locale }}</td>
-					<td>{{ $outage.SummaryForLocale $.Locale }}</td>
-					<td>
+					</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.impact" }}</span><div class="cell-value">{{ $outage.ImpactLabelForLocale $.Locale }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.reason" }}</span><div class="cell-value">{{ $outage.SummaryForLocale $.Locale }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.link" }}</span><div class="cell-value">
 						<a href="{{ $webuiUrl }}/?page=outage&action=show&id={{ $outage.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
-					</td>
+					</div></td>
 				</tr>
 				{{ end }}
 			</tbody>
@@ -117,24 +117,24 @@
 		{{ end }}
 		{{ if .Status.SecurityAdvisories.AnyRecent }}
 		<h2>{{ .Locale.T "security.recent" }}</h2>
-		<table class="table table-sm">
-			<thead>
-				<tr>
-					<th>{{ .Locale.T "table.published" }}</th>
-					<th>{{ .Locale.T "table.cve" }}</th>
-					<th>{{ .Locale.T "table.summary" }}</th>
-					<th>{{ .Locale.T "table.link" }}</th>
+		<table class="table table-sm stacked-table" role="table">
+			<thead role="rowgroup">
+				<tr role="row">
+					<th scope="col" role="columnheader">{{ .Locale.T "table.published" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.cve" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.summary" }}</th>
+					<th scope="col" role="columnheader">{{ .Locale.T "table.link" }}</th>
 				</tr>
 			</thead>
-			<tbody>
+			<tbody role="rowgroup">
 				{{ range $advisory := .Status.SecurityAdvisories.RecentList }}
-				<tr class="table-info">
-					<td>{{ $advisory.PublishedAt.Local.Format "2006-01-02 15:04 MST" }}</td>
-					<td>{{ $advisory.CveLabel }}</td>
-					<td>{{ $advisory.SummaryForLocale $.Locale }}</td>
-					<td>
+				<tr role="row" class="table-info">
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.published" }}</span><div class="cell-value">{{ $advisory.PublishedAt.Local.Format "2006-01-02 15:04 MST" }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.cve" }}</span><div class="cell-value">{{ $advisory.CveLabel }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.summary" }}</span><div class="cell-value">{{ $advisory.SummaryForLocale $.Locale }}</div></td>
+					<td role="cell"><span class="cell-label" aria-hidden="true">{{ $.Locale.T "table.link" }}</span><div class="cell-value">
 						<a href="{{ $webuiUrl }}/?page=security_advisory&action=show&id={{ $advisory.Id }}" target="_blank">{{ $.Locale.T "outage.more_information" }}</a>
-					</td>
+					</div></td>
 				</tr>
 				{{ end }}
 			</tbody>
@@ -172,9 +172,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>{{ $.Locale.T "table.service" }}</th>
-									<th>{{ $.Locale.T "table.description" }}</th>
-									<th>{{ $.Locale.T "table.status" }}</th>
+									<th scope="col">{{ $.Locale.T "table.service" }}</th>
+									<th scope="col">{{ $.Locale.T "table.description" }}</th>
+									<th scope="col">{{ $.Locale.T "table.status" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -257,10 +257,10 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>{{ $.Locale.T "table.node" }}</th>
-									<th>vpsAdmin</th>
-									<th>{{ $.Locale.T "table.storage" }}</th>
-									<th>{{ $.Locale.T "table.ping" }}</th>
+									<th scope="col">{{ $.Locale.T "table.node" }}</th>
+									<th scope="col">vpsAdmin</th>
+									<th scope="col">{{ $.Locale.T "table.storage" }}</th>
+									<th scope="col">{{ $.Locale.T "table.ping" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -337,9 +337,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>{{ $.Locale.T "table.name" }}</th>
-									<th>{{ $.Locale.T "table.ping" }}</th>
-									<th>{{ $.Locale.T "table.lookup" }}</th>
+									<th scope="col">{{ $.Locale.T "table.name" }}</th>
+									<th scope="col">{{ $.Locale.T "table.ping" }}</th>
+									<th scope="col">{{ $.Locale.T "table.lookup" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -400,9 +400,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>{{ $.Locale.T "table.service" }}</th>
-									<th>{{ $.Locale.T "table.description" }}</th>
-									<th>{{ $.Locale.T "table.status" }}</th>
+									<th scope="col">{{ $.Locale.T "table.service" }}</th>
+									<th scope="col">{{ $.Locale.T "table.description" }}</th>
+									<th scope="col">{{ $.Locale.T "table.status" }}</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -441,9 +441,9 @@
 						<table class="table table-sm">
 							<thead>
 								<tr>
-									<th>{{ $.Locale.T "table.service" }}</th>
-									<th>{{ $.Locale.T "table.ping" }}</th>
-									<th>{{ $.Locale.T "table.lookup" }}</th>
+									<th scope="col">{{ $.Locale.T "table.service" }}</th>
+									<th scope="col">{{ $.Locale.T "table.ping" }}</th>
+									<th scope="col">{{ $.Locale.T "table.lookup" }}</th>
 								</tr>
 							</thead>
 							<tbody>

@@ -1,5 +1,6 @@
 {{ define "history_bar" }}
-<div class="history-bar{{ if .HasLanes }} history-bar-split{{ end }}" style="grid-template-columns: repeat({{ .DayCount }}, minmax(2px, 1fr));" aria-label="{{ .AriaLabel }}">
+<div class="history-track" tabindex="0" role="group" aria-label="{{ .AriaLabel }}">
+<div class="history-bar{{ if .HasLanes }} history-bar-split{{ end }}" style="--history-days: {{ .DayCount }}">
 	{{ range .Days }}
 	<span class="history-day-wrap" tabindex="0" aria-label="{{ .SummaryLabel }}">
 		{{ if .HasLanes }}
@@ -11,7 +12,7 @@
 		{{ else }}
 		<span class="history-day {{ .Class }}"></span>
 		{{ end }}
-		<span class="history-popover" role="tooltip">
+		<span class="history-popover" role="group" aria-label="{{ .SummaryLabel }}">
 			<span class="history-popover-date">{{ .Label }}</span>
 			{{ if .HasIncidents }}
 			<ul class="history-popover-list">
@@ -37,5 +38,6 @@
 		</span>
 	</span>
 	{{ end }}
+</div>
 </div>
 {{ end }}
