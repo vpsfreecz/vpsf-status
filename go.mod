@@ -8,7 +8,7 @@ require (
 	github.com/nicksnyder/go-i18n/v2 v2.7.0
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
-	github.com/prometheus/common v0.73.1
+	github.com/prometheus/common v0.74.0
 	github.com/vpsfreecz/vpsadmin-go-client v0.2.0
 	golang.org/x/text v0.44.0
 	modernc.org/sqlite v1.62.0
